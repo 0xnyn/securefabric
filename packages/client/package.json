@@ -1,0 +1,31 @@
+{
+  "name": "@securefabric/client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed client for the SecureFabric API, generated from its FastAPI OpenAPI schema",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./v1": "./src/v1.ts"
+  },
+  "scripts": {
+    "check-generated": "cd ../.. && uv run --frozen securefabric-openapi | pnpm -C packages/client exec openapi-typescript --enum-values --default-non-nullable=false --check -o ./src/v1.ts",
+    "dev": "cd ../.. && uv run --frozen watchfiles --filter python --ignore-paths .venv,node_modules \"pnpm -C packages/client run sync\" apps/api/src packages/core/src packages/tasks/src packages/domain/src",
+    "generate": "cd ../.. && uv run --frozen securefabric-openapi | pnpm -C packages/client exec openapi-typescript --enum-values --default-non-nullable=false -o ./src/v1.ts",
+    "lint": "biome check .",
+    "sync": "pnpm run --silent check-generated >/dev/null 2>&1 || pnpm run generate",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "@securefabric/config": "workspace:*",
+    "@types/node": "catalog:",
+    "api": "workspace:*",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
