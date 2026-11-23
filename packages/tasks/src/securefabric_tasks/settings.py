@@ -15,5 +15,5 @@ class AbsurdSettings(BaseSettings):
         frozen=True,
     )
 
-    default_queue: str = Queue.DEFAULT
+    default_queue: str = Queue.CONTROL
     default_max_attempts: int = Field(default=5, ge=1)

@@ -1,7 +1,6 @@
-"""Worker liveness: upsert a row in ``fabric.worker_heartbeats`` every few seconds.
+"""Worker liveness: upsert ``obs.worker_heartbeat`` every few seconds.
 
-``make status`` and ``GET /api/v1/status`` read it to show which workers are online,
-what queue they serve, and when they were last seen.
+``make status`` and ``GET /v1/status`` read it to show which workers are online.
 """
 
 import asyncio
@@ -18,23 +17,23 @@ log = get_logger(__name__)
 INTERVAL_SECONDS = 5.0
 
 
-async def beat(pool: AsyncPool, worker_id: str, queue: str, concurrency: int) -> None:
+async def beat(
+    pool: AsyncPool, worker_id: str, role: str, queues: list[str], concurrency: int
+) -> None:
     started = datetime.now(UTC)
     while True:
         try:
             async with pool.connection() as conn:
                 await conn.execute(
-                    """
-                    insert into fabric.worker_heartbeats (
-                        worker_id, queue, hostname, pid, version, concurrency,
-                        started_at, last_seen_at
-                    ) values (%s, %s, %s, %s, %s, %s, %s, now())
-                    on conflict (worker_id) do update set last_seen_at = now(),
-                        queue = excluded.queue, concurrency = excluded.concurrency
-                    """,
+                    """insert into obs.worker_heartbeat (worker_id, role, queues, hostname, pid, version, concurrency,
+                                                         started_at, last_seen_at)
+                       values (%s, %s, %s, %s, %s, %s, %s, %s, now())
+                       on conflict (worker_id) do update set last_seen_at = now(), queues = excluded.queues,
+                           concurrency = excluded.concurrency, role = excluded.role""",
                     (
                         worker_id,
-                        queue,
+                        role,
+                        queues,
                         socket.gethostname(),
                         os.getpid(),
                         __version__,
@@ -51,7 +50,7 @@ async def clear(pool: AsyncPool, worker_id: str) -> None:
     try:
         async with pool.connection() as conn:
             await conn.execute(
-                "delete from fabric.worker_heartbeats where worker_id = %s", (worker_id,)
+                "delete from obs.worker_heartbeat where worker_id = %s", (worker_id,)
             )
     except Exception as exc:
         log.warning("heartbeat_clear_failed", error=type(exc).__name__)

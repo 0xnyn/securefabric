@@ -68,3 +68,30 @@ class TaskSpec[P: BaseModel, R: BaseModel]:
             return result.model_dump(mode="json")
 
         _wrapped.__name__ = getattr(handler, "__name__", self.name)
+
+
+async def spawn_sql(
+    conn: Any,
+    *,
+    queue: str,
+    task_name: str,
+    params: dict[str, Any],
+    idempotency_key: str | None = None,
+    max_attempts: int = 5,
+    headers: dict[str, Any] | None = None,
+) -> str:
+    """Spawn inside the caller's transaction, so the spawn commits or rolls back
+    with the state change that caused it (admission, outbox dispatch)."""
+    import json
+
+    options: dict[str, Any] = {"max_attempts": max_attempts}
+    if idempotency_key:
+        options["idempotency_key"] = idempotency_key
+    if headers:
+        options["headers"] = headers
+    cur = await conn.execute(
+        "select task_id from absurd.spawn_task(%s, %s, %s, %s)",
+        (queue, task_name, json.dumps(params), json.dumps(options)),
+    )
+    row = await cur.fetchone()
+    return str(row[0])

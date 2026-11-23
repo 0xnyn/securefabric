@@ -1,125 +1,72 @@
-import dataclasses
-import uuid
-from typing import Any, cast
+"""Task contracts and the transactional spawn the engine relies on."""
 
+import uuid
+from typing import Any
+
+import psycopg
 import pytest
-from absurd_sdk import AsyncAbsurd, AsyncTaskContext
 from pydantic import ValidationError
 
-from securefabric_tasks import PROVISION_TENANT, ProvisionTenantParams, ProvisionTenantResult
+from securefabric_tasks import ALL_TASKS, ROLE_QUEUES, SYNC_SLICE_BULK, Queue, SliceParams
+from securefabric_tasks.spec import spawn_sql
 
 
-class RecordingClient:
-    def __init__(self) -> None:
-        self.calls: list[tuple[str, Any, dict[str, Any]]] = []
-
-    async def spawn(self, task_name: str, params: Any, **kwargs: Any) -> dict[str, Any]:
-        self.calls.append((task_name, params, kwargs))
-        # Real SDK returns uuid.UUID objects despite annotating str.
-        return {"task_id": uuid.UUID(int=1), "run_id": uuid.UUID(int=2), "attempt": 1}
-
-
-def _params(**overrides: Any) -> ProvisionTenantParams:
-    data: dict[str, Any] = {"tenant_id": "acme", "admin_email": "ops@acme.io"} | overrides
-    return ProvisionTenantParams.model_validate(data)
+def test_every_task_runs_on_a_known_queue_that_some_worker_role_serves() -> None:
+    served = {q for queues in ROLE_QUEUES.values() for q in queues}
+    assert served == set(Queue)
+    for spec in ALL_TASKS:
+        assert spec.queue in set(Queue), spec.name
+        assert spec.max_attempts >= 1
+    # One handler per (queue, name): the worker registers each pair once.
+    pairs = [(spec.queue, spec.name) for spec in ALL_TASKS]
+    assert len(pairs) == len(set(pairs))
 
 
-@pytest.mark.parametrize("tenant_id", ["A", "ab", "-acme", "acme-", "ac me", "x" * 41])
-def test_params_reject_bad_tenant_ids(tenant_id: str) -> None:
+def test_params_are_strict_and_frozen() -> None:
     with pytest.raises(ValidationError):
-        _params(tenant_id=tenant_id)
-
-
-def test_params_forbid_unknown_fields() -> None:
+        SliceParams.model_validate({"run_id": "r", "environment_id": "e", "extra": 1})
+    p = SliceParams(run_id="r", environment_id="e")
     with pytest.raises(ValidationError):
-        _params(surprise=True)
+        p.slice = 2  # type: ignore[misc]
 
 
-async def test_spawn_sends_json_params_and_spec_defaults() -> None:
-    client = RecordingClient()
-    result = await PROVISION_TENANT.spawn(
-        cast(AsyncAbsurd, client), _params(plan="pro"), idempotency_key="k1"
+def test_queues_exist_in_the_database(database_url: str) -> None:
+    with psycopg.connect(database_url) as conn:
+        names = {r[0] for r in conn.execute("select queue_name from absurd.queues")}
+    assert set(Queue) <= names
+
+
+async def _count(conn: psycopg.AsyncConnection[Any], key: str) -> int:
+    cur = await conn.execute(
+        "select count(*) from absurd.t_sync_bulk where idempotency_key = %s", (key,)
     )
-    assert result == {
-        "task_id": str(uuid.UUID(int=1)),
-        "run_id": str(uuid.UUID(int=2)),
-        "attempt": 1,
+    row = await cur.fetchone()
+    assert row is not None
+    return int(row[0])
+
+
+async def test_spawn_sql_commits_with_the_caller_and_dedups_by_key(database_url: str) -> None:
+    key = f"test-{uuid.uuid4()}"
+    params = SliceParams(run_id=str(uuid.uuid4()), environment_id=str(uuid.uuid4()))
+    spawn: dict[str, Any] = {
+        "queue": SYNC_SLICE_BULK.queue,
+        "task_name": SYNC_SLICE_BULK.name,
+        "params": params.model_dump(mode="json"),
+        "idempotency_key": key,
     }
-    name, params, kwargs = client.calls[0]
-    assert name == "provision-tenant"
-    assert params == {
-        "tenant_id": "acme",
-        "plan": "pro",
-        "admin_email": "ops@acme.io",
-        "activation_delay_seconds": 0,
-    }
-    assert kwargs["queue"] == PROVISION_TENANT.queue
-    assert kwargs["max_attempts"] == PROVISION_TENANT.max_attempts
-    assert kwargs["idempotency_key"] == "k1"
-
-
-# ---------------------------------------------------------------------------
-# Integration: real Absurd round-trip through Postgres
-# ---------------------------------------------------------------------------
-
-
-async def _echo_handler(
-    params: ProvisionTenantParams, ctx: AsyncTaskContext
-) -> ProvisionTenantResult:
-    async def resources() -> list[str]:
-        return [f"db:{params.tenant_id}"]
-
-    allocated = await ctx.step("alloc", resources)
-    if params.activation_delay_seconds:
-        await ctx.sleep_for("wait", params.activation_delay_seconds)
-    return ProvisionTenantResult(
-        tenant_id=params.tenant_id,
-        plan=params.plan,
-        resources=allocated,
-        activated_at="2026-01-01T00:00:00Z",
-    )
-
-
-@pytest.mark.integration
-async def test_spawn_work_and_fetch_result(database_url: str, unique_queue: str) -> None:
-    spec = dataclasses.replace(PROVISION_TENANT, queue=unique_queue)
-    client = AsyncAbsurd(database_url, queue_name=unique_queue)
-    try:
-        await client.create_queue(unique_queue)
-        spec.register(client, _echo_handler)
-
-        spawned = await spec.spawn(client, _params(), idempotency_key="same")
-        again = await spec.spawn(client, _params(), idempotency_key="same")
-        assert again["task_id"] == spawned["task_id"], "idempotency key must dedupe"
-
-        pending = await client.fetch_task_result(spawned["task_id"])
-        assert pending is not None
-        assert pending.state == "pending"
-
-        await client.work_batch(worker_id="pytest", batch_size=5)
-
-        done = await client.fetch_task_result(spawned["task_id"])
-        assert done is not None
-        assert done.state == "completed", done.failure
-        result = spec.parse_result(done.result)
-        assert result.resources == ["db:acme"]
-    finally:
-        await client.close()
-
-
-@pytest.mark.integration
-async def test_durable_sleep_suspends_task(database_url: str, unique_queue: str) -> None:
-    spec = dataclasses.replace(PROVISION_TENANT, queue=unique_queue)
-    client = AsyncAbsurd(database_url, queue_name=unique_queue)
-    try:
-        await client.create_queue(unique_queue)
-        spec.register(client, _echo_handler)
-        spawned = await spec.spawn(client, _params(activation_delay_seconds=3600))
-
-        await client.work_batch(worker_id="pytest")
-
-        snapshot = await client.fetch_task_result(spawned["task_id"])
-        assert snapshot is not None
-        assert snapshot.state == "sleeping"
-    finally:
-        await client.close()
+    async with await psycopg.AsyncConnection.connect(database_url) as conn:
+        # Rolled back with the caller's transaction: no task.
+        async with conn.transaction(force_rollback=True):
+            await spawn_sql(conn, **spawn)
+        assert await _count(conn, key) == 0
+        try:
+            async with conn.transaction():
+                first = await spawn_sql(conn, **spawn)
+            async with conn.transaction():
+                second = await spawn_sql(conn, **spawn)
+            assert first == second and await _count(conn, key) == 1
+        finally:
+            async with conn.transaction():
+                await conn.execute(
+                    "delete from absurd.t_sync_bulk where idempotency_key = %s", (key,)
+                )

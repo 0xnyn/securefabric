@@ -1,86 +1,163 @@
-"""Task contracts: the params/result schemas and specs for every durable task.
+"""Task contracts: params/result schemas and specs for every durable task.
 
-Add a new task by defining its models and a ``TaskSpec`` here, then register a
-handler for it in ``apps/worker``.
+Retries of *classified* failures are ours (PD-13): a stream slice that hits a
+vendor 5xx ends its Absurd task normally and the run row waits for its next
+attempt on our schedule. Absurd's own ``max_attempts`` only covers a worker
+dying mid-task.
 """
 
-from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from securefabric_tasks.queues import Queue
 from securefabric_tasks.spec import TaskSpec
 
-TenantPlan = Literal["free", "pro", "enterprise"]
 
-
-class ProvisionTenantParams(BaseModel):
+class _Params(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    tenant_id: str = Field(
-        min_length=3, max_length=40, pattern=r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
-    )
-    plan: TenantPlan = "free"
-    admin_email: str = Field(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", max_length=254)
-    activation_delay_seconds: float = Field(
-        default=0,
-        ge=0,
-        le=3600,
-        description="Durable sleep before activation; demonstrates suspend/resume.",
-    )
+
+class SliceParams(_Params):
+    run_id: str
+    environment_id: str
+    slice: int = 0
 
 
-class ProvisionTenantResult(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-    tenant_id: str
-    plan: TenantPlan
-    resources: list[str]
-    activated_at: datetime
+class SliceResult(BaseModel):
+    run_id: str
+    outcome: str
+    health_code: str | None = None
 
 
-PROVISION_TENANT = TaskSpec(
-    name="provision-tenant",
-    queue=Queue.DEFAULT,
-    params_model=ProvisionTenantParams,
-    result_model=ProvisionTenantResult,
-    max_attempts=5,
-    retry_strategy={"kind": "exponential", "base_seconds": 2, "factor": 2, "max_seconds": 300},
-    description="Allocate resources for a tenant, wait, then activate it.",
+SYNC_SLICE_INTERACTIVE = TaskSpec(
+    name="sync.slice",
+    queue=Queue.SYNC_INTERACTIVE,
+    params_model=SliceParams,
+    result_model=SliceResult,
+    max_attempts=20,
+    description="Execute one slice of one stream run (interactive pool).",
+)
+SYNC_SLICE_BULK = TaskSpec(
+    name="sync.slice",
+    queue=Queue.SYNC_BULK,
+    params_model=SliceParams,
+    result_model=SliceResult,
+    max_attempts=20,
+    description="Execute one slice of one stream run (bulk pool).",
 )
 
 
-class SyncConnectionParams(BaseModel):
-    """Run one vendor sync for a connection. The API has already recorded the job."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    connection_id: str = Field(min_length=1, max_length=64)
-    job_id: str = Field(min_length=1, max_length=64)
-    duration_seconds: float = Field(
-        default=2.6, ge=0, le=3600, description="Simulated vendor sync time (durable sleep)."
-    )
+class VerifyParams(_Params):
+    connection_id: str
+    environment_id: str
+    reason: Literal["create", "test", "rotate", "reprobe", "reauthorize", "restore"] = "create"
+    staged: bool = False
 
 
-class SyncConnectionResult(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-    job_id: str
-    status: Literal["SUCCESS", "FAILED", "skipped"]
-    added: int = 0
-    updated: int = 0
-    deleted: int = 0
+class VerifyResultModel(BaseModel):
+    connection_id: str
+    is_valid: bool
+    message: str | None = None
+    grants: dict[str, str] = Field(default_factory=dict)
 
 
-SYNC_CONNECTION = TaskSpec(
-    name="sync-connection",
-    queue=Queue.DEFAULT,
-    params_model=SyncConnectionParams,
-    result_model=SyncConnectionResult,
+CONNECTION_VERIFY = TaskSpec(
+    name="connection.verify",
+    queue=Queue.CONTROL,
+    params_model=VerifyParams,
+    result_model=VerifyResultModel,
     max_attempts=3,
-    retry_strategy={"kind": "exponential", "base_seconds": 1, "factor": 2, "max_seconds": 30},
-    description="Pull a connection's records from the vendor and update its sync job.",
+    retry_strategy={"kind": "exponential", "base_seconds": 2, "factor": 2, "max_seconds": 30},
+    description="Verify credentials, probe streams, record grants, activate.",
 )
 
-ALL_TASKS: tuple[TaskSpec[BaseModel, BaseModel], ...] = (PROVISION_TENANT, SYNC_CONNECTION)  # type: ignore[assignment]
+
+class ConnectCompleteParams(_Params):
+    state: str
+    environment_id: str
+
+
+CONNECT_COMPLETE = TaskSpec(
+    name="connect.complete",
+    queue=Queue.CONTROL,
+    params_model=ConnectCompleteParams,
+    result_model=VerifyResultModel,
+    max_attempts=2,
+    description="Finish a redirect connect flow: exchange the code, check access, bind, verify.",
+)
+
+
+class IngressParams(_Params):
+    delivery_row_id: str
+
+
+class GenericResult(BaseModel):
+    ok: bool = True
+    detail: dict[str, Any] = Field(default_factory=dict)
+
+
+INGRESS_PROCESS = TaskSpec(
+    name="ingress.process",
+    queue=Queue.CONTROL,
+    params_model=IngressParams,
+    result_model=GenericResult,
+    max_attempts=5,
+    description="Route an inbound vendor webhook and apply its effects.",
+)
+
+
+class ActionParams(_Params):
+    action_id: str
+    environment_id: str
+
+
+ACTION_PERFORM = TaskSpec(
+    name="action.perform",
+    queue=Queue.CONTROL,
+    params_model=ActionParams,
+    result_model=GenericResult,
+    max_attempts=1,
+    description="Perform a write-back action against the vendor.",
+)
+
+
+class DeliveryParams(_Params):
+    delivery_id: str
+    environment_id: str
+
+
+DELIVERY_SEND = TaskSpec(
+    name="webhook.deliver",
+    queue=Queue.DELIVERY,
+    params_model=DeliveryParams,
+    result_model=GenericResult,
+    max_attempts=3,
+    description="Deliver one outbound webhook with its retry schedule (durable sleeps).",
+)
+
+
+class MaintenanceParams(_Params):
+    job: str
+    args: dict[str, Any] = Field(default_factory=dict)
+
+
+MAINTENANCE_RUN = TaskSpec(
+    name="maintenance.run",
+    queue=Queue.MAINTENANCE,
+    params_model=MaintenanceParams,
+    result_model=GenericResult,
+    max_attempts=3,
+    description="Retention, partitions, purge, refresh sweeps, enrichment.",
+)
+
+ALL_TASKS: tuple[TaskSpec[Any, Any], ...] = (
+    SYNC_SLICE_INTERACTIVE,
+    SYNC_SLICE_BULK,
+    CONNECTION_VERIFY,
+    CONNECT_COMPLETE,
+    INGRESS_PROCESS,
+    ACTION_PERFORM,
+    DELIVERY_SEND,
+    MAINTENANCE_RUN,
+)
