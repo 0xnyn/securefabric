@@ -1,0 +1,57 @@
+# Development overrides: hot reload for api + worker, Habitat dashboard on.
+#   docker compose -f compose.yaml -f compose.dev.yaml up   (or just: make stack)
+#
+# The repo is bind-mounted at /app; workspace packages are installed editable in
+# /opt/venv, so edits under apps/ and packages/ are picked up instantly:
+#   - api:    uvicorn --reload (API_RELOAD=true)
+#   - worker: watchfiles restarts the process (SIGINT -> graceful stop)
+# Changing dependencies (uv.lock) requires `make stack-build`.
+
+# Only `api` builds the dev image; the other app services reuse that tag, so
+# compose never builds the same image concurrently.
+x-dev-app: &dev-app
+  image: securefabric-dev:local
+  build: !reset null
+  pull_policy: never
+  volumes:
+    - .:/app
+    - /app/.venv # mask any host venv (macOS binaries won't run in Linux)
+
+services:
+  migrate:
+    <<: *dev-app
+
+  api:
+    <<: *dev-app
+    build: { context: ., target: dev }
+    pull_policy: build
+    # securefabric-api runs uvicorn with --reload watching apps/ and packages/
+    command: [ "securefabric-api" ]
+    environment:
+      API_RELOAD: "true"
+      API_ENVIRONMENT: local
+      API_DEBUG: "true"
+      API_LOG_FORMAT: console
+      API_LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+      API_HOST: 0.0.0.0
+      API_CORS_ORIGINS: '["http://localhost:3000"]'
+      DATABASE_URL: postgresql://${POSTGRES_USER:-securefabric}:${POSTGRES_PASSWORD:-securefabric}@postgres:5432/${POSTGRES_DB:-securefabric}
+
+  worker:
+    <<: *dev-app
+    command:
+      - watchfiles
+      - --filter=python
+      - --sigint-timeout=20
+      - securefabric-worker
+      - apps
+      - packages
+    environment:
+      WORKER_ENVIRONMENT: local
+      WORKER_LOG_FORMAT: console
+      WORKER_LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-4}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-securefabric}:${POSTGRES_PASSWORD:-securefabric}@postgres:5432/${POSTGRES_DB:-securefabric}
+
+  habitat:
+    profiles: !reset []
