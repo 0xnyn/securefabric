@@ -1,0 +1,16 @@
+{
+  "name": "@securefabric/tasks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Durable task contracts (Python; deps in pyproject.toml, managed by uv)",
+  "scripts": {
+    "fix": "cd ../.. && uv run --frozen ruff check --fix packages/tasks && uv run --frozen ruff format packages/tasks",
+    "lint": "cd ../.. && uv run --frozen ruff check packages/tasks && uv run --frozen ruff format --check packages/tasks",
+    "test": "cd ../.. && uv run --frozen pytest packages/tasks",
+    "typecheck": "cd ../.. && uv run --frozen mypy packages/tasks"
+  },
+  "dependencies": {
+    "@securefabric/core": "workspace:*",
+    "@securefabric/db": "workspace:*"
+  }
+}
