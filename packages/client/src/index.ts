@@ -1,6 +1,9 @@
-import createOpenAPIFetchClient, { type HeadersOptions } from "openapi-fetch";
+import createOpenAPIFetchClient, {
+	type Client as FetchClient,
+	type HeadersOptions,
+} from "openapi-fetch";
 
-import type { components, operations, paths } from "./v1";
+import type { components, operations, paths } from "./v1.js";
 
 const HTTP_NOT_FOUND = 404;
 const HTTP_UNPROCESSABLE = 422;
@@ -13,10 +16,12 @@ const HTTP_TOO_MANY_REQUESTS = 429;
  *
  * ```ts
  * const api = createClient("http://localhost:8000");
- * const task = await unwrap(
- *   api.GET("/api/v1/tasks/{task_id}", { params: { path: { task_id } } })
+ * const org = await unwrap(
+ *   api.GET("/v1/organizations/{organization_id}", {
+ *     params: { path: { organization_id } },
+ *   })
  * );
- * task.state; // "pending" | "running" | ... straight from absurd_sdk's Literal
+ * org.identifier;
  * ```
  */
 export const createClient = (
@@ -27,7 +32,7 @@ export const createClient = (
 		/** Custom fetch, e.g. Next's server fetch or a stub in tests. */
 		fetch?: (input: Request) => Promise<Response>;
 	} = {}
-) => {
+): FetchClient<paths> & { baseUrl: string } => {
 	const { token, headers, fetch } = options;
 	return {
 		...createOpenAPIFetchClient<paths>({
@@ -46,22 +51,29 @@ export type Client = ReturnType<typeof createClient>;
 
 export type schemas = components["schemas"];
 
-/** The `{ error: { code, message, details? } }` body of every non-2xx response. */
-export type ErrorResponse = schemas["ErrorResponse"];
-export type ErrorBody = schemas["ErrorBody"];
+/**
+ * The RFC 9457 problem details body of every non-2xx response (API-06):
+ * `{ type, title, status, detail, code, request_id, errors[] }`.
+ */
+export type Problem = schemas["Problem"];
+export type FieldError = schemas["FieldError"];
 
 export class ClientResponseError extends Error {
-	readonly body: ErrorBody;
+	readonly body: Problem;
 	readonly response: Response;
 
-	constructor(body: ErrorBody, response: Response) {
-		super(body.message || `Request failed with status ${response.status}`);
+	constructor(body: Problem, response: Response) {
+		super(
+			body.detail ||
+				body.title ||
+				`Request failed with status ${response.status}`
+		);
 		this.name = "ClientResponseError";
 		this.body = body;
 		this.response = response;
 	}
 
-	/** The API's stable error code, e.g. `not_found` or `validation_failed`. */
+	/** The API's stable error code, e.g. `not_found` or `scope_missing`. */
 	get code(): string {
 		return this.body.code;
 	}
@@ -69,69 +81,77 @@ export class ClientResponseError extends Error {
 	get status(): number {
 		return this.response.status;
 	}
-}
 
-export class NotFoundResponseError extends ClientResponseError {
-	constructor(body: ErrorBody, response: Response) {
-		super(body, response);
-		this.name = "NotFoundResponseError";
-	}
-}
-
-export interface ValidationIssue {
-	loc: (string | number)[];
-	msg: string;
-	type: string;
-}
-
-export class ValidationResponseError extends ClientResponseError {
-	constructor(body: ErrorBody, response: Response) {
-		super(body, response);
-		this.name = "ValidationResponseError";
+	/** The request id to quote to support (also in the X-Request-Id header). */
+	get requestId(): string | null {
+		return this.body.request_id ?? this.response.headers.get("x-request-id");
 	}
 
-	/** Pydantic's per-field errors, e.g. `[{ loc: ["body", "tenant_id"], msg, type }]`. */
-	get issues(): ValidationIssue[] {
-		const errors = this.body.details?.errors;
-		return Array.isArray(errors) ? (errors as ValidationIssue[]) : [];
+	/** Per-field problems, e.g. `[{ field: "credentials.api_key", message }]`. */
+	get errors(): FieldError[] {
+		return this.body.errors ?? [];
 	}
 
-	/** Issues keyed by field name (the last `loc` segment), for form errors. */
+	/** Field problems keyed by field path, for form errors (first one wins). */
 	get fieldErrors(): Partial<Record<string, string>> {
 		const out: Partial<Record<string, string>> = {};
-		for (const issue of this.issues) {
-			const field = issue.loc.at(-1);
-			if (field !== undefined && !(String(field) in out)) {
-				out[String(field)] = issue.msg;
+		for (const e of this.errors) {
+			if (!(e.field in out)) {
+				out[e.field] = e.message;
 			}
 		}
 		return out;
 	}
 }
 
-export class TooManyRequestsResponseError extends ClientResponseError {
-	constructor(body: ErrorBody, response: Response) {
+export class NotFoundResponseError extends ClientResponseError {
+	constructor(body: Problem, response: Response) {
 		super(body, response);
-		this.name = "TooManyRequestsResponseError";
+		this.name = "NotFoundResponseError";
 	}
 }
 
-const isErrorResponse = (value: unknown): value is ErrorResponse =>
+export class ValidationResponseError extends ClientResponseError {
+	constructor(body: Problem, response: Response) {
+		super(body, response);
+		this.name = "ValidationResponseError";
+	}
+}
+
+export class TooManyRequestsResponseError extends ClientResponseError {
+	constructor(body: Problem, response: Response) {
+		super(body, response);
+		this.name = "TooManyRequestsResponseError";
+	}
+
+	/** Seconds to wait, from Retry-After. */
+	get retryAfter(): number | null {
+		const v = this.response.headers.get("retry-after");
+		return v ? Number(v) : null;
+	}
+}
+
+const isProblem = (value: unknown): value is Problem =>
 	typeof value === "object" &&
 	value !== null &&
-	"error" in value &&
-	typeof (value as { error: unknown }).error === "object" &&
-	(value as { error: unknown }).error !== null;
+	"code" in value &&
+	"status" in value &&
+	typeof (value as { code: unknown }).code === "string";
 
-const toErrorBody = (error: unknown, response: Response): ErrorBody =>
-	isErrorResponse(error)
-		? error.error
+const toProblem = (error: unknown, response: Response): Problem =>
+	isProblem(error)
+		? { errors: [], ...error }
 		: {
 				code: `http_${response.status}`,
-				message: typeof error === "string" ? error : response.statusText,
+				detail: typeof error === "string" ? error : response.statusText,
+				errors: [],
+				request_id: response.headers.get("x-request-id"),
+				status: response.status,
+				title: response.statusText || "Error",
+				type: "about:blank",
 			};
 
-const errorFor = (body: ErrorBody, response: Response): ClientResponseError => {
+const errorFor = (body: Problem, response: Response): ClientResponseError => {
 	switch (response.status) {
 		case HTTP_NOT_FOUND:
 			return new NotFoundResponseError(body, response);
@@ -160,7 +180,7 @@ export const unwrap = async <R extends FetchResult>(
 ): Promise<NonNullable<R["data"]>> => {
 	const { data, error, response } = await request;
 	if (error !== undefined || !response.ok) {
-		throw errorFor(toErrorBody(error, response), response);
+		throw errorFor(toProblem(error, response), response);
 	}
 	// 204s have no body; callers of those endpoints ignore the value.
 	return data as NonNullable<R["data"]>;
@@ -175,9 +195,9 @@ export const isApiError = (
 	(code === undefined || error.code === code);
 
 export type { Middleware } from "openapi-fetch";
-export type { components, operations, paths } from "./v1";
+export type { components, operations, paths } from "./v1.js";
 
-/** Request body of an operation, e.g. `RequestBody<"tenants:provision_tenant">`. */
+/** Request body of an operation, e.g. `RequestBody<"organizations:create_organization">`. */
 export type RequestBody<K extends keyof operations> = operations[K] extends {
 	requestBody: { content: { "application/json": infer B } };
 }
