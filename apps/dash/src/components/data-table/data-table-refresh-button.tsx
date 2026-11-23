@@ -1,0 +1,40 @@
+"use client";
+
+import { LoaderCircle, RefreshCcw } from "lucide-react";
+import { useDataTable } from "@/components/data-table/data-table-provider";
+import { Button } from "@/components/ui/button";
+
+/**
+ * A toolbar action that re-reads the table from the top. Pair it with
+ * `refreshDataTableQuery` rather than the bare `refetch`: the helper resets
+ * the cache to a fresh first page first, so a list extended by live mode or
+ * infinite scroll does not restart from a stale cursor.
+ *
+ * @example
+ * ```tsx
+ * const queryClient = useQueryClient();
+ * const refresh = () => refreshDataTableQuery(queryClient, dataOptions(search));
+ * <DataTableInfinite toolbarActions={<DataTableRefreshButton onClick={refresh} />} />
+ * ```
+ */
+export function DataTableRefreshButton({ onClick }: { onClick: () => void }) {
+	const { isLoading } = useDataTable();
+
+	return (
+		<Button
+			className="shadow-none"
+			disabled={isLoading}
+			onClick={onClick}
+			size="icon"
+			type="button"
+			variant="outline"
+		>
+			{isLoading ? (
+				<LoaderCircle className="h-4 w-4 animate-spin" />
+			) : (
+				<RefreshCcw className="h-4 w-4" />
+			)}
+			<span className="sr-only">Refresh data</span>
+		</Button>
+	);
+}

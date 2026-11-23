@@ -1,0 +1,217 @@
+"use client";
+
+import { useMemo, useRef } from "react";
+import type { StoreApi } from "zustand";
+import type { InternalStoreAdapter } from "../../adapter/types";
+import { getSchemaDefaults } from "../../schema/serialization";
+import type { SchemaDefinition, StoreSnapshot } from "../../schema/types";
+import { getFilterSliceKeys } from "./slice";
+import type { ZustandAdapterOptions } from "./types";
+
+export {
+	createFilterSlice,
+	getFilterSliceFromState,
+	getFilterSliceKeys,
+} from "./slice";
+export type {
+	FilterSlice,
+	FilterSliceActions,
+	FilterSliceState,
+	ZustandAdapterOptions,
+} from "./types";
+
+/**
+ * Create a Zustand adapter from an existing store
+ *
+ * @example
+ * ```typescript
+ * import { create } from 'zustand';
+ * import { createFilterSlice, useZustandAdapter } from '@/lib/store/adapters/zustand';
+ *
+ * const schema = createSchema({
+ *   regions: field.array(field.string()).default([]),
+ *   host: field.string(),
+ * });
+ *
+ * // Create store with filter slice
+ * const useAppStore = create((set, get) => ({
+ *   user: null,
+ *   ...createFilterSlice(schema.definition, 'my-table', set, get),
+ * }));
+ *
+ * // In component
+ * function MyComponent() {
+ *   const adapter = useZustandAdapter(useAppStore, schema.definition, { id: 'my-table' });
+ *   return (
+ *     <DataTableStoreProvider adapter={adapter}>
+ *       <DataTable />
+ *     </DataTableStoreProvider>
+ *   );
+ * }
+ * ```
+ */
+export function useZustandAdapter<
+	TStore extends Record<string, unknown>,
+	TFilters extends Record<string, unknown>,
+>(
+	useStore: {
+		(): TStore;
+		getState: () => TStore;
+		subscribe: (
+			listener: (state: TStore, prevState: TStore) => void
+		) => () => void;
+	},
+	schema: SchemaDefinition,
+	options: ZustandAdapterOptions<TFilters>
+): InternalStoreAdapter<TFilters> {
+	const { id, initialState } = options;
+	// REMINDER: a fresh object literal per call, so calling it unmemoized rebuilt
+	// the adapter below on every render. See the note in the nuqs adapter: every
+	// consumer memoizes on the adapter identity, and an unstable one re-renders
+	// every row of the table on every render.
+	const keys = useMemo(() => getFilterSliceKeys(id), [id]);
+	const defaults = useMemo(
+		() => getSchemaDefaults(schema) as TFilters,
+		[schema]
+	);
+
+	const versionRef = useRef(0);
+
+	// Cache server snapshot to avoid infinite loop with useSyncExternalStore
+	const serverSnapshotRef = useRef<StoreSnapshot<TFilters>>({
+		state: { ...defaults, ...initialState } as TFilters,
+		version: 0,
+	});
+
+	const adapter = useMemo<InternalStoreAdapter<TFilters>>(() => {
+		const storeApi = useStore as unknown as StoreApi<TStore>;
+
+		return {
+			destroy() {
+				// Nothing to clean up for Zustand adapter
+			},
+
+			getDefaults() {
+				return defaults;
+			},
+
+			getSchema() {
+				return schema;
+			},
+
+			// Zustand adapter is client-only, return cached snapshot for SSR
+			getServerSnapshot(): StoreSnapshot<TFilters> {
+				return serverSnapshotRef.current;
+			},
+
+			getSnapshot(): StoreSnapshot<TFilters> {
+				const state = storeApi.getState();
+				const filters = (state[keys.state] as TFilters) || defaults;
+				return {
+					state: filters,
+					version: versionRef.current,
+				};
+			},
+
+			getTableId() {
+				return id;
+			},
+
+			isPaused() {
+				const state = storeApi.getState();
+				return (state[keys.paused] as boolean) || false;
+			},
+
+			pause() {
+				const state = storeApi.getState();
+				const pauseFilters = state[keys.pauseFilters] as
+					| (() => void)
+					| undefined;
+
+				if (pauseFilters) {
+					pauseFilters();
+				} else {
+					(storeApi as unknown as StoreApi<Record<string, unknown>>).setState({
+						[keys.paused]: true,
+					});
+				}
+			},
+
+			reset(fields?: (keyof TFilters)[]) {
+				const state = storeApi.getState();
+				const resetFilters = state[keys.resetFilters] as
+					| ((fields?: (keyof TFilters)[]) => void)
+					| undefined;
+
+				if (resetFilters) {
+					resetFilters(fields);
+				} else {
+					// Fallback: direct reset
+					if (fields) {
+						const resetPartial: Partial<TFilters> = {};
+						for (const field of fields) {
+							resetPartial[field] = defaults[field];
+						}
+						this.setState(resetPartial);
+					} else {
+						(storeApi as unknown as StoreApi<Record<string, unknown>>).setState(
+							{
+								[keys.state]: defaults,
+							}
+						);
+					}
+				}
+			},
+
+			resume() {
+				const state = storeApi.getState();
+				const resumeFilters = state[keys.resumeFilters] as
+					| (() => void)
+					| undefined;
+
+				if (resumeFilters) {
+					resumeFilters();
+				} else {
+					const pending = state[keys.pending] as Partial<TFilters> | null;
+					(storeApi as unknown as StoreApi<Record<string, unknown>>).setState({
+						[keys.paused]: false,
+						[keys.pending]: null,
+					});
+
+					if (pending) {
+						this.setState(pending);
+					}
+				}
+			},
+
+			setField<K extends keyof TFilters>(key: K, value: TFilters[K]) {
+				this.setState({ [key]: value } as unknown as Partial<TFilters>);
+			},
+
+			setState(partial: Partial<TFilters>) {
+				const state = storeApi.getState();
+				const setFilters = state[keys.setFilters] as
+					| ((partial: Partial<TFilters>) => void)
+					| undefined;
+
+				if (setFilters) {
+					setFilters(partial);
+				} else {
+					// Fallback: direct state update if slice actions not found
+					const current = (state[keys.state] as TFilters) || defaults;
+					(storeApi as unknown as StoreApi<Record<string, unknown>>).setState({
+						[keys.state]: { ...current, ...partial },
+					});
+				}
+			},
+			subscribe(listener: () => void) {
+				return storeApi.subscribe(() => {
+					versionRef.current++;
+					listener();
+				});
+			},
+		};
+	}, [useStore, schema, id, defaults, keys]);
+
+	return adapter;
+}

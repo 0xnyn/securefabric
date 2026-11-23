@@ -1,0 +1,13 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { WorkflowsView } from "@/components/views/workflows";
+
+export const metadata: Metadata = { title: "Workflows" };
+
+export default function Page() {
+	return (
+		<Suspense>
+			<WorkflowsView />
+		</Suspense>
+	);
+}

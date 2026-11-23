@@ -1,0 +1,46 @@
+@import "@securefabric/ui/globals.css";
+
+/* The data-table-filters registry colours rows, the timeline chart and the
+   level indicators from four status roles. Upstream ships them as oklch
+   literals; here they point at the design tokens so both themes stay on the
+   scale (packages/tokens/DESIGN.md). */
+:root {
+	--success: var(--ds-success);
+	--warning: var(--ds-severity-high);
+	--error: var(--destructive);
+	--info: var(--ds-accent);
+}
+
+@theme inline {
+	--color-success: var(--success);
+	--color-warning: var(--warning);
+	--color-error: var(--error);
+	--color-info: var(--info);
+	--animate-accordion-down: accordion-down var(--ds-duration-base)
+		var(--ds-ease);
+	--animate-accordion-up: accordion-up var(--ds-duration-base) var(--ds-ease);
+
+	@keyframes accordion-down {
+		from {
+			height: 0;
+		}
+		to {
+			height: var(
+				--radix-accordion-content-height,
+				var(--accordion-panel-height, auto)
+			);
+		}
+	}
+
+	@keyframes accordion-up {
+		from {
+			height: var(
+				--radix-accordion-content-height,
+				var(--accordion-panel-height, auto)
+			);
+		}
+		to {
+			height: 0;
+		}
+	}
+}

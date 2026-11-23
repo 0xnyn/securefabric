@@ -1,0 +1,34 @@
+{
+  "$schema": "../../node_modules/@biomejs/biome/configuration_schema.json",
+  // Nested config: inherits the repo root. The logos are copied from
+  // apps/home/public/integrations and aren't ours to edit.
+  "root": false,
+  "extends": "//",
+  "files": {
+    "includes": ["**", "!**/.next", "!public/**/*.svg"]
+  },
+  "overrides": [
+    {
+      // Vendored from shadcn/ui and the data-table-filters registry
+      // (https://data-table.openstatus.dev), installed with `shadcn add`
+      // through components.json. They stay byte-close to upstream so a
+      // re-add is a reviewable diff, which rewriting them to Ultracite's
+      // rules would make impossible. Formatting still applies; edits we
+      // make on purpose are marked `securefabric:` in a comment.
+      "includes": [
+        "src/components/custom/**",
+        "src/components/data-table/**",
+        "src/components/ui/**",
+        // Ours, not shadcn's: the playground's own button and kit.
+        "!src/components/ui/button.tsx",
+        "!src/components/ui/overlay.tsx",
+        "!src/components/ui/primitives.tsx",
+        "src/hooks/**",
+        "src/lib/{actions,constants,data-table,filters,request,store,table,table-schema}/**",
+        "src/lib/{colors,compose-refs,date-preset,delimiters,is-array,style}.ts",
+        "src/lib/react-table.d.ts"
+      ],
+      "linter": { "enabled": false }
+    }
+  ]
+}
