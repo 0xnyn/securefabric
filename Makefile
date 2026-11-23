@@ -251,8 +251,12 @@ test-watch: ## Re-run Python unit tests on file changes
 
 ##@ Develop (host processes, hot reload; Postgres in Docker)
 
+.PHONY: dev-preflight
+dev-preflight: ## Check the dash and API agree on sign-in (WorkOS) before starting
+	@$(RUN) --frozen python scripts/check_dev_auth.py
+
 .PHONY: dev
-dev: db-up db-migrate ## Postgres + api + worker + dash + client watcher, all hot-reloading
+dev: dev-preflight db-up db-migrate ## Postgres + api + worker + dash + client watcher, all hot-reloading
 	@printf "API → http://localhost:8000/docs   Dash → http://localhost:3000\n"
 	$(PNPM) run dev
 
@@ -265,7 +269,7 @@ dev-worker: ## Run only the worker, restarting on code changes
 	$(PNPM) run dev:worker
 
 .PHONY: dev-dash
-dev-dash: ## Run only the dash (+ client watcher) on http://localhost:3000
+dev-dash: dev-preflight ## Run only the dash (+ client watcher) on http://localhost:3000
 	$(PNPM) run dev:dash
 
 .PHONY: build
