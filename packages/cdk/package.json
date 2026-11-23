@@ -1,0 +1,12 @@
+{
+  "name": "@securefabric/cdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Connector development kit: manifest, stream interface, HTTP client, fixtures, conformance (Python; deps in pyproject.toml, managed by uv)",
+  "scripts": {
+    "fix": "cd ../.. && uv run --frozen ruff check --fix packages/cdk && uv run --frozen ruff format packages/cdk",
+    "lint": "cd ../.. && uv run --frozen ruff check packages/cdk && uv run --frozen ruff format --check packages/cdk",
+    "test": "cd ../.. && uv run --frozen pytest packages/cdk",
+    "typecheck": "cd ../.. && uv run --frozen mypy packages/cdk"
+  }
+}

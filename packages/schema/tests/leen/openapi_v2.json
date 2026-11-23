@@ -1,0 +1,5304 @@
+{
+  "components": {
+    "schemas": {
+      "AikidoCodeRepository": {
+        "properties": {
+          "_dlt_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dlt Id"
+          },
+          "_dlt_load_id": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dlt Load Id"
+          },
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "branch": {
+            "title": "Branch",
+            "type": "string"
+          },
+          "external_repo_id": {
+            "title": "External Repo Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "external_repo_id",
+          "provider",
+          "active",
+          "branch"
+        ],
+        "title": "AikidoCodeRepository",
+        "type": "object"
+      },
+      "AikidoContainer": {
+        "properties": {
+          "_dlt_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dlt Id"
+          },
+          "_dlt_load_id": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dlt Load Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "registry_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registry Name"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "provider"
+        ],
+        "title": "AikidoContainer",
+        "type": "object"
+      },
+      "AikidoIssueAttackSurfaceEnum": {
+        "enum": [
+          "backend",
+          "cloud",
+          "docker_container",
+          "frontend",
+          "scm",
+          "cloud_instance",
+          ""
+        ],
+        "title": "AikidoIssueAttackSurfaceEnum",
+        "type": "string"
+      },
+      "AikidoIssueTypeEnum": {
+        "enum": [
+          "cloud",
+          "eol",
+          "iac",
+          "leaked_secret",
+          "malware",
+          "mobile",
+          "open_source",
+          "sast",
+          "surface_monitoring",
+          "scm_security",
+          "license",
+          "ai_pentest"
+        ],
+        "title": "AikidoIssueTypeEnum",
+        "type": "string"
+      },
+      "AikidoVulnerabilityFindingVendorAttributesData": {
+        "properties": {
+          "attack_surface": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AikidoCodeRepository"
+              },
+              {
+                "$ref": "#/components/schemas/AkikidoCloud"
+              },
+              {
+                "$ref": "#/components/schemas/AikidoContainer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attack Surface"
+          },
+          "attack_surface_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AikidoIssueAttackSurfaceEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "code_repo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Repo"
+          },
+          "finding_type": {
+            "$ref": "#/components/schemas/AikidoIssueTypeEnum"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
+          "repo_branch_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Branch Name"
+          },
+          "repo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Url"
+          },
+          "vendor": {
+            "const": "AIKIDO",
+            "default": "AIKIDO",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "finding_type"
+        ],
+        "title": "AikidoVulnerabilityFindingVendorAttributesData",
+        "type": "object"
+      },
+      "AkikidoCloud": {
+        "properties": {
+          "_dlt_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dlt Id"
+          },
+          "_dlt_load_id": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dlt Load Id"
+          },
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "external_id": {
+            "title": "External Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "provider",
+          "environment",
+          "external_id"
+        ],
+        "title": "AkikidoCloud",
+        "type": "object"
+      },
+      "AppSecIssueVulnIdentifierCVE": {
+        "properties": {
+          "type": {
+            "const": "CVE",
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "examples": [
+              "CVE-2021-34527"
+            ],
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "title": "AppSecIssueVulnIdentifierCVE",
+        "type": "object"
+      },
+      "AppSecIssueVulnIdentifierCWE": {
+        "properties": {
+          "type": {
+            "const": "CWE",
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "examples": [
+              "CWE-79"
+            ],
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "title": "AppSecIssueVulnIdentifierCWE",
+        "type": "object"
+      },
+      "AppSecIssueVulnIdentifierGHSA": {
+        "properties": {
+          "type": {
+            "const": "GHSA",
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "examples": [
+              "GHSA-968p-4wvh-cqc8"
+            ],
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "title": "AppSecIssueVulnIdentifierGHSA",
+        "type": "object"
+      },
+      "AppSecIssueVulnIdentifierOWASP": {
+        "properties": {
+          "type": {
+            "const": "OWASP",
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "examples": [
+              "A06:2021"
+            ],
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "title": "AppSecIssueVulnIdentifierOWASP",
+        "type": "object"
+      },
+      "AppSecIssueVulnIdentifierOther": {
+        "properties": {
+          "type": {
+            "const": "OTHER",
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "examples": [
+              "SNYK-CC-TF-130"
+            ],
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "title": "AppSecIssueVulnIdentifierOther",
+        "type": "object"
+      },
+      "ArnicaVendorAttributesData": {
+        "properties": {
+          "asset_hash": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Hash"
+          },
+          "asset_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Link"
+          },
+          "code_repo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Repo"
+          },
+          "commit_author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commit Author"
+          },
+          "commit_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commit Hash"
+          },
+          "commit_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commit Message"
+          },
+          "repo_branch_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Branch Name"
+          },
+          "repo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Url"
+          },
+          "rule_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Id"
+          },
+          "vendor": {
+            "const": "ARNICA",
+            "default": "ARNICA",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "title": "ArnicaVendorAttributesData",
+        "type": "object"
+      },
+      "BitSightVulnerabilityFindingVendorAttributesData": {
+        "properties": {
+          "risk_vector_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risk Vector Label"
+          },
+          "vendor": {
+            "const": "BIT_SIGHT",
+            "default": "BIT_SIGHT",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "title": "BitSightVulnerabilityFindingVendorAttributesData",
+        "type": "object"
+      },
+      "BlackDuckSCAVulnerabilityFindingVendorAttributesData": {
+        "properties": {
+          "base_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Score"
+          },
+          "component_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Component Name"
+          },
+          "component_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Component Version"
+          },
+          "ignored": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ignored"
+          },
+          "license_display": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Display"
+          },
+          "overall_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overall Score"
+          },
+          "package_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Package Url"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "project_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Name"
+          },
+          "related_vulnerability": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Vulnerability"
+          },
+          "remediation_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remediation Status"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "vendor": {
+            "const": "BLACK_DUCK_SCA",
+            "default": "BLACK_DUCK_SCA",
+            "title": "Vendor",
+            "type": "string"
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
+          },
+          "version_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Name"
+          }
+        },
+        "title": "BlackDuckSCAVulnerabilityFindingVendorAttributesData",
+        "type": "object"
+      },
+      "BlackDuckVulnerabilityFindingVendorAttributesData": {
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "checker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checker"
+          },
+          "classification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classification"
+          },
+          "display_function": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Function"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "project_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Name"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "stream_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream Name"
+          },
+          "vendor": {
+            "const": "BLACK_DUCK_COVERITY",
+            "default": "BLACK_DUCK_COVERITY",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "title": "BlackDuckVulnerabilityFindingVendorAttributesData",
+        "type": "object"
+      },
+      "BlackKiteVulnerabilityFindingVendorAttributesData": {
+        "properties": {
+          "asset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset"
+          },
+          "component": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Component"
+          },
+          "control_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Control Id"
+          },
+          "cpes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpes"
+          },
+          "cve_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cve Id"
+          },
+          "cves": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cves"
+          },
+          "cvss_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cvss Score"
+          },
+          "cwe_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cwe Id"
+          },
+          "cwss_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cwss Score"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "epss": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Epss"
+          },
+          "host_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Name"
+          },
+          "host_name_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Name Type"
+          },
+          "in_kev": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Kev"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port"
+          },
+          "product_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Name"
+          },
+          "publish_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publish Date"
+          },
+          "references": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "References"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "subdomain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subdomain"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Tag"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "vendor": {
+            "const": "BLACK_KITE",
+            "default": "BLACK_KITE",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "title": "BlackKiteVulnerabilityFindingVendorAttributesData",
+        "type": "object"
+      },
+      "CheckmarxResourceVendorAttributesData": {
+        "properties": {
+          "repo_url_inferred": {
+            "title": "Repo Url Inferred",
+            "type": "boolean"
+          },
+          "vendor": {
+            "const": "CHECKMARX",
+            "default": "CHECKMARX",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "repo_url_inferred"
+        ],
+        "title": "CheckmarxResourceVendorAttributesData",
+        "type": "object"
+      },
+      "CheckmarxVulnerabilityFindingVendorAttributesData": {
+        "properties": {
+          "alternate_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alternate Id"
+          },
+          "image_file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image File Path"
+          },
+          "image_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Name"
+          },
+          "image_tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Tag"
+          },
+          "package_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Package Name"
+          },
+          "package_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Package Version"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "vendor": {
+            "const": "CHECKMARX",
+            "default": "CHECKMARX",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "title": "CheckmarxVulnerabilityFindingVendorAttributesData",
+        "type": "object"
+      },
+      "ErrorException": {
+        "properties": {
+          "detail": {
+            "description": "Error message",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorException",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "code": {
+            "description": "Error code",
+            "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "description": "List of error dictionaries",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Detail",
+            "type": "array"
+          },
+          "message": {
+            "description": "Error message",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "description": "Type of error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message",
+          "detail"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "GitHubVulnerabilityFindingVendorAttributesData": {
+        "properties": {
+          "analysis_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Key"
+          },
+          "bypassed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bypassed"
+          },
+          "bypassed_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bypassed Comment"
+          },
+          "classifications": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classifications"
+          },
+          "commit_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commit Sha"
+          },
+          "dismissed_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dismissed Comment"
+          },
+          "dismissed_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dismissed Reason"
+          },
+          "environment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Environment"
+          },
+          "has_more_locations": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has More Locations"
+          },
+          "is_base64_encoded": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Base64 Encoded"
+          },
+          "multi_repo": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Multi Repo"
+          },
+          "publicly_leaked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publicly Leaked"
+          },
+          "ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ref"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution"
+          },
+          "validity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validity"
+          },
+          "vendor": {
+            "const": "GITHUB",
+            "default": "GITHUB",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "title": "GitHubVulnerabilityFindingVendorAttributesData",
+        "type": "object"
+      },
+      "GitlabGraphqlVulnerabilityReportTypeEnum": {
+        "enum": [
+          "SAST",
+          "DEPENDENCY_SCANNING",
+          "CONTAINER_SCANNING",
+          "SECRET_DETECTION",
+          "DAST"
+        ],
+        "title": "GitlabGraphqlVulnerabilityReportTypeEnum",
+        "type": "string"
+      },
+      "GitlabGraphqlVulnerabilityScanner": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "vendor": {
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "vendor",
+          "name"
+        ],
+        "title": "GitlabGraphqlVulnerabilityScanner",
+        "type": "object"
+      },
+      "GitlabGraphqlVulnerabilityVendorAttributesData": {
+        "properties": {
+          "report_type": {
+            "$ref": "#/components/schemas/GitlabGraphqlVulnerabilityReportTypeEnum"
+          },
+          "scanner": {
+            "$ref": "#/components/schemas/GitlabGraphqlVulnerabilityScanner"
+          },
+          "vendor": {
+            "const": "GITLAB",
+            "default": "GITLAB",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "report_type",
+          "scanner"
+        ],
+        "title": "GitlabGraphqlVulnerabilityVendorAttributesData",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HeelerVulnerabilityFindingVendorAttributesData": {
+        "description": "Heeler-specific fields.\n\nHeeler reports three kinds of finding through one shape — dependency\nvulnerabilities, SAST findings and leaked secrets — so which fields are\npopulated depends on the kind, and the descriptions below say which.",
+        "properties": {
+          "affected_package_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Name of the vulnerable package. Dependency findings only.",
+            "title": "Affected Package Name"
+          },
+          "affected_package_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Version of the package that is affected. Dependency findings only.",
+            "title": "Affected Package Version"
+          },
+          "cve_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "CVE the finding refers to, when Heeler names one. Null for findings with no CVE, which includes every secret and most SAST findings.",
+            "title": "Cve Id"
+          },
+          "cvss_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "CVSS base score. Reserved: the Heeler payloads Leen ingests do not carry a score today, so this is null in practice — read `severity` on the finding instead.",
+            "title": "Cvss Score"
+          },
+          "cvss_vector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "CVSS vector string. Reserved on the same terms as `cvss_score`, and null in practice.",
+            "title": "Cvss Vector"
+          },
+          "cwe_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "CWE identifiers Heeler cross-references for the finding. SAST findings only.",
+            "title": "Cwe Ids"
+          },
+          "ecosystem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Language or ecosystem the finding was raised in — the detected language for secrets, and the language or rule category for SAST findings. Null on dependency findings.",
+            "title": "Ecosystem"
+          },
+          "fixed_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Version Heeler recommends upgrading to. Dependency findings only, and null when Heeler has no recommendation.",
+            "title": "Fixed Version"
+          },
+          "service_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "ID of the Heeler service the finding belongs to. Set on dependency and SAST findings; null on secrets, which Heeler attributes to a repository rather than a service.",
+            "title": "Service Id"
+          },
+          "service_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Repository the finding was found in. Set on secrets only; null on dependency and SAST findings, which carry `service_id` instead.",
+            "title": "Service Name"
+          },
+          "vendor": {
+            "const": "HEELER",
+            "default": "HEELER",
+            "description": "Always `HEELER`. Identifies which vendor's shape this object takes.",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "title": "HeelerVulnerabilityFindingVendorAttributesData",
+        "type": "object"
+      },
+      "KeySetPaginatedResponse_ResourceRespModel_": {
+        "properties": {
+          "items": {
+            "description": "The records on this page.",
+            "items": {
+              "$ref": "#/components/schemas/ResourceRespModel"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque position of the next page. Pass it back as `cursor` to continue; null when this is the last page.",
+            "title": "Next Cursor"
+          },
+          "previous_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque position of the previous page, for walking backwards. Null on the first page.",
+            "title": "Previous Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "KeySetPaginatedResponse[ResourceRespModel]",
+        "type": "object"
+      },
+      "KeySetPaginatedResponse_VulnerabilityFindingV2RespModel_": {
+        "properties": {
+          "items": {
+            "description": "The records on this page.",
+            "items": {
+              "$ref": "#/components/schemas/VulnerabilityFindingV2RespModel"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque position of the next page. Pass it back as `cursor` to continue; null when this is the last page.",
+            "title": "Next Cursor"
+          },
+          "previous_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque position of the previous page, for walking backwards. Null on the first page.",
+            "title": "Previous Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "KeySetPaginatedResponse[VulnerabilityFindingV2RespModel]",
+        "type": "object"
+      },
+      "NvdCveReference": {
+        "properties": {
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "NvdCveReference",
+        "type": "object"
+      },
+      "OrcaResourceVendorAttributesData": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "subcategory": {
+            "title": "Subcategory",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "vendor": {
+            "const": "ORCA",
+            "default": "ORCA",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "subcategory",
+          "type"
+        ],
+        "title": "OrcaResourceVendorAttributesData",
+        "type": "object"
+      },
+      "OrcaVulnerabilityFindingVendorAttributesData": {
+        "properties": {
+          "patch_release_date": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Patch Release Date"
+          },
+          "patched_versions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Patched Versions"
+          },
+          "vendor": {
+            "const": "ORCA",
+            "default": "ORCA",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "title": "OrcaVulnerabilityFindingVendorAttributesData",
+        "type": "object"
+      },
+      "QualysDeviceVendorData": {
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "host_id": {
+            "title": "Host Id",
+            "type": "string"
+          },
+          "tracking_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tracking Method"
+          },
+          "vendor": {
+            "const": "qualys",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "vendor",
+          "host_id"
+        ],
+        "title": "QualysDeviceVendorData",
+        "type": "object"
+      },
+      "QualysVulnerabilityVendorData": {
+        "properties": {
+          "cve_list": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cve List"
+          },
+          "software_list": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Software List"
+          },
+          "unique_vulnerability_id": {
+            "title": "Unique Vulnerability Id",
+            "type": "string"
+          },
+          "vendor": {
+            "const": "qualys",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "vendor",
+          "unique_vulnerability_id"
+        ],
+        "title": "QualysVulnerabilityVendorData",
+        "type": "object"
+      },
+      "Rapid7VulnerabilityVendorAttributesData": {
+        "properties": {
+          "risk_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risk Score"
+          },
+          "severity_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity Score"
+          },
+          "vendor": {
+            "const": "INSIGHTVM",
+            "default": "INSIGHTVM",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "title": "Rapid7VulnerabilityVendorAttributesData",
+        "type": "object"
+      },
+      "ResourceBranch": {
+        "description": "ORM model representing a branch in a resource.",
+        "properties": {
+          "code_repo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Code repository name",
+            "title": "Code Repo"
+          },
+          "repo_branch_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Repository branch name",
+            "title": "Repo Branch Name"
+          }
+        },
+        "title": "ResourceBranch",
+        "type": "object"
+      },
+      "ResourceCloudMetadata": {
+        "description": "ORM model representing cloud metadata in a resource.",
+        "properties": {
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cloud account identifier",
+            "title": "Account Id"
+          },
+          "account_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cloud account name",
+            "title": "Account Name"
+          },
+          "cloud_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cloud service provider",
+            "title": "Cloud Provider"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cloud image identifier",
+            "title": "Image Id"
+          },
+          "instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cloud instance identifier",
+            "title": "Instance Id"
+          },
+          "instance_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Type of cloud instance",
+            "title": "Instance Type"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cloud region",
+            "title": "Region"
+          },
+          "subnet_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cloud subnet identifier",
+            "title": "Subnet Id"
+          },
+          "vpc_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cloud VPC identifier",
+            "title": "Vpc Id"
+          }
+        },
+        "title": "ResourceCloudMetadata",
+        "type": "object"
+      },
+      "ResourceContainer": {
+        "description": "ORM model representing a container in a resource.",
+        "properties": {
+          "hostnames": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "List of hostnames for the container",
+            "title": "Hostnames"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Container image identifier",
+            "title": "Image"
+          }
+        },
+        "title": "ResourceContainer",
+        "type": "object"
+      },
+      "ResourceGroup": {
+        "description": "ORM model representing a groups in a resource.",
+        "properties": {
+          "name": {
+            "description": "The name of the group.",
+            "title": "Name",
+            "type": "string"
+          },
+          "uid": {
+            "description": "The unique identifier of the group.",
+            "title": "Uid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "uid"
+        ],
+        "title": "ResourceGroup",
+        "type": "object"
+      },
+      "ResourceHash": {
+        "properties": {
+          "algorithm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Algorithm"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "title": "ResourceHash",
+        "type": "object"
+      },
+      "ResourceHost": {
+        "description": "ORM model representing a host in a resource.",
+        "properties": {
+          "ad_device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Active Directory device ID",
+            "title": "Ad Device Id"
+          },
+          "ad_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Active Directory domain",
+            "title": "Ad Domain"
+          },
+          "ad_org_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Active Directory organizational unit",
+            "title": "Ad Org Unit"
+          },
+          "ad_site_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Active Directory site name",
+            "title": "Ad Site Name"
+          },
+          "agents": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResourceHostAgent"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Agent information for the host",
+            "title": "Agents"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the host was deleted",
+            "title": "Deleted At"
+          },
+          "fqdns": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Fully qualified domain names of the host",
+            "title": "Fqdns"
+          },
+          "hostnames": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "List of hostnames for the host",
+            "title": "Hostnames"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Host image identifier",
+            "title": "Image"
+          },
+          "installed_software": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Installed software on the host",
+            "title": "Installed Software"
+          },
+          "ipv4s": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "IPv4 addresses associated with the host",
+            "title": "Ipv4S"
+          },
+          "ipv6s": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "IPv6 addresses associated with the host",
+            "title": "Ipv6S"
+          },
+          "is_deleted": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether the host is deleted",
+            "title": "Is Deleted"
+          },
+          "mac_addresses": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "MAC addresses associated with the host",
+            "title": "Mac Addresses"
+          },
+          "os_major_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Major version of the host's operating system",
+            "title": "Os Major Version"
+          },
+          "os_minor_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Minor version of the host's operating system",
+            "title": "Os Minor Version"
+          },
+          "os_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Full operating system version of the host",
+            "title": "Os Version"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResourcePlatformEnum"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Platform on which the host is running"
+          }
+        },
+        "title": "ResourceHost",
+        "type": "object"
+      },
+      "ResourceHostAgent": {
+        "description": "ORM model representing agent information in a resource.",
+        "properties": {
+          "product": {
+            "description": "Product name of the agent",
+            "title": "Product",
+            "type": "string"
+          },
+          "signature_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Signature version of the agent, usually related to EDR agents",
+            "title": "Signature Version"
+          },
+          "vendor": {
+            "description": "Vendor of the agent",
+            "title": "Vendor",
+            "type": "string"
+          },
+          "vendor_attributes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResourceHostAgentVendorAttributes"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vendor-specific attributes of the agent"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Version of the agent",
+            "title": "Version"
+          }
+        },
+        "required": [
+          "vendor",
+          "product"
+        ],
+        "title": "ResourceHostAgent",
+        "type": "object"
+      },
+      "ResourceHostAgentVendorAttributes": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vendor ID of the agent",
+            "title": "Id"
+          },
+          "policies": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Policies associated with the agent",
+            "title": "Policies"
+          }
+        },
+        "title": "ResourceHostAgentVendorAttributes",
+        "type": "object"
+      },
+      "ResourceImage": {
+        "description": "ORM model representing an image in a resource.",
+        "properties": {
+          "hash": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResourceHash"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Image hash"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Image labels",
+            "title": "Labels"
+          }
+        },
+        "title": "ResourceImage",
+        "type": "object"
+      },
+      "ResourcePlatformEnum": {
+        "description": "Enumeration for resource platforms.",
+        "enum": [
+          "WINDOWS",
+          "LINUX",
+          "MAC",
+          "UNKNOWN"
+        ],
+        "title": "ResourcePlatformEnum",
+        "type": "string"
+      },
+      "ResourceRespModel": {
+        "description": "Response model for returning resource details via an API endpoint.",
+        "properties": {
+          "cloud_metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResourceCloudMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cloud metadata for the resource"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResourceContainer"
+              },
+              {
+                "$ref": "#/components/schemas/ResourceHost"
+              },
+              {
+                "$ref": "#/components/schemas/ResourceImage"
+              },
+              {
+                "$ref": "#/components/schemas/ResourceBranch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Additional data or properties about the resource",
+            "title": "Data"
+          },
+          "first_seen": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Timestamp when the resource was first seen",
+            "title": "First Seen"
+          },
+          "groups": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResourceGroup"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Groups associated with the resource",
+            "title": "Groups"
+          },
+          "id": {
+            "description": "Leen's UUID for the resource",
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_seen": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Timestamp when the resource was last seen",
+            "title": "Last Seen"
+          },
+          "name": {
+            "description": "Resource name",
+            "title": "Name",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ResourceStateEnum",
+            "description": "State of the resource"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResourceTag"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "List of arbitrary tags/metadata for the resource",
+            "title": "Tags"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ResourceTypeEnum",
+            "description": "Type of the resource"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "URL associated with the resource",
+            "title": "Url"
+          },
+          "vendor": {
+            "description": "The source vendor of the resource",
+            "title": "Vendor",
+            "type": "string"
+          },
+          "vendor_attributes": {
+            "$ref": "#/components/schemas/ResourceVendorAttributes",
+            "description": "Vendor-specific attributes like IDs"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "state",
+          "vendor",
+          "vendor_attributes"
+        ],
+        "title": "Resource",
+        "type": "object"
+      },
+      "ResourceStateEnum": {
+        "enum": [
+          "ACTIVE",
+          "IGNORED",
+          "DELETED",
+          "INACTIVE",
+          "QUARANTINED",
+          "UNKNOWN"
+        ],
+        "title": "ResourceStateEnum",
+        "type": "string"
+      },
+      "ResourceTag": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ResourceTagSourceEnum"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "value",
+          "source"
+        ],
+        "title": "ResourceTag",
+        "type": "object"
+      },
+      "ResourceTagSourceEnum": {
+        "description": "Which integration contributed a resource tag.\n\nNamed rather than an inline ``Literal`` so the OpenAPI document carries a reusable\n``ResourceTagSourceEnum`` component. An inline literal generates an anonymous,\ndifferently-named enum type in every SDK language.",
+        "enum": [
+          "wiz_vms",
+          "gitlab",
+          "checkmarx",
+          "mend",
+          "qualys",
+          "aws",
+          "insight_vm",
+          "orca",
+          "blackkite"
+        ],
+        "title": "ResourceTagSourceEnum",
+        "type": "string"
+      },
+      "ResourceTypeEnum": {
+        "description": "Enumeration for resource types.",
+        "enum": [
+          "BRANCH",
+          "HOST",
+          "CONTAINER",
+          "DEPENDENCY",
+          "IMAGE",
+          "REPOSITORY",
+          "VENDOR",
+          "KUBERNETES",
+          "UNKNOWN"
+        ],
+        "title": "ResourceTypeEnum",
+        "type": "string"
+      },
+      "ResourceVendorAttributes": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QualysDeviceVendorData"
+              },
+              {
+                "$ref": "#/components/schemas/TenableDeviceVendorData"
+              },
+              {
+                "$ref": "#/components/schemas/OrcaResourceVendorAttributesData"
+              },
+              {
+                "$ref": "#/components/schemas/UpwindResourceVendorAttributesData"
+              },
+              {
+                "$ref": "#/components/schemas/CheckmarxResourceVendorAttributesData"
+              },
+              {
+                "$ref": "#/components/schemas/SocketResourceVendorAttributesData"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vendor specific data",
+            "title": "Data"
+          },
+          "id": {
+            "description": "Vendor specific ID",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "ResourceVendorAttributes",
+        "type": "object"
+      },
+      "SecurityScorecardVulnerabilityFindingVendorAttributesData": {
+        "properties": {
+          "domain": {
+            "title": "Domain",
+            "type": "string"
+          },
+          "hostname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hostname"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address"
+          },
+          "ports": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ports"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "vendor": {
+            "const": "SecurityScorecard",
+            "default": "SecurityScorecard",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "domain"
+        ],
+        "title": "SecurityScorecardVulnerabilityFindingVendorAttributesData",
+        "type": "object"
+      },
+      "SemgrepVendorAttributesData": {
+        "description": "Minimal Semgrep-specific structured data for ScopedVulnerabilityFindingV2VendorAttributes.",
+        "properties": {
+          "code_repo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Repo"
+          },
+          "found_dependency_ecosystem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Found Dependency Ecosystem"
+          },
+          "line_of_code_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Of Code Url"
+          },
+          "repo_branch_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Branch Name"
+          },
+          "repo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Url"
+          },
+          "vendor": {
+            "const": "SEMGREP",
+            "default": "SEMGREP",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "title": "SemgrepVendorAttributesData",
+        "type": "object"
+      },
+      "SocketResourceVendorAttributesData": {
+        "properties": {
+          "default_branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Branch"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "vendor": {
+            "const": "SOCKET",
+            "default": "SOCKET",
+            "title": "Vendor",
+            "type": "string"
+          },
+          "workspace": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspace"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "title": "SocketResourceVendorAttributesData",
+        "type": "object"
+      },
+      "SonarQubeIssueVendorAttributesData": {
+        "description": "SonarQube-specific structured data for scoped issues and ScopedVulnerabilityFindingV2VendorAttributes.",
+        "properties": {
+          "assignee": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author"
+          },
+          "component": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Component"
+          },
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort"
+          },
+          "hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hash"
+          },
+          "issue_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issue Status"
+          },
+          "issue_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issue Type"
+          },
+          "line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line"
+          },
+          "project": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution"
+          },
+          "risk_severity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risk Severity"
+          },
+          "risk_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risk Status"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "security_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Security Category"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "text_range_end_line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Range End Line"
+          },
+          "text_range_end_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Range End Offset"
+          },
+          "text_range_start_line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Range Start Line"
+          },
+          "text_range_start_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Range Start Offset"
+          },
+          "vendor": {
+            "const": "SONARQUBE",
+            "default": "SONARQUBE",
+            "title": "Vendor",
+            "type": "string"
+          },
+          "vulnerability_probability": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vulnerability Probability"
+          }
+        },
+        "title": "SonarQubeIssueVendorAttributesData",
+        "type": "object"
+      },
+      "Tag": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "value"
+        ],
+        "title": "Tag",
+        "type": "object"
+      },
+      "TenableDeviceVendorData": {
+        "properties": {
+          "first_seen": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen"
+          },
+          "is_licensed": {
+            "title": "Is Licensed",
+            "type": "boolean"
+          },
+          "last_seen": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen"
+          },
+          "operating_systems": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operating Systems"
+          },
+          "vendor": {
+            "const": "tenable",
+            "default": "tenable",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "is_licensed"
+        ],
+        "title": "TenableDeviceVendorData",
+        "type": "object"
+      },
+      "TenableVulnerabilityVendorData": {
+        "properties": {
+          "previous_vulnerability_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Vulnerability State"
+          },
+          "vendor": {
+            "const": "tenable",
+            "default": "tenable",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "title": "TenableVulnerabilityVendorData",
+        "type": "object"
+      },
+      "UpwindResourceVendorAttributesData": {
+        "properties": {
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "vendor": {
+            "const": "UPWIND",
+            "default": "UPWIND",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "UpwindResourceVendorAttributesData",
+        "type": "object"
+      },
+      "UpwindVulnerabilityFindingImage": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "os_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Os Name"
+          },
+          "os_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Os Version"
+          },
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "uri"
+        ],
+        "title": "UpwindVulnerabilityFindingImage",
+        "type": "object"
+      },
+      "UpwindVulnerabilityFindingVendorAttributesData": {
+        "properties": {
+          "image": {
+            "$ref": "#/components/schemas/UpwindVulnerabilityFindingImage"
+          },
+          "vendor": {
+            "const": "UPWIND",
+            "default": "UPWIND",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "image"
+        ],
+        "title": "UpwindVulnerabilityFindingVendorAttributesData",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "VulnCveRespModel": {
+        "properties": {
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "cvss_scores": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VulnCvssScoreRespModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cvss Scores"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "last_modified": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Modified"
+          },
+          "published": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published"
+          },
+          "references": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NvdCveReference"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "References"
+          },
+          "source_identifier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Identifier"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "uid": {
+            "title": "Uid",
+            "type": "string"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "weaknesses": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weaknesses"
+          }
+        },
+        "required": [
+          "uid"
+        ],
+        "title": "VulnCveRespModel",
+        "type": "object"
+      },
+      "VulnCvssScoreRespModel": {
+        "properties": {
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          },
+          "vector": {
+            "title": "Vector",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "score",
+          "vector"
+        ],
+        "title": "VulnCvssScoreRespModel",
+        "type": "object"
+      },
+      "VulnerabilityFindingV2Analytic": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "uid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uid"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "title": "VulnerabilityFindingV2Analytic",
+        "type": "object"
+      },
+      "VulnerabilityFindingV2Product": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "vendor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Name"
+          }
+        },
+        "title": "VulnerabilityFindingV2Product",
+        "type": "object"
+      },
+      "VulnerabilityFindingV2Reachability": {
+        "enum": [
+          "REACHABLE",
+          "POTENTIALLY_REACHABLE",
+          "UNREACHABLE",
+          "UNKNOWN"
+        ],
+        "title": "VulnerabilityFindingV2Reachability",
+        "type": "string"
+      },
+      "VulnerabilityFindingV2ResourceRelated": {
+        "properties": {
+          "affected_code": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VulnerabilityFindingV2ResourceRelatedAffectedCode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "affected_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Affected Image"
+          },
+          "affected_os": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Affected Os"
+          },
+          "affected_package": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VulnerabilityFindingV2ResourceRelatedAffectedPackage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "affected_platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Affected Platform"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port"
+          },
+          "protocol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol"
+          },
+          "service": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service"
+          }
+        },
+        "title": "VulnerabilityFindingV2ResourceRelated",
+        "type": "object"
+      },
+      "VulnerabilityFindingV2ResourceRelatedAffectedCode": {
+        "properties": {
+          "end_line_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Line Number"
+          },
+          "file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Path"
+          },
+          "start_line_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Line Number"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "title": "VulnerabilityFindingV2ResourceRelatedAffectedCode",
+        "type": "object"
+      },
+      "VulnerabilityFindingV2ResourceRelatedAffectedPackage": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "package_manager": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Package Manager"
+          },
+          "reachability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VulnerabilityFindingV2Reachability"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "title": "VulnerabilityFindingV2ResourceRelatedAffectedPackage",
+        "type": "object"
+      },
+      "VulnerabilityFindingV2RespModel": {
+        "properties": {
+          "analytic": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VulnerabilityFindingV2Analytic"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Analytic of the vulnerability finding"
+          },
+          "analytic_output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Analytic output of the vulnerability finding",
+            "title": "Analytic Output"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Description of the vulnerability finding",
+            "title": "Description"
+          },
+          "exploitable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether the vendor marked this finding exploitable — typically that a known exploit exists for the vulnerability. Null when the vendor provides no such signal. Package reachability is reported separately on resource_related[].affected_package.reachability.",
+            "title": "Exploitable"
+          },
+          "first_seen": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "First seen of the vulnerability finding",
+            "title": "First Seen"
+          },
+          "has_fix": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Has fix of the vulnerability finding",
+            "title": "Has Fix"
+          },
+          "id": {
+            "description": "Leen's UUID for the vulnerability finding",
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_seen": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last seen of the vulnerability finding",
+            "title": "Last Seen"
+          },
+          "product": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VulnerabilityFindingV2Product"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Product of the vulnerability finding"
+          },
+          "reachability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VulnerabilityFindingV2Reachability"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Finding-level reachability rollup over the affected packages, most-reachable-wins (REACHABLE > POTENTIALLY_REACHABLE > UNKNOWN > UNREACHABLE). Null when no package carries a vendor signal; UNKNOWN means analysis ran but was inconclusive. Per-package detail remains on resource_related[].affected_package.reachability."
+          },
+          "remediation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Remediation of the vulnerability finding",
+            "title": "Remediation"
+          },
+          "resource_related": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VulnerabilityFindingV2ResourceRelated"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resource related of the vulnerability finding",
+            "title": "Resource Related"
+          },
+          "resources": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResourceRespModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "List of resources associated with the finding",
+            "title": "Resources"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/VulnerabilityFindingV2Severity",
+            "description": "Severity of the vulnerability finding"
+          },
+          "state": {
+            "$ref": "#/components/schemas/VulnerabilityFindingV2State",
+            "description": "State of the vulnerability finding"
+          },
+          "state_updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last time the state was updated for the finding",
+            "title": "State Updated At"
+          },
+          "ticket": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VulnerabilityFindingV2Ticket"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ticket of the vulnerability finding"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Title of the vulnerability finding",
+            "title": "Title"
+          },
+          "type": {
+            "$ref": "#/components/schemas/VulnerabilityFindingV2Type",
+            "description": "Type of the vulnerability finding"
+          },
+          "vendor_attributes": {
+            "$ref": "#/components/schemas/VulnerabilityFindingV2VendorAttributes",
+            "description": "Vendor-specific attributes of the finding"
+          },
+          "vulnerabilities": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VulnCveRespModel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "List of CVE Knowledge Base entries associated with the finding",
+            "title": "Vulnerabilities"
+          }
+        },
+        "required": [
+          "id",
+          "severity",
+          "state",
+          "type",
+          "vendor_attributes"
+        ],
+        "title": "VulnerabilityFindingV2",
+        "type": "object"
+      },
+      "VulnerabilityFindingV2Severity": {
+        "enum": [
+          "CRITICAL",
+          "HIGH",
+          "MEDIUM",
+          "LOW",
+          "INFO",
+          "UNKNOWN"
+        ],
+        "title": "VulnerabilityFindingV2Severity",
+        "type": "string"
+      },
+      "VulnerabilityFindingV2State": {
+        "enum": [
+          "OPEN",
+          "CLOSED",
+          "REOPENED",
+          "IGNORED",
+          "DELETED",
+          "UNKNOWN"
+        ],
+        "title": "VulnerabilityFindingV2State",
+        "type": "string"
+      },
+      "VulnerabilityFindingV2Ticket": {
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "uid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uid"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "title": "VulnerabilityFindingV2Ticket",
+        "type": "object"
+      },
+      "VulnerabilityFindingV2Type": {
+        "enum": [
+          "DEPENDENCY",
+          "CODE",
+          "SECRET",
+          "CONTAINER",
+          "IAC",
+          "HOST",
+          "DOMAIN",
+          "UNKNOWN"
+        ],
+        "title": "VulnerabilityFindingV2Type",
+        "type": "string"
+      },
+      "VulnerabilityFindingV2VendorAttributes": {
+        "properties": {
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Timestamp when the vendor first created the finding",
+            "title": "Created At"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "AIKIDO": "#/components/schemas/AikidoVulnerabilityFindingVendorAttributesData",
+                    "ARNICA": "#/components/schemas/ArnicaVendorAttributesData",
+                    "BIT_SIGHT": "#/components/schemas/BitSightVulnerabilityFindingVendorAttributesData",
+                    "BLACK_DUCK_COVERITY": "#/components/schemas/BlackDuckVulnerabilityFindingVendorAttributesData",
+                    "BLACK_DUCK_SCA": "#/components/schemas/BlackDuckSCAVulnerabilityFindingVendorAttributesData",
+                    "BLACK_KITE": "#/components/schemas/BlackKiteVulnerabilityFindingVendorAttributesData",
+                    "CHECKMARX": "#/components/schemas/CheckmarxVulnerabilityFindingVendorAttributesData",
+                    "GITHUB": "#/components/schemas/GitHubVulnerabilityFindingVendorAttributesData",
+                    "GITLAB": "#/components/schemas/GitlabGraphqlVulnerabilityVendorAttributesData",
+                    "HEELER": "#/components/schemas/HeelerVulnerabilityFindingVendorAttributesData",
+                    "INSIGHTVM": "#/components/schemas/Rapid7VulnerabilityVendorAttributesData",
+                    "ORCA": "#/components/schemas/OrcaVulnerabilityFindingVendorAttributesData",
+                    "SEMGREP": "#/components/schemas/SemgrepVendorAttributesData",
+                    "SONARQUBE": "#/components/schemas/SonarQubeIssueVendorAttributesData",
+                    "SecurityScorecard": "#/components/schemas/SecurityScorecardVulnerabilityFindingVendorAttributesData",
+                    "UPWIND": "#/components/schemas/UpwindVulnerabilityFindingVendorAttributesData",
+                    "WIZ_CODE": "#/components/schemas/WizCodeVendorAttributesData",
+                    "WIZ_VMS": "#/components/schemas/WizVmsVulnerabilityFindingVendorAttributesData",
+                    "qualys": "#/components/schemas/QualysVulnerabilityVendorData",
+                    "tenable": "#/components/schemas/TenableVulnerabilityVendorData"
+                  },
+                  "propertyName": "vendor"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/GitlabGraphqlVulnerabilityVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UpwindVulnerabilityFindingVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CheckmarxVulnerabilityFindingVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SemgrepVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AikidoVulnerabilityFindingVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ArnicaVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/QualysVulnerabilityVendorData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GitHubVulnerabilityFindingVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TenableVulnerabilityVendorData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/OrcaVulnerabilityFindingVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WizCodeVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BlackKiteVulnerabilityFindingVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BitSightVulnerabilityFindingVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SecurityScorecardVulnerabilityFindingVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SonarQubeIssueVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BlackDuckVulnerabilityFindingVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BlackDuckSCAVulnerabilityFindingVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/HeelerVulnerabilityFindingVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Rapid7VulnerabilityVendorAttributesData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WizVmsVulnerabilityFindingVendorAttributesData"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vendor-specific data associated with the finding",
+            "title": "Data"
+          },
+          "id": {
+            "description": "Vendor-reported ID of the vulnerability finding",
+            "title": "Id",
+            "type": "string"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vendor-reported severity of the vulnerability finding",
+            "title": "Severity"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Vendor-reported state of the vulnerability finding",
+            "title": "State"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Timestamp when the vendor last updated the finding",
+            "title": "Updated At"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "URL to the finding in the vendor platform",
+            "title": "Url"
+          },
+          "vulnerability_identifiers": {
+            "anyOf": [
+              {
+                "items": {
+                  "discriminator": {
+                    "mapping": {
+                      "CVE": "#/components/schemas/AppSecIssueVulnIdentifierCVE",
+                      "CWE": "#/components/schemas/AppSecIssueVulnIdentifierCWE",
+                      "GHSA": "#/components/schemas/AppSecIssueVulnIdentifierGHSA",
+                      "OTHER": "#/components/schemas/AppSecIssueVulnIdentifierOther",
+                      "OWASP": "#/components/schemas/AppSecIssueVulnIdentifierOWASP"
+                    },
+                    "propertyName": "type"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AppSecIssueVulnIdentifierCVE"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AppSecIssueVulnIdentifierCWE"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AppSecIssueVulnIdentifierOWASP"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AppSecIssueVulnIdentifierOther"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AppSecIssueVulnIdentifierGHSA"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "List of additional vulnerability identifiers (CVE, CWE, …) reported by the vendor",
+            "title": "Vulnerability Identifiers"
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "severity"
+        ],
+        "title": "VulnerabilityFindingV2VendorAttributes",
+        "type": "object"
+      },
+      "WizCodeVendorAttributesData": {
+        "properties": {
+          "cloud_platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cloud Platform"
+          },
+          "cloud_provider_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cloud Provider Url"
+          },
+          "code_repo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Repo"
+          },
+          "line_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Number"
+          },
+          "location_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Path"
+          },
+          "related_issues": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WizRelatedIssuesNode"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Issues"
+          },
+          "repo_branch_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Branch Name"
+          },
+          "repo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Url"
+          },
+          "source_code_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Code Url"
+          },
+          "vendor": {
+            "const": "WIZ_CODE",
+            "default": "WIZ_CODE",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "title": "WizCodeVendorAttributesData",
+        "type": "object"
+      },
+      "WizRelatedIssues": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "title": "WizRelatedIssues",
+        "type": "object"
+      },
+      "WizRelatedIssuesNode": {
+        "properties": {
+          "nodes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WizRelatedIssues"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "field_metadata": {
+              "is_event_timestamp": false,
+              "is_silver_identifier": false,
+              "is_unique_identifier": false,
+              "is_updated_at": false,
+              "lookup_identifiers": [],
+              "prefix": "related_issue"
+            },
+            "title": "Nodes"
+          }
+        },
+        "required": [
+          "nodes"
+        ],
+        "title": "WizRelatedIssuesNode",
+        "type": "object"
+      },
+      "WizVmsVulnerabilityFindingVendorAttributesData": {
+        "properties": {
+          "fixed_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixed Version"
+          },
+          "related_issues": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WizRelatedIssues"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Issues"
+          },
+          "vendor": {
+            "const": "WIZ_VMS",
+            "default": "WIZ_VMS",
+            "title": "Vendor",
+            "type": "string"
+          }
+        },
+        "title": "WizVmsVulnerabilityFindingVendorAttributesData",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "API-Key": {
+        "in": "header",
+        "name": "X-API-KEY",
+        "type": "apiKey"
+      },
+      "Connection-ID": {
+        "in": "header",
+        "name": "X-CONNECTION-ID",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "title": "Leen Security API V2",
+    "version": "0.0.1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/resources": {
+      "get": {
+        "description": "List all the resources",
+        "operationId": "list_resources",
+        "parameters": [
+          {
+            "description": "Only records whose `updated_at` is at or after this time. Leen bumps `updated_at` whenever any field on a record changes, so this is the filter for an incremental sync: it returns records that are new and records that changed, and nothing that has stood still. Example: `2021-01-01T00:00:00+00:00`.",
+            "in": "query",
+            "name": "updatedSince",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only records whose `updated_at` is at or after this time. Leen bumps `updated_at` whenever any field on a record changes, so this is the filter for an incremental sync: it returns records that are new and records that changed, and nothing that has stood still. Example: `2021-01-01T00:00:00+00:00`.",
+              "examples": [
+                "2021-01-01T00:00:00+00:00"
+              ],
+              "title": "Updatedsince"
+            }
+          },
+          {
+            "description": "Opaque position of the next page, taken from the previous response. Ignore its contents; it encodes where the walk had reached.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque position of the next page, taken from the previous response. Ignore its contents; it encodes where the walk had reached.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "How many records to return per page. The walk is the same either way; a larger page means fewer round trips and more memory per response.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "description": "How many records to return per page. The walk is the same either way; a larger page means fewer round trips and more memory per response.",
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Filter resources by name (comma-separated values supported)",
+            "in": "query",
+            "name": "name",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter resources by name (comma-separated values supported)",
+              "title": "Name"
+            }
+          },
+          {
+            "description": "Filter resources by vendor (comma-separated values supported)",
+            "in": "query",
+            "name": "vendor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter resources by vendor (comma-separated values supported)",
+              "title": "Vendor"
+            }
+          },
+          {
+            "description": "Filter resources by state (comma-separated values supported)",
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter resources by state (comma-separated values supported)",
+              "examples": [
+                "ACTIVE,DELETED,IGNORED"
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "description": "Filter resources by type (comma-separated values supported)",
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter resources by type (comma-separated values supported)",
+              "examples": [
+                "branch,host,container,dependency,image,unknown"
+              ],
+              "title": "Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeySetPaginatedResponse_ResourceRespModel_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorException"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "security": [
+          {
+            "API-Key": [],
+            "Connection-ID": []
+          }
+        ],
+        "summary": "List Resources",
+        "tags": [
+          "resources"
+        ]
+      }
+    },
+    "/resources/{resource_id}": {
+      "get": {
+        "description": "Return a resource by its ID (Leen's UUID)",
+        "operationId": "get_resource_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Resource Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceRespModel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorException"
+                }
+              }
+            },
+            "description": "Resource not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "API-Key": [],
+            "Connection-ID": []
+          }
+        ],
+        "summary": "Get Resource by ID",
+        "tags": [
+          "resources"
+        ]
+      }
+    },
+    "/vulnerability_findings": {
+      "get": {
+        "description": "List vulnerability findings with keyset pagination and filtering options.\n\n- **severity**: Filter by severity (comma-separated list, e.g., 'CRITICAL,HIGH')\n- **state**: Filter by state (comma-separated list, e.g., 'OPEN,REOPENED')\n- **has_fix**: Filter by whether a fix is available\n- **reachability**: Filter by reachability rollup (comma-separated list, e.g., 'REACHABLE,POTENTIALLY_REACHABLE')\n- **exploitable**: Filter by exploitability (true/false); findings with no vendor signal match neither\n- **first_seen_since**: Filter by findings first seen after this date\n- **last_seen_since**: Filter by findings last seen after this date\n- **state_updated_since**: Filter by findings with state updated after this date\n- **resourceId**: Filter by resource ID (comma-separated list)\n- **ids**: Filter by finding IDs (comma-separated list of UUIDs, max 100)",
+        "operationId": "get_vulnerability_findings",
+        "parameters": [
+          {
+            "description": "Sort by a field, written as `field`, `field:asc` or `field:desc`. Which fields can be sorted on differs per endpoint.",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^severity$|^severity\\:asc$|^severity\\:desc$|^updated_at$|^updated_at\\:asc$|^updated_at\\:desc$|^state_updated_at$|^state_updated_at\\:asc$|^state_updated_at\\:desc$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sort by a field, written as `field`, `field:asc` or `field:desc`. Which fields can be sorted on differs per endpoint.",
+              "title": "Sort"
+            }
+          },
+          {
+            "description": "Filter by severity (comma-separated list, e.g., 'CRITICAL,HIGH')",
+            "in": "query",
+            "name": "severity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by severity (comma-separated list, e.g., 'CRITICAL,HIGH')",
+              "title": "Severity"
+            }
+          },
+          {
+            "description": "Filter by state (comma-separated list, e.g., 'OPEN,REOPENED')",
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by state (comma-separated list, e.g., 'OPEN,REOPENED')",
+              "title": "State"
+            }
+          },
+          {
+            "description": "Filter by whether a fix is available",
+            "in": "query",
+            "name": "has_fix",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by whether a fix is available",
+              "title": "Has Fix"
+            }
+          },
+          {
+            "description": "Filter by reachability rollup (comma-separated list, e.g., 'REACHABLE,POTENTIALLY_REACHABLE'). Findings with no vendor signal match no value.",
+            "in": "query",
+            "name": "reachability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by reachability rollup (comma-separated list, e.g., 'REACHABLE,POTENTIALLY_REACHABLE'). Findings with no vendor signal match no value.",
+              "title": "Reachability"
+            }
+          },
+          {
+            "description": "Filter by exploitability: true returns findings the vendor marked exploitable (typically a known exploit exists); false returns findings the vendor explicitly marked not exploitable. Findings with no vendor signal match neither true nor false.",
+            "in": "query",
+            "name": "exploitable",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by exploitability: true returns findings the vendor marked exploitable (typically a known exploit exists); false returns findings the vendor explicitly marked not exploitable. Findings with no vendor signal match neither true nor false.",
+              "title": "Exploitable"
+            }
+          },
+          {
+            "description": "Filter by findings first seen after this date",
+            "in": "query",
+            "name": "firstSeenSince",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by findings first seen after this date",
+              "title": "Firstseensince"
+            }
+          },
+          {
+            "description": "Filter by findings last seen after this date",
+            "in": "query",
+            "name": "lastSeenSince",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by findings last seen after this date",
+              "title": "Lastseensince"
+            }
+          },
+          {
+            "description": "Filter by findings with state updated after this date",
+            "in": "query",
+            "name": "stateUpdatedSince",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by findings with state updated after this date",
+              "title": "Stateupdatedsince"
+            }
+          },
+          {
+            "description": "Filter by resource ID (comma-separated list)",
+            "in": "query",
+            "name": "resourceId",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by resource ID (comma-separated list)",
+              "title": "Resourceid"
+            }
+          },
+          {
+            "description": "Filter by finding IDs (comma-separated list of UUIDs, max 100)",
+            "in": "query",
+            "name": "ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by finding IDs (comma-separated list of UUIDs, max 100)",
+              "title": "Ids"
+            }
+          },
+          {
+            "description": "Only records whose `updated_at` is at or after this time. Leen bumps `updated_at` whenever any field on a record changes, so this is the filter for an incremental sync: it returns records that are new and records that changed, and nothing that has stood still. Example: `2021-01-01T00:00:00+00:00`.",
+            "in": "query",
+            "name": "updatedSince",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only records whose `updated_at` is at or after this time. Leen bumps `updated_at` whenever any field on a record changes, so this is the filter for an incremental sync: it returns records that are new and records that changed, and nothing that has stood still. Example: `2021-01-01T00:00:00+00:00`.",
+              "examples": [
+                "2021-01-01T00:00:00+00:00"
+              ],
+              "title": "Updatedsince"
+            }
+          },
+          {
+            "description": "Opaque position of the next page, taken from the previous response. Ignore its contents; it encodes where the walk had reached.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque position of the next page, taken from the previous response. Ignore its contents; it encodes where the walk had reached.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "How many records to return per page. The walk is the same either way; a larger page means fewer round trips and more memory per response.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "description": "How many records to return per page. The walk is the same either way; a larger page means fewer round trips and more memory per response.",
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeySetPaginatedResponse_VulnerabilityFindingV2RespModel_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "security": [
+          {
+            "API-Key": [],
+            "Connection-ID": []
+          }
+        ],
+        "summary": "List Vulnerability Findings",
+        "tags": [
+          "Vulnerability Findings"
+        ]
+      }
+    },
+    "/vulnerability_findings/{vulnerability_finding_id}": {
+      "get": {
+        "description": "Get a vulnerability finding by ID.",
+        "operationId": "get_vulnerability_finding_by_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vulnerability_finding_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vulnerability Finding Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VulnerabilityFindingV2RespModel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "API-Key": [],
+            "Connection-ID": []
+          }
+        ],
+        "summary": "Get Vulnerability Finding by ID",
+        "tags": [
+          "Vulnerability Findings"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Production API V2 (US)",
+      "url": "https://api.leen.dev/v2"
+    },
+    {
+      "description": "Production API V2 (EU)",
+      "url": "https://api.eu-c1.leen.dev/v2"
+    },
+    {
+      "description": "Production API V2 (APAC)",
+      "url": "https://api.ap-se2.leen.dev/v2"
+    }
+  ]
+}

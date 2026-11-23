@@ -1,0 +1,12 @@
+{
+  "name": "@securefabric/schema",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Canonical models: resources, findings, enums, health codes, event envelopes (Python; deps in pyproject.toml, managed by uv)",
+  "scripts": {
+    "fix": "cd ../.. && uv run --frozen ruff check --fix packages/schema && uv run --frozen ruff format packages/schema",
+    "lint": "cd ../.. && uv run --frozen ruff check packages/schema && uv run --frozen ruff format --check packages/schema",
+    "test": "cd ../.. && uv run --frozen pytest packages/schema",
+    "typecheck": "cd ../.. && uv run --frozen mypy packages/schema"
+  }
+}

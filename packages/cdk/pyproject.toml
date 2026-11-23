@@ -1,0 +1,26 @@
+[project]
+name = "securefabric-cdk"
+version = "0.1.0"
+description = "Connector development kit: manifest, stream interface, HTTP client, fixtures, conformance"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.14",
+    "pyyaml>=6",
+    "jsonschema>=4.23",
+    "httpx2>=2.16.2",
+    "pyjwt[crypto]>=2.10",
+    "securefabric-core",
+    "securefabric-schema",
+]
+
+[project.scripts]
+securefabric-cdk = "securefabric_cdk.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9.15,<0.10"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+securefabric-core = { workspace = true }
+securefabric-schema = { workspace = true }
