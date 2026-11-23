@@ -19,6 +19,7 @@ class ApiSettings(BaseServiceSettings):
     root_path: str = ""
     docs_enabled: bool = True
     cors_origins: list[str] = Field(default_factory=list)
+    rate_limit_per_minute: int = Field(default=1000, ge=1)
 
 
 @lru_cache

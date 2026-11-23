@@ -1,77 +1,83 @@
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from typing import Any
-from uuid import UUID, uuid4
 
+import httpx2
 import pytest
-from absurd_sdk import TaskResultSnapshot
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
 
 from securefabric_api.config import ApiSettings
-from securefabric_api.dependencies import get_absurd, get_pool
 from securefabric_api.main import create_app
+from securefabric_connectors.sandbox.vendor import reset_registry
+from securefabric_domain import tenancy
+from securefabric_domain.runtime import Platform
+from securefabric_domain.testing import (
+    Tenant,
+    build_test_platform,
+    build_test_settings,
+    make_tenant,
+    reset_queues,
+)
 
 
-class FakeAbsurd:
-    """In-memory stand-in for ``AsyncAbsurd`` covering what the API uses."""
+@dataclass
+class Api:
+    client: httpx2.AsyncClient
+    platform: Platform
+    worker: Platform
+    tenant: Tenant
+    key: str
+    other_key: str
 
-    def __init__(self) -> None:
-        self.spawned: list[dict[str, Any]] = []
-        self.snapshots: dict[str, TaskResultSnapshot] = {}
-        self.cancelled: list[str] = []
+    def h(self, key: str | None = None, **extra: str) -> dict[str, str]:
+        return {"Authorization": f"Bearer {key or self.key}", **extra}
 
-    async def spawn(self, task_name: str, params: Any, **kwargs: Any) -> dict[str, Any]:
-        # Like the real SDK (psycopg), IDs come back as uuid.UUID, not str.
-        task_id: UUID = uuid4()
-        self.spawned.append({"task_name": task_name, "params": params, **kwargs})
-        self.snapshots[str(task_id)] = TaskResultSnapshot(state="pending")
-        return {"task_id": task_id, "run_id": uuid4(), "attempt": 1}
+    async def get(self, path: str, key: str | None = None, **kw: Any) -> httpx2.Response:
+        return await self.client.get(path, headers=self.h(key, **kw.pop("headers", {})), **kw)
 
-    async def fetch_task_result(
-        self, task_id: str, queue_name: str | None = None
-    ) -> TaskResultSnapshot | None:
-        return self.snapshots.get(task_id)
+    async def post(
+        self, path: str, json: Any = None, key: str | None = None, **kw: Any
+    ) -> httpx2.Response:
+        return await self.client.post(
+            path, json=json, headers=self.h(key, **kw.pop("headers", {})), **kw
+        )
 
-    async def cancel_task(self, task_id: str, queue_name: str | None = None) -> None:
-        self.cancelled.append(task_id)
-        self.snapshots[task_id] = TaskResultSnapshot(state="cancelled")
+    async def patch(
+        self, path: str, json: Any = None, key: str | None = None, **kw: Any
+    ) -> httpx2.Response:
+        return await self.client.patch(
+            path, json=json, headers=self.h(key, **kw.pop("headers", {})), **kw
+        )
 
-
-class FakePool:
-    def __init__(self, healthy: bool = True) -> None:
-        self.healthy = healthy
-
-    @asynccontextmanager
-    async def connection(self) -> AsyncIterator["FakePool"]:
-        if not self.healthy:
-            raise OSError("connection refused")
-        yield self
-
-    async def execute(self, *_: Any) -> None:
-        return None
+    async def delete(self, path: str, key: str | None = None) -> httpx2.Response:
+        return await self.client.delete(path, headers=self.h(key))
 
 
-@pytest.fixture
-def fake_absurd() -> FakeAbsurd:
-    return FakeAbsurd()
-
-
-@pytest.fixture
-def fake_pool() -> FakePool:
-    return FakePool()
-
-
-@pytest.fixture
-def app(fake_absurd: FakeAbsurd, fake_pool: FakePool) -> FastAPI:
-    settings = ApiSettings(_env_file=None, environment="test")
-    application = create_app(settings=settings)
-    application.dependency_overrides[get_absurd] = lambda: fake_absurd
-    application.dependency_overrides[get_pool] = lambda: fake_pool
-    return application
+async def make_key(
+    platform: Platform, environment_id: Any, account_id: Any, scopes: list[str] | None = None
+) -> str:
+    principal = tenancy.system_principal(environment_id, account_id)
+    _, key = await tenancy.create_api_key(platform, principal, name="test", scopes=scopes)
+    return key
 
 
 @pytest.fixture
-def client(app: FastAPI) -> TestClient:
-    # Not entering the context manager skips the lifespan, so no real pool is opened.
-    return TestClient(app)
+async def api(database_url: str) -> AsyncIterator[Api]:
+    reset_registry()
+    platform = build_test_platform(database_url, role="api", settings=build_test_settings())
+    worker = build_test_platform(database_url, role="test")
+    await worker.open()
+    await reset_queues(worker)
+    app = create_app(
+        settings=ApiSettings(_env_file=None, environment="test", log_level="WARNING"),
+        platform=platform,
+        rate_limit_per_minute=100000,
+    )
+    async with app.router.lifespan_context(app):
+        tenant = await make_tenant(worker)
+        key = await make_key(worker, tenant.environment_id, tenant.account_id)
+        other = await make_key(worker, tenant.other_environment_id, tenant.account_id)
+        transport = httpx2.ASGITransport(app=app)
+        async with httpx2.AsyncClient(transport=transport, base_url="http://api.test") as client:
+            yield Api(client, platform, worker, tenant, key, other)
+    await worker.close()
+    await platform.close()

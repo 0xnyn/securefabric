@@ -1,79 +1,70 @@
-"""The OpenAPI document is a contract: the TypeScript client is generated from it."""
+"""The OpenAPI document: stable operation ids, one error shape, write-only secrets."""
 
 from typing import Any
 
 from securefabric_api.openapi import build_schema
 
 
-def _operations(schema: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    return {op["operationId"]: op for path in schema["paths"].values() for op in path.values()}
+def _operations(schema: dict[str, Any]) -> dict[str, tuple[str, str]]:
+    out: dict[str, tuple[str, str]] = {}
+    for path, item in schema["paths"].items():
+        for method, op in item.items():
+            out[op["operationId"]] = (method, path)
+    return out
 
 
-def test_operation_ids_are_stable_tag_and_name() -> None:
-    assert set(_operations(build_schema())) == {
-        "health:live",
-        "health:ready",
-        "tenants:provision_tenant",
-        "tasks:get_task",
-        "tasks:cancel_task",
-        "workspace:get_workspace",
-        "workspace:reset_workspace",
-        "environments:create_environment",
-        "environments:update_environment",
-        "environments:delete_environment",
-        "environments:rotate_webhook_secret",
-        "keys:create_api_key",
-        "keys:update_api_key",
-        "keys:roll_api_key",
-        "keys:revoke_api_key",
-        "webhooks:add_webhook",
-        "webhooks:update_webhook",
-        "webhooks:remove_webhook",
-        "webhooks:deliver_webhook",
-        "variables:set_variable",
-        "variables:remove_variable",
-        "integrations:enable_integration",
-        "integrations:update_integration",
-        "integrations:delete_integration",
+def test_operation_ids_are_unique_and_tag_prefixed() -> None:
+    schema = build_schema()
+    ops = _operations(schema)
+    count = sum(len(i) for i in schema["paths"].values())
+    assert len(ops) == count, "duplicate operationId"
+    assert all(":" in op for op in ops)
+    for expected in (
+        "organizations:create_organization",
         "connections:create_connection",
-        "connections:trigger_sync",
-        "connections:update_connection",
-        "connections:update_credentials",
-        "connections:simulate_health",
-        "connections:delete_connection",
-        "connect:create_connect_session",
-        "operations:record_operation",
-        "members:invite_member",
-        "members:set_member_role",
-        "members:remove_member",
-        "status:get_status",
-    }
+        "connections:list_connections",
+        "api_keys:create_api_key",
+        "connectors:list_connectors",
+        "jobs:get_job",
+        "account:get_me",
+    ):
+        assert expected in ops
 
 
-def test_errors_use_the_envelope_schema() -> None:
-    ops = _operations(build_schema())
-    for op_id in ("tenants:provision_tenant", "tasks:get_task", "tasks:cancel_task"):
-        for code in ("404", "422", "500"):
-            content = ops[op_id]["responses"][code]["content"]["application/json"]
-            assert content["schema"] == {"$ref": "#/components/schemas/ErrorResponse"}
+def test_every_v1_path_is_versioned_and_errors_are_problem_json() -> None:
+    schema = build_schema()
+    for path, item in schema["paths"].items():
+        assert path.startswith(("/v1/", "/health/")), path
+        for op in item.values():
+            for status, resp in op.get("responses", {}).items():
+                if status.startswith(("4", "5")) and status != "503":
+                    assert "Problem" in str(resp), (path, status)
 
 
-def test_response_defaults_are_required_but_request_defaults_are_not() -> None:
+def test_no_response_schema_carries_credentials() -> None:
+    schema = build_schema()
+    for name, comp in schema["components"]["schemas"].items():
+        if name.endswith(("In", "Patch")) or "Body" in name or name in ("ConnectIn", "SessionIn"):
+            continue
+        for prop in comp.get("properties", {}):
+            assert prop not in (
+                "credentials",
+                "secrets",
+                "client_secret",
+                "private_key",
+                "webhook_secret",
+            ), (name, prop)
+
+
+def test_every_response_field_is_typed() -> None:
+    # A catch-all serializer once erased every field's type (the TS client got `unknown`).
     schemas = build_schema()["components"]["schemas"]
-    # Always sent, so required for the client...
-    assert "status" in schemas["Liveness"]["required"]
-    assert {"result", "failure"} <= set(schemas["TaskStatus"]["required"])
-    # ...while callers may omit defaulted request fields.
-    assert set(schemas["ProvisionTenantParams"]["required"]) == {"tenant_id", "admin_email"}
-
-
-def test_control_plane_speaks_camel_case() -> None:
-    schemas = build_schema()["components"]["schemas"]
-    assert {"apiKeys", "webhookSecret", "isProduction"} <= set(schemas["Environment"]["required"])
-    # Request bodies are camelCase too, and defaulted fields stay optional.
-    assert schemas["ConnectionCreate"]["required"] == ["integrationId", "customer"]
-    assert "409" in _operations(build_schema())["connections:trigger_sync"]["responses"]
-
-
-def test_schema_is_deterministic() -> None:
-    assert build_schema() == build_schema()
+    untyped = sorted(
+        f"{name}.{field}"
+        for name, schema in schemas.items()
+        for field, prop in (schema.get("properties") or {}).items()
+        if not ({"type", "$ref", "anyOf", "allOf", "oneOf", "items", "enum", "const"} & prop.keys())
+    )
+    assert untyped == ["PassthroughOut.body"]  # vendor JSON, deliberately open
+    key = schemas["ApiKeyOut"]["properties"]["created_at"]
+    assert key == {"type": "string", "format": "date-time", "title": "Created At"}
