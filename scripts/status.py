@@ -3,7 +3,7 @@
 Sections, top to bottom: toolchain, dependencies, services (Docker, Postgres,
 migrations), running processes (API, dash, worker), the workspace and task
 queues, generated-code drift, and git. Database facts come from the same
-``securefabric_domain.status.collect`` that serves ``GET /api/v1/status``, so the
+``securefabric_domain.status.collect`` that serves ``GET /v1/status``, so the
 terminal and the dash's Status page always agree.
 
     make status                # the report
@@ -204,12 +204,12 @@ def services() -> Section:
 
 
 async def database_facts() -> tuple[dict[str, Any] | None, str | None]:
-    """The API's status payload, computed locally."""
+    """The operator view of ``GET /v1/status``, computed locally, plus workspace counts."""
     try:
         import psycopg
 
-        from securefabric_db import DatabaseSettings
-        from securefabric_domain.status import as_dict, collect
+        from securefabric_db import DatabaseSettings, fetch_all
+        from securefabric_domain.status import collect
     except ImportError as exc:
         return None, f"Python deps missing ({exc.name}); run make install"
     url = DatabaseSettings().url
@@ -217,7 +217,26 @@ async def database_facts() -> tuple[dict[str, Any] | None, str | None]:
         async with await psycopg.AsyncConnection.connect(
             url, autocommit=True, connect_timeout=3
         ) as conn:
-            return as_dict(await collect(conn, version="local", environment="local")), None
+            facts = await collect(conn, version="local", migrations_dir=ROOT / "db" / "migrations")
+            # Local only (this runs as the database owner): per-environment counts.
+            facts["environments"] = await fetch_all(
+                conn,
+                """select e.slug,
+                          (select count(*) from control.organization o
+                            where o.environment_id = e.id and o.deleted_at is null) as organizations,
+                          count(c.id) as connections,
+                          count(c.id) filter (where c.health_status = 'HEALTHY') as healthy,
+                          count(c.id) filter (where c.health_status = 'UNHEALTHY') as attention,
+                          count(c.id) filter (where c.health_status = 'INITIALIZING') as initializing
+                     from control.environment e
+                     left join control.connection c
+                       on c.environment_id = e.id and c.deleted_at is null
+                    where e.deleted_at is null
+                    group by e.id, e.slug order by e.slug""",
+            )
+            return facts, None
+    except psycopg.errors.UndefinedFunction:
+        return None, "obs.system_status() is missing: migrations pending"
     except psycopg.OperationalError as exc:
         return None, first_line(str(exc)) or type(exc).__name__
 
@@ -225,28 +244,28 @@ async def database_facts() -> tuple[dict[str, Any] | None, str | None]:
 def database(facts: dict[str, Any] | None, error: str | None) -> Section:
     s = Section("Database")
     if facts is None:
-        s.add("postgres", "down", error or "unreachable", "make db-up")
+        hint = "make db-migrate" if error and "migrations" in error else "make db-up"
+        s.add("postgres", "down", error or "unreachable", hint)
         return s
     db = facts["database"]
     s.add(
         "postgres",
         "ok",
-        f"{db['serverVersion']} · {db['database']} · {db['latencyMs']} ms · "
-        f"{(db['sizeBytes'] or 0) / 1024 / 1024:.0f} MB",
+        f"{db['server_version']} · {db['database']} · {db['latency_ms']} ms · "
+        f"{(db['size_bytes'] or 0) / 1024 / 1024:.0f} MB",
     )
-    m = facts.get("migrations")
-    if m:
-        if m["pending"]:
-            s.add(
-                "migrations",
-                "warn",
-                f"{len(m['pending'])} pending: {', '.join(m['pending'])}",
-                "make db-migrate",
-            )
-        else:
-            s.add("migrations", "ok", f"{len(m['applied'])} applied, latest {m['applied'][-1]}")
-        if m["unknown"]:
-            s.add("migrations", "warn", f"applied but not on disk: {', '.join(m['unknown'])}")
+    m = facts["migrations"]
+    if m["pending"]:
+        s.add(
+            "migrations",
+            "warn",
+            f"{len(m['pending'])} pending: {', '.join(m['pending'])}",
+            "make db-migrate",
+        )
+    else:
+        s.add("migrations", "ok", f"{len(m['applied'])} applied, latest {m['applied'][-1]}")
+    if m["unknown"]:
+        s.add("migrations", "warn", f"applied but not on disk: {', '.join(m['unknown'])}")
     return s
 
 
@@ -275,21 +294,26 @@ def processes(facts: dict[str, Any] | None) -> Section:
         f"http://localhost:{dash_port}" if code is not None else f"nothing on :{dash_port}",
         None if code is not None else "make dev (or make dev-dash)",
     )
-    workers = (facts or {}).get("workers", [])
-    online = [w for w in workers if w["online"]]
     if facts is None:
         s.add("worker", "info", "unknown (database unreachable)")
-    elif online:
-        s.add(
-            "worker",
-            "ok",
-            ", ".join(
-                f"{w['workerId']} ({w['queue']}, concurrency {w['concurrency']})" for w in online
-            ),
-        )
-    else:
+        return s
+    workers = facts.get("workers", [])
+    online = [w for w in workers if w["online"]]
+    if not online:
         stale = f" · {len(workers)} stale heartbeat(s)" if workers else ""
         s.add("worker", "down", f"none online{stale}", "make dev (or make dev-worker)")
+        return s
+    s.add(
+        "worker",
+        "ok",
+        ", ".join(
+            f"{w['role']} ({','.join(w['queues']) or '-'}, x{w['concurrency']})" for w in online
+        ),
+    )
+    roles = {w["role"] for w in online}
+    missing = {"scheduler", "sync", "control", "delivery", "maintenance"} - roles
+    if missing and "all" not in roles:
+        s.add("roles", "warn", f"no worker for: {', '.join(sorted(missing))}", "make dev-worker")
     return s
 
 
@@ -298,39 +322,41 @@ def workspace(facts: dict[str, Any] | None) -> Section:
     if facts is None:
         s.add("workspace", "info", "unknown (database unreachable)")
         return s
-    ws = facts.get("workspace") or {}
-    if not ws.get("seeded"):
-        s.add("workspace", "info", "not seeded", "make seed (or open the dash)")
+    envs = facts.get("environments") or []
+    if not envs:
+        s.add("workspace", "info", "no environments yet", "make seed")
+    # Connection health is customer data, so it is reported, not counted against the system.
+    for env in envs:
+        s.add(
+            f"  {env['slug']}",
+            "info",
+            f"{env['organizations']} organizations · {env['connections']} connections "
+            f"({env['healthy']} healthy, {env['attention']} need attention, "
+            f"{env['initializing']} initializing)",
+        )
+    runs = facts.get("runs") or {}
+    active = ", ".join(f"{n} {state.lower()}" for state, n in sorted(runs.items())) or "none"
+    if facts.get("stuck_runs"):
+        s.add(
+            "syncs",
+            "warn",
+            f"{facts['stuck_runs']} RUNNING > 15 min · active: {active}",
+            "check the sync workers: make dev-worker",
+        )
     else:
-        s.add("workspace", "ok", f"{ws['team']} · {ws['members']} members")
-        # Connection health is customer data (the demo seeds some broken ones on
-        # purpose), so it's reported, not counted against the system.
-        for env in ws["environments"]:
-            s.add(
-                f"  {env['slug']}",
-                "info",
-                f"{env['integrations']} integrations · {env['connections']} connections "
-                f"({env['healthy']} healthy, {env['attention']} need attention, "
-                f"{env['syncing']} syncing) · {env['operationsLastDay']} requests/24h",
-            )
-        if ws["stuckJobs"]:
-            s.add(
-                "syncs",
-                "warn",
-                f"{ws['stuckJobs']} RUNNING > 2 min (of {ws['runningJobs']} running)",
-                "start a worker: make dev-worker",
-            )
-        else:
-            s.add(
-                "syncs",
-                "ok",
-                f"{ws['runningJobs']} running · {ws['failedJobsLastDay']} failed in 24h",
-            )
+        s.add("syncs", "ok", f"active: {active} · {facts['failed_runs_last_day']} failed in 24h")
+    for severity, n in sorted((facts.get("alert_counts") or {}).items()):
+        s.add(
+            f"alerts ({severity})",
+            "warn" if severity == "page" else "info",
+            f"{n} open",
+            "GET /v1/admin/alerts (operators); resolve with POST /v1/admin/alerts/{id}/resolve",
+        )
     queues = facts.get("queues") or []
     if not queues:
-        s.add("queues", "info", "none yet (the worker creates `default`)")
+        s.add("queues", "info", "none yet (make db-migrate creates them)")
     for q in queues:
-        oldest = q.get("oldestPendingSeconds")
+        oldest = q.get("oldest_pending_seconds")
         level: Level = "warn" if (oldest or 0) > 60 else "ok"
         s.add(
             f"queue {q['name']}",
@@ -350,7 +376,6 @@ def drift(fast: bool) -> Section:
     checks = {
         "client (v1.ts)": (("pnpm", "-s", "-F", "@securefabric/client", "check-generated"),
                            "make generate"),
-        "catalog.json": (("pnpm", "-s", "-F", "dash", "check-catalog"), "make generate"),
         "tokens": (("pnpm", "-s", "-F", "@securefabric/tokens", "check-tokens"),
                    "pnpm -F @securefabric/tokens generate"),
     }  # fmt: skip
