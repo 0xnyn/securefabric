@@ -1,0 +1,12 @@
+{
+  "name": "@securefabric/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared settings, logging and errors (Python; deps in pyproject.toml, managed by uv)",
+  "scripts": {
+    "fix": "cd ../.. && uv run --frozen ruff check --fix packages/core && uv run --frozen ruff format packages/core",
+    "lint": "cd ../.. && uv run --frozen ruff check packages/core && uv run --frozen ruff format --check packages/core",
+    "test": "cd ../.. && uv run --frozen pytest packages/core",
+    "typecheck": "cd ../.. && uv run --frozen mypy packages/core"
+  }
+}

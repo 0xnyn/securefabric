@@ -1,0 +1,13 @@
+{
+  "name": "@securefabric/db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Postgres pool and migrations (Python; deps in pyproject.toml, managed by uv)",
+  "scripts": {
+    "fix": "cd ../.. && uv run --frozen ruff check --fix packages/db && uv run --frozen ruff format packages/db",
+    "lint": "cd ../.. && uv run --frozen ruff check packages/db && uv run --frozen ruff format --check packages/db",
+    "migrate": "cd ../.. && uv run --frozen securefabric-migrate",
+    "test": "cd ../.. && uv run --frozen pytest packages/db",
+    "typecheck": "cd ../.. && uv run --frozen mypy packages/db"
+  }
+}

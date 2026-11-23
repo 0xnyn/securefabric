@@ -1,0 +1,21 @@
+[project]
+name = "securefabric-db"
+version = "0.1.0"
+description = "Postgres connectivity (psycopg pool) and SQL migration runner for SecureFabric"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "psycopg-pool>=3.3",
+    "psycopg[binary]>=3.3",
+    "securefabric-core",
+]
+
+[project.scripts]
+securefabric-migrate = "securefabric_db.migrate:main"
+
+[build-system]
+requires = ["uv_build>=0.9.15,<0.10"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+securefabric-core = { workspace = true }
