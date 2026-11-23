@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { ProviderView } from "@/components/views/provider";
+import { ConnectorView } from "@/components/views/catalog";
 
-export const metadata: Metadata = { title: "Catalog" };
+export const metadata: Metadata = { title: "Connector" };
 
 export default async function Page({
 	params,
@@ -9,5 +9,5 @@ export default async function Page({
 	params: Promise<{ provider: string }>;
 }) {
 	const { provider } = await params;
-	return <ProviderView slug={provider} />;
+	return <ConnectorView id={provider} />;
 }

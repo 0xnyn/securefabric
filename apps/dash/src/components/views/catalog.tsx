@@ -1,185 +1,350 @@
 "use client";
 
-import { CheckIcon, SearchIcon } from "lucide-react";
+import { unwrap } from "@securefabric/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { PageBody, PageHeader, ProviderLogo } from "@/components/common";
-import { useEnv, useHref } from "@/components/shell/env-context";
-import { Select } from "@/components/ui/overlay";
-import { Badge, EmptyState, Input } from "@/components/ui/primitives";
+import { toast } from "sonner";
+import { PageBody, PageHeader } from "@/components/common";
 import {
-	CATEGORIES,
-	CATEGORY_ORDER,
-	type CategoryKey,
-	MODELS,
-	PROVIDERS,
-	type Provider,
-} from "@/lib/catalog";
-import { useSearchParam } from "@/lib/use-search-param";
+	ConnectorLogo,
+	errorText,
+	QueryState,
+	Section,
+} from "@/components/kit";
+import { useEnv, useHref } from "@/components/shell/env-context";
+import { Button } from "@/components/ui/button";
+import {
+	Badge,
+	Card,
+	Input,
+	Table,
+	Td,
+	Th,
+	Tr,
+} from "@/components/ui/primitives";
+import { api } from "@/lib/api";
+import type { Connector } from "@/lib/types";
 
-type Availability = "all" | "available" | "soon";
+const STATUS_TONE = { beta: "accent", deprecated: "warn", ga: "ok" } as const;
 
-const STATUS_RANK = { beta: 1, ga: 0, soon: 2 } as const;
-
-function ProviderCard({
-	provider,
-	enabled,
-}: {
-	provider: Provider;
-	enabled: boolean;
-}) {
-	const href = useHref();
-	return (
-		<Link
-			className="group border-border bg-card hover:border-ds-line-accent hover:bg-ds-shell flex flex-col gap-4 rounded-lg border p-4 transition-colors"
-			href={href(`/catalog/${provider.slug}`)}
-		>
-			<div className="flex items-start justify-between gap-3">
-				<ProviderLogo provider={provider} size={40} />
-				<div className="flex items-center gap-1.5">
-					{enabled ? (
-						<Badge tone="ok">
-							<CheckIcon className="size-3" />
-							Enabled
-						</Badge>
-					) : null}
-					{provider.status === "beta" ? (
-						<Badge tone="accent">Beta</Badge>
-					) : null}
-					{provider.status === "soon" ? <Badge>Coming soon</Badge> : null}
-				</div>
-			</div>
-			<div className="grid gap-1">
-				<p className="text-sm font-medium">{provider.name}</p>
-				<p className="text-muted-foreground line-clamp-2 text-sm">
-					{provider.description}
-				</p>
-			</div>
-			<div className="mt-auto flex flex-wrap gap-1">
-				{provider.models.slice(0, 3).map((m) => (
-					<span
-						className="border-border text-2xs text-muted-foreground rounded border px-1.5 py-0.5 font-mono"
-						key={m}
-					>
-						{MODELS[m].name}
-					</span>
-				))}
-				{provider.models.length === 0 && provider.writeActions.length > 0 ? (
-					<span className="border-border text-2xs text-muted-foreground rounded border px-1.5 py-0.5 font-mono">
-						Actions
-					</span>
-				) : null}
-			</div>
-		</Link>
-	);
+function useConnectors() {
+	return useQuery({
+		queryFn: () => unwrap(api.GET("/v1/connectors")),
+		queryKey: ["connectors"],
+	});
 }
 
-const CATEGORY_VALUES = ["all", ...CATEGORY_ORDER] as const;
-
 export function CatalogView() {
-	const { env } = useEnv();
-	const [query, setQuery] = useState("");
-	const [category, setCategory] = useSearchParam<CategoryKey | "all">(
-		"category",
-		CATEGORY_VALUES,
-		"all"
+	const connectors = useConnectors();
+	const href = useHref();
+	const [q, setQ] = useState("");
+	const items = (connectors.data ?? []).filter((c) =>
+		`${c.name} ${c.id} ${c.categories.join(" ")}`
+			.toLowerCase()
+			.includes(q.toLowerCase())
 	);
-	const [availability, setAvailability] = useState<Availability>("all");
-	const enabled = new Set(env.integrations.map((i) => i.provider));
-	const q = query.trim().toLowerCase();
-
-	const matchesText = (p: Provider): boolean =>
-		!q ||
-		p.name.toLowerCase().includes(q) ||
-		p.description.toLowerCase().includes(q) ||
-		p.models.some((m) => MODELS[m].name.toLowerCase().includes(q));
-	const matchesAvailability = (p: Provider): boolean =>
-		availability === "all" ||
-		(availability === "soon" ? p.status === "soon" : p.status !== "soon");
-
-	const base = PROVIDERS.filter(
-		(p) => matchesText(p) && matchesAvailability(p)
-	);
-	const visible = base
-		.filter((p) => category === "all" || p.categories.includes(category))
-		.sort(
-			(a, b) =>
-				STATUS_RANK[a.status] - STATUS_RANK[b.status] ||
-				a.name.localeCompare(b.name)
-		);
-	const liveCount = PROVIDERS.filter((p) => p.status !== "soon").length;
-
 	return (
 		<>
 			<PageHeader
-				description={
-					category === "all"
-						? `${PROVIDERS.length} security tools, ${liveCount} available today. Every integration maps into the same unified models, so code written against one scanner works with all of them.`
-						: `${visible.length} ${visible.length === 1 ? "tool" : "tools"} in ${CATEGORIES[category]}. Each maps into the same unified models as every other tool.`
+				actions={
+					<Input
+						className="w-64"
+						onChange={(e) => setQ(e.target.value)}
+						placeholder="Search connectors"
+						value={q}
+					/>
 				}
-				title={category === "all" ? "Catalog" : CATEGORIES[category]}
+				description="Generated from each connector's manifest: auth, streams, permissions and capabilities."
+				title="Catalog"
 			/>
 			<PageBody>
-				{/* The categories are in the sidebar (shell/focused-nav.tsx); the
-				    page keeps a picker only for phones, where the sidebar hides. */}
-				<div className="grid content-start gap-5">
-					<div className="flex flex-col gap-2 sm:flex-row">
-						<div className="relative flex-1">
-							<SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-							<Input
-								aria-label="Search integrations"
-								className="pl-9"
-								onChange={(e) => setQuery(e.target.value)}
-								placeholder="Search by tool or model, e.g. CrowdStrike or Vulnerability"
-								value={query}
-							/>
-						</div>
-						<div className="md:hidden">
-							<Select
-								ariaLabel="Category"
-								onChange={(v) => setCategory(v as CategoryKey | "all")}
-								options={[
-									{ label: "All categories", value: "all" },
-									...CATEGORY_ORDER.map((c) => ({
-										label: CATEGORIES[c],
-										value: c,
-									})),
-								]}
-								value={category}
-							/>
-						</div>
-						<div className="sm:w-44">
-							<Select
-								ariaLabel="Availability"
-								onChange={setAvailability}
-								options={[
-									{ label: "All tools", value: "all" },
-									{ label: "Available now", value: "available" },
-									{ label: "Coming soon", value: "soon" },
-								]}
-								value={availability}
-							/>
-						</div>
+				<QueryState
+					empty={{
+						description: "Try another search.",
+						title: "No connectors",
+						when: items.length === 0,
+					}}
+					query={connectors}
+				>
+					<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+						{items.map((c) => (
+							<Link
+								className="block"
+								href={href(`/catalog/${c.id}`)}
+								key={c.id}
+							>
+								<Card className="hover:border-ds-accent/50 grid h-full gap-3 p-5 transition-colors">
+									<div className="flex items-center gap-3">
+										<ConnectorLogo id={c.id} logo={c.logo_url} size={36} />
+										<div className="grid min-w-0">
+											<span className="truncate font-medium">{c.name}</span>
+											<span className="text-muted-foreground font-mono text-xs">
+												{c.id}
+											</span>
+										</div>
+										<Badge
+											className="ml-auto"
+											tone={
+												STATUS_TONE[c.status as keyof typeof STATUS_TONE] ??
+												"neutral"
+											}
+										>
+											{c.status}
+										</Badge>
+									</div>
+									<p className="text-muted-foreground line-clamp-2 text-sm">
+										{c.description}
+									</p>
+									<div className="flex flex-wrap gap-1.5">
+										<Badge>{c.auth.mode as string}</Badge>
+										{c.data_types.map((d) => (
+											<Badge key={d} tone="accent">
+												{d.replaceAll("_", " ")}
+											</Badge>
+										))}
+										<Badge>{c.streams.length} streams</Badge>
+									</div>
+								</Card>
+							</Link>
+						))}
 					</div>
-					{visible.length === 0 ? (
-						<EmptyState
-							description="Try another search, or request the tool you need and we'll prioritize it."
-							icon={<SearchIcon className="size-4" />}
-							title="No integrations match"
-						/>
-					) : (
-						<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-							{visible.map((p) => (
-								<ProviderCard
-									enabled={enabled.has(p.slug)}
-									key={p.slug}
-									provider={p}
-								/>
-							))}
-						</div>
-					)}
-				</div>
+				</QueryState>
 			</PageBody>
 		</>
+	);
+}
+
+function capabilityRows(c: Connector) {
+	const rows: {
+		stream: string;
+		field: string;
+		supported: boolean;
+		notes: string | null;
+	}[] = [];
+	for (const s of c.streams as Record<string, unknown>[]) {
+		for (const [field, cap] of Object.entries(
+			(s.capabilities as
+				| Record<string, { supported: boolean; notes?: string | null }>
+				| undefined) ?? {}
+		)) {
+			rows.push({
+				field,
+				notes: cap.notes ?? null,
+				stream: String(s.name),
+				supported: cap.supported,
+			});
+		}
+	}
+	return rows;
+}
+
+export function ConnectorView({ id }: { id: string }) {
+	const connector = useQuery({
+		queryFn: () =>
+			unwrap(
+				api.GET("/v1/connectors/{connector_id}", {
+					params: { path: { connector_id: id } },
+				})
+			),
+		queryKey: ["connectors", id],
+	});
+	const { client, env } = useEnv();
+	const router = useRouter();
+	const href = useHref();
+	const queryClient = useQueryClient();
+	const integrations = useQuery({
+		queryFn: () => unwrap(client.GET("/v1/integrations")),
+		queryKey: ["integrations", env.id],
+	});
+	const existing = integrations.data?.find((i) => i.connector_id === id);
+	const enable = useMutation({
+		mutationFn: () =>
+			unwrap(client.POST("/v1/integrations", { body: { connector_id: id } })),
+		onError: (e) =>
+			toast.error("Couldn't enable", { description: errorText(e) }),
+		onSuccess: async (i) => {
+			await queryClient.invalidateQueries({
+				queryKey: ["integrations", env.id],
+			});
+			toast.success(`${i.display_name} enabled`);
+			router.push(href(`/integrations/${i.id}`));
+		},
+	});
+	const c = connector.data;
+	return (
+		<QueryState query={connector}>
+			{c ? (
+				<>
+					<PageHeader
+						actions={
+							existing ? (
+								<Button
+									render={<Link href={href(`/integrations/${existing.id}`)} />}
+									variant="outline"
+								>
+									Configure integration
+								</Button>
+							) : (
+								<Button
+									disabled={enable.isPending}
+									onClick={() => enable.mutate()}
+									variant="primary"
+								>
+									Enable in {env.name}
+								</Button>
+							)
+						}
+						description={c.description}
+						title={
+							<span className="flex items-center gap-3">
+								<ConnectorLogo id={c.id} logo={c.logo_url} size={32} />
+								{c.name}
+							</span>
+						}
+					/>
+					<PageBody className="grid gap-8">
+						<Section
+							description="How a connection authenticates"
+							title="Authentication"
+						>
+							<Card className="grid gap-2 p-5 text-sm">
+								<div>
+									Mode <Badge>{c.auth.mode as string}</Badge> · connect{" "}
+									<Badge>{c.auth.connect as string}</Badge>
+									{c.auth.vendor_app === "none" ? null : (
+										<>
+											{" "}
+											· vendor app <Badge>{c.auth.vendor_app as string}</Badge>
+										</>
+									)}
+								</div>
+								{c.regions.length ? (
+									<div className="text-muted-foreground">
+										Regions:{" "}
+										{c.regions
+											.map((r) => `${r.label ?? r.id} (${r.api_base})`)
+											.join(" · ")}
+									</div>
+								) : null}
+							</Card>
+						</Section>
+						<Section
+							description="What to grant in the vendor (the connect UI shows this guide)"
+							title="Permissions"
+						>
+							<Card>
+								<Table>
+									<thead>
+										<Tr>
+											<Th>Permission</Th>
+											<Th>Access</Th>
+											<Th>Used by</Th>
+										</Tr>
+									</thead>
+									<tbody>
+										{c.permissions.map((p) => (
+											<Tr key={`${String(p.name)}:${String(p.access)}`}>
+												<Td>
+													{String(p.name)}
+													{p.optional ? (
+														<Badge className="ml-2">optional</Badge>
+													) : null}
+												</Td>
+												<Td>{String(p.access)}</Td>
+												<Td className="text-muted-foreground">
+													{[
+														...((p.streams as string[] | undefined) ?? []),
+														...((p.actions as string[] | undefined) ?? []),
+													].join(", ")}
+												</Td>
+											</Tr>
+										))}
+									</tbody>
+								</Table>
+							</Card>
+						</Section>
+						<Section title="Streams">
+							<Card>
+								<Table>
+									<thead>
+										<Tr>
+											<Th>Stream</Th>
+											<Th>Object</Th>
+											<Th>Mode</Th>
+											<Th>Deletion</Th>
+											<Th>Interval</Th>
+											<Th>Natural key</Th>
+										</Tr>
+									</thead>
+									<tbody>
+										{(c.streams as Record<string, unknown>[]).map((s) => {
+											const iv = s.interval as {
+												default: number;
+												min: number;
+												max: number;
+											};
+											return (
+												<Tr key={String(s.name)}>
+													<Td>
+														<div className="font-medium">{String(s.title)}</div>
+														<div className="text-muted-foreground font-mono text-xs">
+															{String(s.name)}
+														</div>
+													</Td>
+													<Td>{String(s.object).replaceAll("_", " ")}</Td>
+													<Td>{String(s.sync_mode)}</Td>
+													<Td>{String(s.deletion).replaceAll("_", " ")}</Td>
+													<Td className="whitespace-nowrap">
+														{iv.default / 60} min ({iv.min / 60}–{iv.max / 60})
+													</Td>
+													<Td className="font-mono text-xs">
+														{String(s.natural_key)}
+													</Td>
+												</Tr>
+											);
+										})}
+									</tbody>
+								</Table>
+							</Card>
+						</Section>
+						<Section
+							description="Fields this connector can honestly fill (tri-state fields stay null otherwise)"
+							title="Capabilities"
+						>
+							<Card>
+								<Table>
+									<thead>
+										<Tr>
+											<Th>Stream</Th>
+											<Th>Field</Th>
+											<Th>Supported</Th>
+											<Th>Notes</Th>
+										</Tr>
+									</thead>
+									<tbody>
+										{capabilityRows(c).map((r) => (
+											<Tr key={`${r.stream}.${r.field}`}>
+												<Td className="font-mono text-xs">{r.stream}</Td>
+												<Td>{r.field}</Td>
+												<Td>
+													<Badge tone={r.supported ? "ok" : "neutral"}>
+														{r.supported ? "yes" : "no"}
+													</Badge>
+												</Td>
+												<Td className="text-muted-foreground">
+													{r.notes ?? ""}
+												</Td>
+											</Tr>
+										))}
+									</tbody>
+								</Table>
+							</Card>
+						</Section>
+					</PageBody>
+				</>
+			) : null}
+		</QueryState>
 	);
 }

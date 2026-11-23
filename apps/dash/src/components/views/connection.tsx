@@ -1,794 +1,921 @@
 "use client";
 
-import {
-	ArrowLeftIcon,
-	EllipsisIcon,
-	FlaskConicalIcon,
-	KeyRoundIcon,
-	LinkIcon,
-	PauseIcon,
-	PlayIcon,
-	RefreshCwIcon,
-	ShieldOffIcon,
-	TerminalIcon,
-	Trash2Icon,
-	TriangleAlertIcon,
-} from "lucide-react";
+import { unwrap } from "@securefabric/client";
+import { cn } from "@securefabric/ui/lib/utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { RefreshCwIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
 	CopyField,
-	HealthBadge,
 	KeyValue,
 	PageBody,
-	ProviderLogo,
+	PageHeader,
 	Tabs,
-	useCopy,
 } from "@/components/common";
-import { useEnv, useHref } from "@/components/shell/env-context";
-import { Button, buttonVariants } from "@/components/ui/button";
 import {
-	Dialog,
-	DialogContent,
-	Menu,
-	MenuContent,
-	MenuItem,
-	MenuSeparator,
-	MenuTrigger,
-	Select,
-} from "@/components/ui/overlay";
+	ConfirmButton,
+	ConnectorLogo,
+	errorText,
+	HealthBadge,
+	QueryState,
+	Section,
+	StatusBadge,
+	When,
+} from "@/components/kit";
+import {
+	compactValues,
+	type JsonSchema,
+	SchemaForm,
+} from "@/components/schema-form";
+import { useEnv, useHref } from "@/components/shell/env-context";
+import { Button } from "@/components/ui/button";
 import {
 	Badge,
 	Card,
-	CardHeader,
-	Dot,
-	EmptyState,
 	Field,
-	Input,
 	Table,
 	Td,
 	Th,
 	Tr,
 } from "@/components/ui/primitives";
-import {
-	AUTH_LABELS,
-	MODELS,
-	type ModelKey,
-	providerOrThrow,
-} from "@/lib/catalog";
-import { dateTime, duration, num, timeAgo } from "@/lib/format";
-import { CONNECTION_TABS, type ConnectionTab } from "@/lib/nav";
-import {
-	createConnectSession,
-	deleteConnection,
-	setPaused,
-	simulateHealth,
-	triggerSync,
-	updateConnectionSettings,
-	updateCredentials,
-} from "@/lib/store";
+import { api } from "@/lib/api";
+import { num } from "@/lib/format";
 import {
 	type Connection,
-	FREQUENCY_LABELS,
-	FREQUENCY_MS,
-	HEALTH,
-	type SyncFrequency,
-	type SyncJob,
+	GRANT_TONES,
+	healthInfo,
+	JOB_TONES,
+	STATE_TONES,
 } from "@/lib/types";
-import { useSearchParam } from "@/lib/use-search-param";
-import { RecordsBrowser } from "./records";
-import { ActivityRow } from "./shared";
+import { FindingsExplorer, ResourcesExplorer } from "./explorers";
 
-type Tab = ConnectionTab;
+type Tab =
+	| "overview"
+	| "jobs"
+	| "findings"
+	| "resources"
+	| "authorization"
+	| "settings";
 
-const TAB_VALUES = CONNECTION_TABS.map((t) => t.value);
+const idem = () => ({ "Idempotency-Key": crypto.randomUUID() });
 
-export function ConnectionView({ id }: { id: string }) {
-	const { env } = useEnv();
-	const href = useHref();
-	const conn = env.connections.find((c) => c.id === id);
-	if (!conn) {
-		return (
-			<PageBody>
-				<EmptyState
-					action={
-						<Link className={buttonVariants()} href={href("/connections")}>
-							Back to connections
-						</Link>
-					}
-					description={`No connection ${id} in ${env.name}. It may have been deleted, or it belongs to another environment.`}
-					title="Connection not found"
-				/>
-			</PageBody>
-		);
-	}
-	return <ConnectionDetail conn={conn} />;
+export function useConnection(id: string) {
+	const { client, env } = useEnv();
+	return useQuery({
+		queryFn: () =>
+			unwrap(
+				client.GET("/v1/connections/{connection_id}", {
+					params: { path: { connection_id: id } },
+				})
+			),
+		queryKey: ["connections", env.id, id],
+		refetchInterval: (q) =>
+			q.state.data?.state === "PENDING" ||
+			q.state.data?.health.name === "INITIALIZING"
+				? 3000
+				: 30_000,
+	});
 }
 
-function ConnectionDetail({ conn }: { conn: Connection }) {
-	const { env } = useEnv();
+export function ConnectionView({ id }: { id: string }) {
+	const connection = useConnection(id);
+	const [tab, setTab] = useState<Tab>("overview");
+	const { client, env } = useEnv();
 	const href = useHref();
-	const [tab, setTab] = useSearchParam<Tab>("tab", TAB_VALUES, "overview");
-	const [browseModel, setBrowseModel] = useState<ModelKey | undefined>();
-	const [editingCreds, setEditingCreds] = useState(false);
-	const provider = providerOrThrow(conn.provider);
-	const integration = env.integrations.find((i) => i.id === conn.integrationId);
-	const models = integration?.models ?? provider.models;
-	const ops = env.operations.filter((o) => o.connectionId === conn.id);
-
-	const browse = (m: ModelKey): void => {
-		setBrowseModel(m);
-		setTab("records");
-	};
-
+	const queryClient = useQueryClient();
+	const org = useQuery({
+		enabled: Boolean(connection.data),
+		queryFn: () =>
+			unwrap(
+				client.GET("/v1/organizations/{organization_id}", {
+					params: {
+						path: { organization_id: connection.data?.organization_id ?? "" },
+					},
+				})
+			),
+		queryKey: ["organizations", env.id, connection.data?.organization_id],
+	});
+	const sync = useMutation({
+		mutationFn: () =>
+			unwrap(
+				client.POST("/v1/connections/{connection_id}/jobs", {
+					body: {},
+					headers: idem(),
+					params: { path: { connection_id: id } },
+				})
+			),
+		onError: (e) =>
+			toast.error("Couldn't start a sync", { description: errorText(e) }),
+		onSuccess: async (job) => {
+			toast.success("Sync queued", {
+				description: `Job ${job.id.slice(0, 8)}`,
+			});
+			await queryClient.invalidateQueries({ queryKey: ["jobs", env.id, id] });
+		},
+	});
+	const c = connection.data;
 	return (
-		<>
-			<div className="border-border bg-background border-b">
-				<div className="px-4 pt-6 sm:px-8">
-					<Link
-						className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
-						href={href("/connections")}
+		<QueryState query={connection}>
+			{c ? (
+				<>
+					<PageHeader
+						actions={
+							<Button
+								disabled={sync.isPending || c.state !== "ACTIVE"}
+								onClick={() => sync.mutate()}
+								variant="primary"
+							>
+								<RefreshCwIcon /> Sync now
+							</Button>
+						}
+						description={
+							<span className="flex flex-wrap items-center gap-2">
+								<Link
+									className="hover:underline"
+									href={href(`/organizations/${c.organization_id}`)}
+								>
+									{org.data?.name ?? "Organization"}
+								</Link>
+								<span>·</span>
+								<span className="font-mono text-xs">{c.id}</span>
+								{c.is_sandbox ? <Badge>sandbox</Badge> : null}
+							</span>
+						}
+						title={
+							<span className="flex items-center gap-3">
+								<ConnectorLogo id={c.vendor} size={32} />
+								{c.identifier ?? c.vendor}
+								<StatusBadge tones={STATE_TONES} value={c.state} />
+								<HealthBadge health={c.health} />
+							</span>
+						}
 					>
-						<ArrowLeftIcon className="size-3.5" />
-						Connections
-					</Link>
-					<div className="flex flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between">
-						<div className="flex min-w-0 items-center gap-4">
-							<ProviderLogo provider={provider} size={48} />
-							<div className="grid min-w-0 gap-1">
-								<div className="flex flex-wrap items-center gap-2">
-									<h1 className="tracking-heading truncate text-2xl font-semibold">
-										{conn.customer.orgName}
-									</h1>
-									<HealthBadge health={conn.health} />
-									{conn.sandbox ? (
-										<Badge tone="accent">
-											<FlaskConicalIcon className="size-3" />
-											Sandbox
-										</Badge>
-									) : null}
-								</div>
-								<p className="text-muted-foreground truncate font-mono text-xs">
-									{conn.id} · {conn.integrationId}
-								</p>
-							</div>
-						</div>
-						<HeaderActions conn={conn} />
-					</div>
-					<div>
 						<Tabs
+							className="px-4 sm:px-6"
 							onChange={setTab}
 							tabs={[
 								{ label: "Overview", value: "overview" },
-								{ label: "Records", value: "records" },
-								{ count: conn.jobs.length, label: "Sync jobs", value: "jobs" },
-								{ label: "Authorization", value: "auth" },
-								{ count: ops.length, label: "Logs", value: "logs" },
+								{ label: "Jobs", value: "jobs" },
+								{ label: "Findings", value: "findings" },
+								{ label: "Resources", value: "resources" },
+								{ label: "Authorization", value: "authorization" },
 								{ label: "Settings", value: "settings" },
 							]}
 							value={tab}
 						/>
-					</div>
-				</div>
-			</div>
-			<PageBody className="grid gap-6">
-				{conn.health === "UNAUTHORIZED" ? (
-					<UnauthorizedBanner
-						conn={conn}
-						onUpdate={() => setEditingCreds(true)}
-					/>
-				) : null}
-				{tab === "overview" ? (
-					<OverviewTab conn={conn} models={models} onBrowse={browse} />
-				) : null}
-				{tab === "records" ? (
-					<RecordsBrowser
-						conn={conn}
-						initialModel={browseModel}
-						key={browseModel}
-						models={models}
-					/>
-				) : null}
-				{tab === "jobs" ? <JobsTab jobs={conn.jobs} /> : null}
-				{tab === "auth" ? (
-					<AuthTab conn={conn} onUpdate={() => setEditingCreds(true)} />
-				) : null}
-				{tab === "logs" ? <LogsTab conn={conn} /> : null}
-				{tab === "settings" ? <SettingsTab conn={conn} /> : null}
-			</PageBody>
-			<UpdateCredentialsDialog
-				conn={conn}
-				onOpenChange={setEditingCreds}
-				open={editingCreds}
-			/>
-		</>
-	);
-}
-
-function HeaderActions({ conn }: { conn: Connection }) {
-	const { env } = useEnv();
-	const href = useHref();
-	const router = useRouter();
-	const running = conn.jobs[0]?.status === "RUNNING";
-	return (
-		<div className="flex shrink-0 items-center gap-2">
-			<Link
-				className={buttonVariants()}
-				href={href(`/playground?connection=${conn.id}`)}
-			>
-				<TerminalIcon />
-				Query in playground
-			</Link>
-			<Button
-				disabled={running || conn.paused}
-				onClick={() => {
-					triggerSync(env.slug, conn.id);
-					toast.success("Sync started", {
-						description:
-							"Only records changed since the last sync are fetched.",
-					});
-				}}
-				variant="primary"
-			>
-				<RefreshCwIcon className={running ? "animate-spin" : undefined} />
-				{running ? "Syncing…" : "Sync now"}
-			</Button>
-			<Menu>
-				<MenuTrigger
-					aria-label="More actions"
-					className={buttonVariants({ size: "icon" })}
-				>
-					<EllipsisIcon />
-				</MenuTrigger>
-				<MenuContent align="end" className="w-60">
-					<MenuItem onClick={() => setPaused(env.slug, conn.id, !conn.paused)}>
-						{conn.paused ? <PlayIcon /> : <PauseIcon />}
-						{conn.paused ? "Resume syncs" : "Pause syncs"}
-					</MenuItem>
-					{!env.isProduction && conn.health === "UNAUTHORIZED" ? (
-						<MenuItem
-							onClick={() => simulateHealth(env.slug, conn.id, "HEALTHY")}
-						>
-							<KeyRoundIcon />
-							Test: restore credentials
-						</MenuItem>
-					) : null}
-					{!env.isProduction && conn.health !== "UNAUTHORIZED" ? (
-						<MenuItem
-							onClick={() => simulateHealth(env.slug, conn.id, "UNAUTHORIZED")}
-						>
-							<ShieldOffIcon />
-							Test: revoke credentials
-						</MenuItem>
-					) : null}
-					<MenuSeparator />
-					<MenuItem
-						className="text-destructive [&_svg]:text-destructive"
-						onClick={() => {
-							deleteConnection(env.slug, conn.id);
-							toast.success("Connection deleted", {
-								description: "Credentials were destroyed and syncs stopped.",
-							});
-							router.push(href("/connections"));
-						}}
-					>
-						<Trash2Icon />
-						Delete connection
-					</MenuItem>
-				</MenuContent>
-			</Menu>
-		</div>
-	);
-}
-
-function UnauthorizedBanner({
-	conn,
-	onUpdate,
-}: {
-	conn: Connection;
-	onUpdate: () => void;
-}) {
-	const { env } = useEnv();
-	const [, copy] = useCopy();
-	return (
-		<div className="border-destructive/30 bg-destructive/5 flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
-			<div className="flex gap-3">
-				<TriangleAlertIcon className="text-destructive mt-0.5 size-4 shrink-0" />
-				<div className="grid gap-1 text-sm">
-					<p className="text-destructive font-medium">
-						{providerOrThrow(conn.provider).name} rejected the stored
-						credentials
-					</p>
-					<p className="text-muted-foreground">
-						{HEALTH.UNAUTHORIZED.description} API reads keep returning the last
-						synced data.
-					</p>
-				</div>
-			</div>
-			<div className="flex shrink-0 gap-2">
-				<Button
-					onClick={async () => {
-						const session = await createConnectSession(
-							env.slug,
-							conn.customer,
-							[conn.integrationId]
-						);
-						copy(session.url, "Reconnect link");
-					}}
-					size="sm"
-				>
-					<LinkIcon />
-					Copy reconnect link
-				</Button>
-				<Button onClick={onUpdate} size="sm" variant="primary">
-					Update credentials
-				</Button>
-			</div>
-		</div>
-	);
-}
-
-function nextSync(conn: Connection, frequency: SyncFrequency): string {
-	if (conn.paused) {
-		return "Paused";
-	}
-	if (!conn.lastSyncAt) {
-		return "After the initial sync";
-	}
-	const next = conn.lastSyncAt + FREQUENCY_MS[frequency];
-	return next < Date.now() ? "Queued" : timeAgo(next);
-}
-
-function OverviewTab({
-	conn,
-	models,
-	onBrowse,
-}: {
-	conn: Connection;
-	models: ModelKey[];
-	onBrowse: (m: ModelKey) => void;
-}) {
-	const { env } = useEnv();
-	const integration = env.integrations.find((i) => i.id === conn.integrationId);
-	const frequency =
-		conn.frequencyOverride ?? integration?.syncFrequency ?? "1h";
-	const health = HEALTH[conn.health];
-	const syncing = conn.health === "SYNCING" && !conn.lastSyncAt;
-	return (
-		<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-			<div className="grid content-start gap-6">
-				<Card>
-					<CardHeader
-						description="Normalized records this connection holds, by model."
-						title="Synced data"
-					/>
-					<ul className="divide-border divide-y">
-						{models.map((m) => (
-							<li
-								className="flex items-center justify-between gap-4 px-5 py-4"
-								key={m}
-							>
-								<div className="grid gap-0.5">
-									<span className="font-mono text-sm font-medium">
-										{MODELS[m].name}
-									</span>
-									<span className="text-muted-foreground text-xs">
-										{MODELS[m].description}
-									</span>
-								</div>
-								<div className="flex shrink-0 items-center gap-4">
-									<span className="text-right text-sm tabular-nums">
-										{syncing ? "Syncing…" : num(conn.counts[m] ?? 0)}
-									</span>
-									<Button
-										disabled={syncing}
-										onClick={() => onBrowse(m)}
-										size="sm"
-									>
-										Browse
-									</Button>
-								</div>
-							</li>
-						))}
-						{models.length === 0 ? (
-							<li className="text-muted-foreground px-5 py-4 text-sm">
-								Write actions only.
-							</li>
+					</PageHeader>
+					<PageBody>
+						{tab === "overview" ? <Overview connection={c} /> : null}
+						{tab === "jobs" ? <Jobs connectionId={id} /> : null}
+						{tab === "findings" ? (
+							<FindingsExplorer scope={{ connectionId: id }} />
 						) : null}
-					</ul>
-				</Card>
-				<Card>
-					<CardHeader title="Health" />
-					<div className="grid gap-4 px-5 py-4 sm:grid-cols-[auto_1fr]">
-						<HealthBadge health={conn.health} />
-						<div className="grid gap-1 text-sm">
-							<p>{health.description}</p>
-							<p className="text-muted-foreground text-xs">
-								Code <span className="font-mono">{conn.health}</span> ·
-								Resolution owner: {health.owner}
-							</p>
-						</div>
+						{tab === "resources" ? (
+							<ResourcesExplorer scope={{ connectionId: id }} />
+						) : null}
+						{tab === "authorization" ? <Authorization connection={c} /> : null}
+						{tab === "settings" ? <Settings connection={c} /> : null}
+					</PageBody>
+				</>
+			) : null}
+		</QueryState>
+	);
+}
+
+function Overview({ connection: c }: { connection: Connection }) {
+	const { client, env } = useEnv();
+	const info = healthInfo(c.health.name);
+	const history = useQuery({
+		queryFn: () =>
+			unwrap(
+				client.GET("/v1/connections/{connection_id}/health/history", {
+					params: { path: { connection_id: c.id } },
+				})
+			),
+		queryKey: ["health-history", env.id, c.id],
+	});
+	return (
+		<div className="grid gap-8">
+			<Section title="Health">
+				<Card className="grid gap-3 p-5">
+					<div className="flex flex-wrap items-center gap-3">
+						<HealthBadge health={c.health} />
+						<span className="text-muted-foreground text-sm">
+							{c.health.status}
+							{(c.health.resolution_owner ?? info.owner)
+								? ` · ${c.health.resolution_owner ?? info.owner} to resolve`
+								: ""}
+							{" · since "}
+							<When value={c.health_changed_at} />
+						</span>
 					</div>
+					{c.health.description ? (
+						<p className="text-sm">{c.health.description}</p>
+					) : null}
+					{c.pending_detail ? (
+						<p className="text-muted-foreground text-sm">{c.pending_detail}</p>
+					) : null}
+					{c.health.details?.length ? (
+						<ul className="text-muted-foreground list-disc pl-5 text-sm">
+							{c.health.details.map((d, i) => (
+								// biome-ignore lint/suspicious/noArrayIndexKey: details have no id
+								<li key={i}>
+									{String(d.message ?? d.detail ?? JSON.stringify(d))}
+								</li>
+							))}
+						</ul>
+					) : null}
 				</Card>
+			</Section>
+			<Section
+				description="What each stream can read, how often it runs, and how fresh its data is"
+				title="Streams"
+			>
 				<Card>
-					<CardHeader
-						description="Copied from the connect session. Filter connections by any of them."
-						title="Tags"
-					/>
-					<div className="flex flex-wrap gap-2 px-5 py-4">
-						{Object.entries(conn.tags).map(([k, v]) => (
-							<span
-								className="border-border text-2xs inline-flex items-center overflow-hidden rounded-md border font-mono"
-								key={k}
-							>
-								<span className="bg-muted text-muted-foreground px-2 py-1">
-									{k}
-								</span>
-								<span className="px-2 py-1">{v}</span>
-							</span>
+					<Table>
+						<thead>
+							<Tr>
+								<Th>Stream</Th>
+								<Th>Grant</Th>
+								<Th>Schedule</Th>
+								<Th>Last success</Th>
+								<Th>Next run</Th>
+								<Th className="text-right">Records</Th>
+							</Tr>
+						</thead>
+						<tbody>
+							{(c.streams ?? []).map((s) => (
+								<Tr key={s.name}>
+									<Td>
+										<div className="font-medium">{s.name}</div>
+										<div className="text-muted-foreground text-xs">
+											{s.object.replaceAll("_", " ")}
+											{s.enabled ? "" : " · disabled"}
+										</div>
+									</Td>
+									<Td>
+										<StatusBadge tones={GRANT_TONES} value={s.grant} />
+										{s.grant_detail ? (
+											<div className="text-muted-foreground mt-1 max-w-xs text-xs">
+												{s.grant_detail}
+											</div>
+										) : null}
+									</Td>
+									<Td className="text-xs">
+										{s.interval_s
+											? `every ${Math.round(s.interval_s / 60)} min`
+											: "—"}
+										{s.schedule_state ? (
+											<div className="text-muted-foreground">
+												{s.schedule_state.toLowerCase()}
+											</div>
+										) : null}
+									</Td>
+									<Td>
+										<When value={s.last_success_at} />
+									</Td>
+									<Td>
+										<When value={s.next_run_at} />
+									</Td>
+									<Td className="text-right tabular-nums">
+										{num(s.record_count)}
+										{s.deleted_count ? (
+											<div className="text-muted-foreground text-xs">
+												{num(s.deleted_count)} deleted
+											</div>
+										) : null}
+									</Td>
+								</Tr>
+							))}
+						</tbody>
+					</Table>
+				</Card>
+			</Section>
+			<Section title="Health history">
+				<QueryState
+					empty={{
+						description: "No transitions yet.",
+						title: "No history",
+						when: (history.data ?? []).length === 0,
+					}}
+					query={history}
+					rows={2}
+				>
+					<Card>
+						<Table>
+							<tbody>
+								{history.data?.map((h) => (
+									<Tr key={`${h.at}-${h.to_code}`}>
+										<Td className="w-40">
+											<When value={h.at} />
+										</Td>
+										<Td>
+											{h.from_code ? (
+												<HealthBadge health={h.from_code} />
+											) : (
+												<span className="text-muted-foreground">new</span>
+											)}
+											{" → "}
+											<HealthBadge health={h.to_code} />
+										</Td>
+									</Tr>
+								))}
+							</tbody>
+						</Table>
+					</Card>
+				</QueryState>
+			</Section>
+		</div>
+	);
+}
+
+function Jobs({ connectionId }: { connectionId: string }) {
+	const { client, env } = useEnv();
+	const href = useHref();
+	const jobs = useQuery({
+		queryFn: () =>
+			unwrap(
+				client.GET("/v1/connections/{connection_id}/jobs", {
+					params: {
+						path: { connection_id: connectionId },
+						query: { limit: 50 },
+					},
+				})
+			),
+		queryKey: ["jobs", env.id, connectionId],
+		refetchInterval: (q) =>
+			q.state.data?.some((j) => j.status === "QUEUED" || j.status === "RUNNING")
+				? 3000
+				: false,
+	});
+	return (
+		<QueryState
+			empty={{
+				description: "Jobs appear when a sync runs.",
+				title: "No jobs yet",
+				when: (jobs.data ?? []).length === 0,
+			}}
+			query={jobs}
+		>
+			<Card>
+				<Table>
+					<thead>
+						<Tr>
+							<Th>Job</Th>
+							<Th>Type</Th>
+							<Th>Status</Th>
+							<Th>Requested by</Th>
+							<Th>Started</Th>
+							<Th>Finished</Th>
+						</Tr>
+					</thead>
+					<tbody>
+						{jobs.data?.map((j) => (
+							<Tr className="hover:bg-muted/40" key={j.id}>
+								<Td>
+									<Link
+										className="font-mono text-xs hover:underline"
+										href={href(`/jobs/${j.id}`)}
+									>
+										{j.id.slice(0, 8)}
+									</Link>
+								</Td>
+								<Td className="text-xs">{j.type.toLowerCase()}</Td>
+								<Td>
+									<StatusBadge tones={JOB_TONES} value={j.status} />
+									{j.failure_reason ? (
+										<div className="text-muted-foreground mt-1 max-w-xs truncate text-xs">
+											{j.failure_reason}
+										</div>
+									) : null}
+								</Td>
+								<Td className="text-xs">{j.requested_by ?? "schedule"}</Td>
+								<Td>
+									<When value={j.started_at} />
+								</Td>
+								<Td>
+									<When value={j.finished_at} />
+								</Td>
+							</Tr>
 						))}
-					</div>
-				</Card>
-			</div>
-			<Card className="h-fit">
-				<CardHeader title="Details" />
-				<div className="grid gap-4 px-5 py-4">
-					<div className="grid gap-1">
-						<span className="text-muted-foreground text-xs">Connection ID</span>
-						<CopyField label="Connection ID" value={conn.id} />
-					</div>
+					</tbody>
+				</Table>
+			</Card>
+		</QueryState>
+	);
+}
+
+function Authorization({ connection: c }: { connection: Connection }) {
+	const { client } = useEnv();
+	const [link, setLink] = useState<string | null>(null);
+	const reauth = useMutation({
+		mutationFn: () =>
+			unwrap(
+				client.POST("/v1/connect_sessions", {
+					body: { connection_id: c.id, organization_id: c.organization_id },
+					headers: idem(),
+				})
+			),
+		onError: (e) =>
+			toast.error("Couldn't create a link", { description: errorText(e) }),
+		onSuccess: (s) => setLink(s.url),
+	});
+	const a = c.authorization;
+	return (
+		<div className="grid gap-6">
+			<Card className="p-5">
+				{a ? (
 					<KeyValue
-						className="sm:grid-cols-1"
 						items={[
+							{ label: "Auth mode", value: a.auth_mode },
 							{
-								label: "Integration",
-								value: (
-									<span className="text-code font-mono">
-										{conn.integrationId}
-									</span>
-								),
+								label: "Fields set",
+								value: a.fields_set.length
+									? a.fields_set.map((f) => (
+											<Badge className="mr-1" key={f}>
+												{f}
+											</Badge>
+										))
+									: "—",
+							},
+							{ label: "Rotated", value: <When value={a.rotated_at} /> },
+							{
+								label: "Last token refresh",
+								value: <When value={a.last_refresh_at} />,
 							},
 							{
-								label: "End user ID",
-								value: (
-									<span className="text-code font-mono">
-										{conn.customer.endUserId}
-									</span>
-								),
+								label: "Refresh exhausted",
+								value: a.refresh_exhausted ? "yes" : "no",
 							},
-							{ label: "Admin email", value: conn.customer.email },
-							{
-								label: "Sync frequency",
-								value: `${FREQUENCY_LABELS[frequency]}${conn.frequencyOverride ? " (override)" : ""}`,
-							},
-							{
-								label: "Last sync",
-								value: conn.lastSyncAt
-									? `${timeAgo(conn.lastSyncAt)} · ${dateTime(conn.lastSyncAt)}`
-									: "Never",
-							},
-							{ label: "Next sync", value: nextSync(conn, frequency) },
-							{ label: "Created", value: dateTime(conn.createdAt) },
 						]}
 					/>
-				</div>
+				) : (
+					<p className="text-muted-foreground text-sm">
+						No credentials recorded yet.
+					</p>
+				)}
+				<p className="text-muted-foreground mt-4 text-xs">
+					Credential values are write-only and never returned.
+				</p>
 			</Card>
-		</div>
-	);
-}
-
-const JOB_TONES = {
-	FAILED: "error",
-	QUEUED: "neutral",
-	RUNNING: "busy",
-	SUCCESS: "ok",
-} as const;
-
-function JobsTab({ jobs }: { jobs: SyncJob[] }) {
-	return (
-		<Card className="overflow-hidden">
-			<Table>
-				<thead>
-					<tr>
-						<Th>Job</Th>
-						<Th>Type</Th>
-						<Th>Status</Th>
-						<Th>Started</Th>
-						<Th className="text-right">Duration</Th>
-						<Th className="text-right">Added</Th>
-						<Th className="text-right">Updated</Th>
-						<Th className="text-right">Deleted</Th>
-					</tr>
-				</thead>
-				<tbody>
-					{jobs.map((j) => (
-						<Tr key={j.id}>
-							<Td className="text-code text-muted-foreground font-mono">
-								{j.id}
-							</Td>
-							<Td>
-								<Badge className="font-mono">{j.type}</Badge>
-							</Td>
-							<Td>
-								<span className="inline-flex items-center gap-2 text-sm">
-									<Dot tone={JOB_TONES[j.status]} />
-									{j.status.toLowerCase()}
-								</span>
-								{j.failureReason ? (
-									<p className="text-destructive mt-0.5 text-xs">
-										{j.failureReason}
-									</p>
-								) : null}
-							</Td>
-							<Td
-								className="text-muted-foreground whitespace-nowrap"
-								title={dateTime(j.startedAt)}
-							>
-								{timeAgo(j.startedAt)}
-							</Td>
-							<Td className="text-right tabular-nums">
-								{j.durationMs === null ? "—" : duration(j.durationMs)}
-							</Td>
-							<Td className="text-right tabular-nums">{num(j.added)}</Td>
-							<Td className="text-right tabular-nums">{num(j.updated)}</Td>
-							<Td className="text-right tabular-nums">{num(j.deleted)}</Td>
-						</Tr>
-					))}
-				</tbody>
-			</Table>
-		</Card>
-	);
-}
-
-function AuthTab({
-	conn,
-	onUpdate,
-}: {
-	conn: Connection;
-	onUpdate: () => void;
-}) {
-	const provider = providerOrThrow(conn.provider);
-	if (conn.sandbox) {
-		return (
-			<Card className="p-6">
-				<div className="flex gap-4">
-					<FlaskConicalIcon className="text-ds-accent mt-0.5 size-5 shrink-0" />
-					<div className="grid gap-1 text-sm">
-						<p className="font-medium">Sandbox credentials</p>
-						<p className="text-muted-foreground max-w-xl">
-							This connection reads from an SecureFabric-hosted {provider.name}{" "}
-							sandbox. No secrets are stored. Syncs, webhooks, health checks and
-							the API behave exactly as they do for a live connection, so you
-							can move to real credentials without code changes.
-						</p>
-					</div>
-				</div>
-			</Card>
-		);
-	}
-	return (
-		<Card>
-			<CardHeader
+			<Section
 				action={
-					<Button onClick={onUpdate} size="sm">
-						Update credentials
+					<Button
+						disabled={reauth.isPending}
+						onClick={() => reauth.mutate()}
+						size="sm"
+						variant="outline"
+					>
+						Create re-authorization link
 					</Button>
 				}
-				description="Encrypted at rest with AES-256-GCM. Secrets are write-only: the API and the dashboard never show them again."
-				title={AUTH_LABELS[provider.auth]}
-			/>
-			<Table>
-				<tbody>
-					{provider.fields.map((f) => (
-						<Tr key={f.key}>
-							<Td className="text-muted-foreground w-56">{f.label}</Td>
-							<Td className="text-code font-mono">
-								{conn.credentials[f.key] || "—"}
-							</Td>
-						</Tr>
-					))}
-				</tbody>
-			</Table>
-		</Card>
-	);
-}
-
-function LogsTab({ conn }: { conn: Connection }) {
-	const href = useHref();
-	const ops = useEnv()
-		.env.operations.filter((o) => o.connectionId === conn.id)
-		.slice(0, 40);
-	return (
-		<Card>
-			<CardHeader
-				action={
-					<Link
-						className="text-muted-foreground hover:text-foreground text-sm"
-						href={href(`/logs?connection=${conn.id}`)}
-					>
-						Open in Logs
-					</Link>
-				}
-				title="Recent operations"
-			/>
-			<div className="divide-border divide-y">
-				{ops.map((op) => (
-					<ActivityRow key={op.id} op={op} />
-				))}
-			</div>
-		</Card>
-	);
-}
-
-function SettingsTab({ conn }: { conn: Connection }) {
-	const { env } = useEnv();
-	const integration = env.integrations.find((i) => i.id === conn.integrationId);
-	const [webhook, setWebhook] = useState(conn.webhookOverride ?? "");
-	return (
-		<div className="grid max-w-3xl gap-6">
-			<Card>
-				<CardHeader
-					description={`Defaults to the integration's schedule (${FREQUENCY_LABELS[integration?.syncFrequency ?? "1h"]}).`}
-					title="Sync frequency"
-				/>
-				<div className="px-5 py-4 sm:w-80">
-					<Select
-						ariaLabel="Sync frequency"
-						onChange={(v) => {
-							updateConnectionSettings(env.slug, conn.id, {
-								frequencyOverride:
-									v === "default" ? null : (v as SyncFrequency),
-							});
-							toast.success("Sync frequency updated");
-						}}
-						options={[
-							{ label: "Use integration default", value: "default" },
-							...(Object.keys(FREQUENCY_LABELS) as SyncFrequency[]).map(
-								(f) => ({ label: FREQUENCY_LABELS[f], value: f })
-							),
-						]}
-						value={conn.frequencyOverride ?? "default"}
-					/>
-				</div>
-			</Card>
-			<Card>
-				<CardHeader
-					description="Send this connection's webhooks to a different URL, e.g. a regional deployment."
-					title="Webhook URL override"
-				/>
-				<form
-					className="flex flex-col gap-2 px-5 py-4 sm:flex-row"
-					onSubmit={(e) => {
-						e.preventDefault();
-						updateConnectionSettings(env.slug, conn.id, {
-							webhookOverride: webhook.trim() || null,
-						});
-						toast.success(
-							webhook.trim()
-								? "Webhook override saved"
-								: "Webhook override removed"
-						);
-					}}
-				>
-					<Input
-						aria-label="Webhook URL override"
-						className="font-mono"
-						onChange={(e) => setWebhook(e.target.value)}
-						placeholder="https://eu.api.example.com/webhooks/securefabric"
-						value={webhook}
-					/>
-					<Button type="submit">Save</Button>
-				</form>
-			</Card>
-			<Card className="border-destructive/30">
-				<CardHeader
-					description="Destroys stored credentials and stops syncs immediately. Synced records are purged after 31 days."
-					title="Delete connection"
-				/>
-				<DeleteRow conn={conn} />
-			</Card>
+				description="Send the customer a hosted link to replace credentials or re-install the app. The connection keeps its id and data."
+				title="Re-authorize"
+			>
+				{link ? (
+					<Field help="Valid for 30 minutes, single use" label="Link">
+						<CopyField label="Re-authorization link" value={link} />
+					</Field>
+				) : null}
+			</Section>
 		</div>
 	);
 }
 
-function DeleteRow({ conn }: { conn: Connection }) {
-	const { env } = useEnv();
+function Settings({ connection: c }: { connection: Connection }) {
+	const { client, env } = useEnv();
 	const href = useHref();
 	const router = useRouter();
+	const queryClient = useQueryClient();
+	const connector = useQuery({
+		queryFn: () =>
+			unwrap(
+				api.GET("/v1/connectors/{connector_id}", {
+					params: { path: { connector_id: c.vendor } },
+				})
+			),
+		queryKey: ["connectors", c.vendor],
+	});
+	const [opts, setOpts] = useState<Record<string, unknown>>(c.options);
+	const refresh = () =>
+		queryClient.invalidateQueries({ queryKey: ["connections", env.id] });
+	const patch = useMutation({
+		mutationFn: (body: {
+			state?: "ACTIVE" | "PAUSED";
+			options?: Record<string, unknown>;
+		}) =>
+			unwrap(
+				client.PATCH("/v1/connections/{connection_id}", {
+					body,
+					params: { path: { connection_id: c.id } },
+				})
+			),
+		onError: (e) => toast.error("Couldn't save", { description: errorText(e) }),
+		onSuccess: async () => {
+			toast.success("Saved");
+			await refresh();
+		},
+	});
+	const test = useMutation({
+		mutationFn: () =>
+			unwrap(
+				client.GET("/v1/connections/{connection_id}/test", {
+					params: { path: { connection_id: c.id }, query: { wait: 15 } },
+				})
+			),
+		onError: (e) => toast.error("Test failed", { description: errorText(e) }),
+		onSuccess: (r) =>
+			r.is_valid
+				? toast.success("Credentials work", {
+						description: Object.entries(r.grants)
+							.map(([k, v]) => `${k}: ${v}`)
+							.join(" · "),
+					})
+				: toast.error("Credentials rejected", {
+						description: r.message ?? undefined,
+					}),
+	});
+	const reset = useMutation({
+		mutationFn: () =>
+			unwrap(
+				client.POST("/v1/connections/{connection_id}/reset", {
+					body: { wipe: false },
+					headers: idem(),
+					params: { path: { connection_id: c.id } },
+				})
+			),
+		onError: (e) =>
+			toast.error("Couldn't reset", { description: errorText(e) }),
+		onSuccess: () =>
+			toast.success("Full resync queued", {
+				description: "Cursors cleared; data is kept and reconciled.",
+			}),
+	});
+	const remove = useMutation({
+		mutationFn: () =>
+			unwrap(
+				client.DELETE("/v1/connections/{connection_id}", {
+					params: { path: { connection_id: c.id } },
+				})
+			),
+		onError: (e) =>
+			toast.error("Couldn't delete", { description: errorText(e) }),
+		onSuccess: async () => {
+			await refresh();
+			router.push(href("/connections"));
+		},
+	});
+	const schema = connector.data?.options_schema as JsonSchema | undefined;
 	return (
-		<div className="flex justify-end px-5 py-4">
-			<Button
-				onClick={() => {
-					deleteConnection(env.slug, conn.id);
-					toast.success("Connection deleted");
-					router.push(href("/connections"));
-				}}
-				variant="destructive"
-			>
-				<Trash2Icon />
-				Delete connection
-			</Button>
+		<div className="grid max-w-2xl gap-8">
+			{schema?.properties && Object.keys(schema.properties).length ? (
+				<Section title="Options">
+					<Card className="grid gap-4 p-5">
+						<SchemaForm
+							idPrefix="opts"
+							onChange={setOpts}
+							schema={schema}
+							values={opts}
+						/>
+						<div>
+							<Button
+								disabled={patch.isPending}
+								onClick={() => patch.mutate({ options: compactValues(opts) })}
+								size="sm"
+								variant="primary"
+							>
+								Save options
+							</Button>
+						</div>
+					</Card>
+				</Section>
+			) : null}
+			<Section title="Operations">
+				<Card className="divide-border grid divide-y">
+					<Row
+						description="Calls the vendor with the stored credentials and reports per-stream access."
+						title="Test credentials"
+					>
+						<Button
+							disabled={test.isPending}
+							onClick={() => test.mutate()}
+							size="sm"
+							variant="outline"
+						>
+							Test
+						</Button>
+					</Row>
+					<Row
+						description={
+							c.state === "PAUSED"
+								? "Scheduled syncs are stopped."
+								: "Stops scheduled syncs; data stays readable."
+						}
+						title={c.state === "PAUSED" ? "Resume" : "Pause"}
+					>
+						<Button
+							disabled={
+								patch.isPending ||
+								!(c.state === "ACTIVE" || c.state === "PAUSED")
+							}
+							onClick={() =>
+								patch.mutate({
+									state: c.state === "PAUSED" ? "ACTIVE" : "PAUSED",
+								})
+							}
+							size="sm"
+							variant="outline"
+						>
+							{c.state === "PAUSED" ? "Resume" : "Pause"}
+						</Button>
+					</Row>
+					<Row
+						description="Clears every stream's cursor and runs a full sync; records missing afterwards are deleted."
+						title="Reset"
+					>
+						<Button
+							disabled={reset.isPending}
+							onClick={() => reset.mutate()}
+							size="sm"
+							variant="outline"
+						>
+							Reset
+						</Button>
+					</Row>
+					<Row
+						description="Soft-deletes the connection and its data, and uninstalls where the vendor allows."
+						title="Delete"
+					>
+						<ConfirmButton
+							confirmLabel="Delete connection"
+							description="Its data is soft-deleted and the vendor app is uninstalled where possible. This can't be undone from the dashboard."
+							disabled={remove.isPending}
+							onConfirm={() => remove.mutate()}
+							title="Delete this connection?"
+						>
+							Delete
+						</ConfirmButton>
+					</Row>
+				</Card>
+			</Section>
 		</div>
 	);
 }
 
-function UpdateCredentialsDialog({
-	conn,
-	open,
-	onOpenChange,
+function Row({
+	title,
+	description,
+	children,
 }: {
-	conn: Connection;
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
+	title: string;
+	description: string;
+	children: React.ReactNode;
 }) {
-	const { env } = useEnv();
-	const provider = providerOrThrow(conn.provider);
-	const [values, setValues] = useState<Record<string, string>>({});
-	const complete = provider.fields.every(
-		(f) => f.options || (values[f.key] ?? "").trim()
-	);
 	return (
-		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent
-				description="New credentials replace the stored ones after they validate. A sync starts right away."
-				footer={
-					<>
-						<Button onClick={() => onOpenChange(false)}>Cancel</Button>
-						<Button
-							disabled={!complete}
-							onClick={() => {
-								const filled = { ...values };
-								for (const f of provider.fields) {
-									filled[f.key] = filled[f.key] ?? f.options?.[0]?.value ?? "";
-								}
-								updateCredentials(env.slug, conn.id, filled);
-								onOpenChange(false);
-								toast.success("Credentials updated", {
-									description: "Validated and saved. Syncing now.",
-								});
-							}}
-							variant="primary"
-						>
-							Validate and save
-						</Button>
-					</>
-				}
-				title={`Update ${provider.name} credentials`}
-			>
-				<div className="grid gap-4">
-					{provider.fields.map((f) => (
-						<Field
-							help={f.help}
-							htmlFor={`u-${f.key}`}
-							key={f.key}
-							label={f.label}
-						>
-							{f.options ? (
-								<Select
-									ariaLabel={f.label}
-									onChange={(v) => setValues({ ...values, [f.key]: v })}
-									options={f.options}
-									value={values[f.key] ?? f.options[0]?.value ?? ""}
-								/>
-							) : (
-								<Input
-									autoComplete="off"
-									className="font-mono"
-									id={`u-${f.key}`}
-									onChange={(e) =>
-										setValues({ ...values, [f.key]: e.target.value })
-									}
-									placeholder={f.placeholder}
-									type={f.secret ? "password" : "text"}
-									value={values[f.key] ?? ""}
-								/>
-							)}
-						</Field>
-					))}
+		<div className="flex items-center justify-between gap-4 p-4">
+			<div className="grid gap-0.5">
+				<span className="text-sm font-medium">{title}</span>
+				<span className="text-muted-foreground text-xs">{description}</span>
+			</div>
+			{children}
+		</div>
+	);
+}
+
+// ---------------------------------------------------------------------------
+// Job detail
+
+export function JobView({ id }: { id: string }) {
+	const { client, env } = useEnv();
+	const href = useHref();
+	const queryClient = useQueryClient();
+	const job = useQuery({
+		queryFn: () =>
+			unwrap(
+				client.GET("/v1/jobs/{job_id}", { params: { path: { job_id: id } } })
+			),
+		queryKey: ["job", env.id, id],
+		refetchInterval: (q) =>
+			q.state.data?.status === "QUEUED" || q.state.data?.status === "RUNNING"
+				? 2000
+				: false,
+	});
+	const logs = useQuery({
+		queryFn: () =>
+			unwrap(
+				client.GET("/v1/jobs/{job_id}/logs", {
+					params: { path: { job_id: id }, query: { limit: 500 } },
+				})
+			),
+		queryKey: ["job-logs", env.id, id, job.data?.status],
+	});
+	const cancel = useMutation({
+		mutationFn: () =>
+			unwrap(
+				client.POST("/v1/jobs/{job_id}/cancel", {
+					headers: idem(),
+					params: { path: { job_id: id } },
+				})
+			),
+		onError: (e) =>
+			toast.error("Couldn't cancel", { description: errorText(e) }),
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: ["job", env.id, id] }),
+	});
+	const j = job.data;
+	return (
+		<QueryState query={job}>
+			{j ? (
+				<>
+					<PageHeader
+						actions={
+							j.status === "QUEUED" || j.status === "RUNNING" ? (
+								<Button
+									disabled={cancel.isPending}
+									onClick={() => cancel.mutate()}
+									variant="outline"
+								>
+									Cancel job
+								</Button>
+							) : null
+						}
+						description={
+							<Link
+								className="hover:underline"
+								href={href(`/connections/${j.connection_id}`)}
+							>
+								Connection {j.connection_id.slice(0, 8)}
+							</Link>
+						}
+						title={
+							<span className="flex items-center gap-3">
+								{j.type.toLowerCase()} job{" "}
+								<span className="font-mono text-base">{j.id.slice(0, 8)}</span>
+								<StatusBadge tones={JOB_TONES} value={j.status} />
+							</span>
+						}
+					/>
+					<PageBody className="grid gap-8">
+						<Card className="p-5">
+							<KeyValue
+								items={[
+									{
+										label: "Requested by",
+										value: j.requested_by ?? "schedule",
+									},
+									{ label: "Created", value: <When value={j.created_at} /> },
+									{ label: "Started", value: <When value={j.started_at} /> },
+									{ label: "Finished", value: <When value={j.finished_at} /> },
+									{
+										label: "Health",
+										value: j.health_code ? (
+											<HealthBadge health={j.health_code} />
+										) : (
+											"—"
+										),
+									},
+									{ label: "Failure", value: j.failure_reason ?? "—" },
+								]}
+							/>
+						</Card>
+						<Section title="Streams">
+							<Card>
+								<Table>
+									<thead>
+										<Tr>
+											<Th>Stream</Th>
+											<Th>Mode</Th>
+											<Th>State</Th>
+											<Th className="text-right">Added</Th>
+											<Th className="text-right">Updated</Th>
+											<Th className="text-right">Deleted</Th>
+											<Th className="text-right">Unchanged</Th>
+											<Th className="text-right">Requests</Th>
+										</Tr>
+									</thead>
+									<tbody>
+										{(j.streams ?? []).map((s) => (
+											<Tr key={s.id}>
+												<Td>
+													<div className="font-medium">{s.stream}</div>
+													{s.error ? (
+														<div className="text-destructive max-w-xs text-xs">
+															{String(
+																s.error.message ??
+																	s.error.code ??
+																	JSON.stringify(s.error)
+															)}
+														</div>
+													) : null}
+													{s.warning ? (
+														<div className="text-muted-foreground max-w-xs text-xs">
+															{s.warning}
+														</div>
+													) : null}
+												</Td>
+												<Td className="text-xs">{s.mode.toLowerCase()}</Td>
+												<Td>
+													<Badge>{s.state.toLowerCase()}</Badge>
+												</Td>
+												<Td className="text-right tabular-nums">
+													{num(s.added)}
+												</Td>
+												<Td className="text-right tabular-nums">
+													{num(s.updated)}
+												</Td>
+												<Td className="text-right tabular-nums">
+													{num(s.deleted)}
+												</Td>
+												<Td className="text-right tabular-nums">
+													{num(s.unchanged)}
+												</Td>
+												<Td className="text-right tabular-nums">
+													{num(s.vendor_requests)}
+												</Td>
+											</Tr>
+										))}
+									</tbody>
+								</Table>
+							</Card>
+						</Section>
+						<Section title="Logs">
+							<QueryState
+								empty={{
+									description: "No log lines yet.",
+									title: "Empty",
+									when: (logs.data ?? []).length === 0,
+								}}
+								query={logs}
+							>
+								<LogLines lines={logs.data ?? []} />
+							</QueryState>
+						</Section>
+					</PageBody>
+				</>
+			) : null}
+		</QueryState>
+	);
+}
+
+const LEVEL_CLASS: Record<string, string> = {
+	error: "text-destructive",
+	warn: "text-amber-500",
+	warning: "text-amber-500",
+};
+
+export function LogLines({
+	lines,
+}: {
+	lines: {
+		at: string;
+		level: string;
+		kind: string;
+		message: string;
+		http: Record<string, unknown> | null;
+		stream?: string | null;
+	}[];
+}) {
+	return (
+		<div className="border-border bg-ds-shell max-h-[32rem] overflow-auto rounded-md border font-mono text-xs">
+			{lines.map((l, i) => (
+				<div
+					className="border-border/50 flex gap-3 border-b px-3 py-1.5 last:border-0"
+					// biome-ignore lint/suspicious/noArrayIndexKey: log lines are ordered and immutable
+					key={i}
+				>
+					<span className="text-muted-foreground shrink-0">
+						{l.at.slice(11, 23)}
+					</span>
+					<span
+						className={cn(
+							"shrink-0",
+							LEVEL_CLASS[l.level] ?? "text-muted-foreground"
+						)}
+					>
+						{l.level}
+					</span>
+					{l.stream ? (
+						<span className="text-muted-foreground shrink-0">{l.stream}</span>
+					) : null}
+					<span className="min-w-0 break-all">
+						{l.message}
+						{l.http ? (
+							<span className="text-muted-foreground">
+								{" "}
+								{String(l.http.method ?? "")}{" "}
+								{String(l.http.url ?? l.http.path ?? "")}{" "}
+								{String(l.http.status ?? "")}
+								{l.http.duration_ms === undefined
+									? ""
+									: ` ${String(l.http.duration_ms)}ms`}
+							</span>
+						) : null}
+					</span>
 				</div>
-			</DialogContent>
-		</Dialog>
+			))}
+		</div>
 	);
 }

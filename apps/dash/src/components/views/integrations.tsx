@@ -1,535 +1,514 @@
 "use client";
 
-import { ArrowLeftIcon, BoxesIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { unwrap } from "@securefabric/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { PageBody, PageHeader } from "@/components/common";
 import {
-	CopyField,
-	PageBody,
-	PageHeader,
-	ProviderLogo,
-	Tabs,
-} from "@/components/common";
+	ConnectorLogo,
+	errorText,
+	QueryState,
+	Section,
+	When,
+} from "@/components/kit";
 import { useEnv, useHref } from "@/components/shell/env-context";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Select, Switch } from "@/components/ui/overlay";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, Select, Switch } from "@/components/ui/overlay";
 import {
 	Badge,
 	Card,
-	CardHeader,
-	Dot,
-	EmptyState,
+	Field,
 	Input,
 	Table,
 	Td,
+	Textarea,
 	Th,
 	Tr,
 } from "@/components/ui/primitives";
-import {
-	AUTH_LABELS,
-	MODELS,
-	type ModelKey,
-	providerOrThrow,
-} from "@/lib/catalog";
-import { timeAgo } from "@/lib/format";
-import { INTEGRATION_TABS, type IntegrationTab } from "@/lib/nav";
-import { deleteIntegration, updateIntegration } from "@/lib/store";
-import { useZustandAdapter } from "@/lib/store/adapters/zustand";
-import { DataTableStoreProvider } from "@/lib/store/provider/DataTableStoreProvider";
-import {
-	type Connection,
-	FREQUENCY_LABELS,
-	HEALTH,
-	type Integration,
-	type SyncFrequency,
-} from "@/lib/types";
-import { useSearchParam } from "@/lib/use-search-param";
-import {
-	ConnectionsTable,
-	INTEGRATION_FIXED_FILTERS,
-} from "./connections/connections-table";
-import { filterSchema, useEmbeddedFilterStore } from "./connections/schema";
+import type { Integration } from "@/lib/types";
+
+export function useIntegrations() {
+	const { client, env } = useEnv();
+	return useQuery({
+		queryFn: () => unwrap(client.GET("/v1/integrations")),
+		queryKey: ["integrations", env.id],
+	});
+}
 
 export function IntegrationsView() {
-	const { env } = useEnv();
+	const integrations = useIntegrations();
 	const href = useHref();
-	const router = useRouter();
 	return (
 		<>
 			<PageHeader
 				actions={
-					<Link
-						className={buttonVariants({ variant: "primary" })}
-						href={href("/catalog")}
-					>
-						<PlusIcon />
-						Enable integration
-					</Link>
+					<Button render={<Link href={href("/catalog")} />} variant="primary">
+						Enable a connector
+					</Button>
 				}
-				description={`Integrations enabled in ${env.name}. Each one sets which models sync, how often, and whether sandbox connections are allowed.`}
+				description="Connectors enabled in this environment: which streams run, how often, and which vendor app they use."
 				title="Integrations"
 			/>
-			<PageBody>
-				{env.integrations.length === 0 ? (
-					<EmptyState
-						action={
-							<Link
-								className={buttonVariants({ variant: "primary" })}
-								href={href("/catalog")}
-							>
-								Browse catalog
-							</Link>
-						}
-						description="Pick the tools your customers run from the catalog. You can enable as many as you like."
-						icon={<BoxesIcon className="size-4" />}
-						title="No integrations enabled"
-					/>
-				) : (
-					<Card className="overflow-hidden">
+			<PageBody className="grid gap-8">
+				<QueryState
+					empty={{
+						description:
+							"Enable one from the catalog. Creating a connection with only a vendor name also enables it.",
+						title: "No integrations yet",
+						when: (integrations.data ?? []).length === 0,
+					}}
+					query={integrations}
+				>
+					<Card>
 						<Table>
 							<thead>
-								<tr>
+								<Tr>
 									<Th>Integration</Th>
-									<Th className="hidden md:table-cell">Models</Th>
-									<Th>Connections</Th>
-									<Th className="hidden lg:table-cell">Sync</Th>
-									<Th className="hidden sm:table-cell">Sandbox</Th>
-									<Th className="hidden xl:table-cell">Enabled</Th>
-								</tr>
+									<Th>Streams</Th>
+									<Th>Vendor app</Th>
+									<Th>Write-back</Th>
+									<Th>Created</Th>
+								</Tr>
 							</thead>
 							<tbody>
-								{env.integrations.map((i) => {
-									const p = providerOrThrow(i.provider);
-									const conns = env.connections.filter(
-										(c) => c.integrationId === i.id
-									);
-									const failing = conns.filter(
-										(c) => HEALTH[c.health].tone === "error"
-									).length;
-									return (
-										<Tr
-											className="cursor-pointer"
-											key={i.id}
-											onClick={() => router.push(href(`/integrations/${i.id}`))}
-										>
-											<Td>
-												<Link
-													className="flex items-center gap-3 py-2"
-													href={href(`/integrations/${i.id}`)}
-													onClick={(e) => e.stopPropagation()}
-												>
-													<ProviderLogo provider={p} size={32} />
-													<span className="grid">
-														<span className="font-medium">{p.name}</span>
-														<span className="text-2xs text-muted-foreground font-mono">
-															{i.id}
-														</span>
+								{integrations.data?.map((i) => (
+									<Tr className="hover:bg-muted/40" key={i.id}>
+										<Td>
+											<Link
+												className="flex items-center gap-3"
+												href={href(`/integrations/${i.id}`)}
+											>
+												<ConnectorLogo id={i.connector_id} />
+												<span className="grid">
+													<span className="font-medium">{i.display_name}</span>
+													<span className="text-muted-foreground font-mono text-xs">
+														{i.key}
 													</span>
-												</Link>
-											</Td>
-											<Td className="hidden md:table-cell">
-												<div className="flex flex-wrap gap-1">
-													{i.models.map((m) => (
-														<span
-															className="border-border text-2xs text-muted-foreground rounded border px-1.5 py-0.5 font-mono"
-															key={m}
-														>
-															{MODELS[m].name}
-														</span>
-													))}
-												</div>
-											</Td>
-											<Td>
-												<span className="inline-flex items-center gap-2 tabular-nums">
-													{conns.length}
-													{failing ? (
-														<Badge tone="error">
-															<Dot className="size-1.5" tone="error" />
-															{failing} failing
-														</Badge>
-													) : null}
 												</span>
-											</Td>
-											<Td className="text-muted-foreground hidden lg:table-cell">
-												{FREQUENCY_LABELS[i.syncFrequency]}
-											</Td>
-											<Td className="hidden sm:table-cell">
-												{i.allowSandbox ? (
-													<Badge tone="accent">Allowed</Badge>
-												) : (
-													<span className="text-muted-foreground">Off</span>
-												)}
-											</Td>
-											<Td className="text-muted-foreground hidden xl:table-cell">
-												{timeAgo(i.createdAt)}
-											</Td>
-										</Tr>
-									);
-								})}
+												{i.deprecated ? (
+													<Badge tone="warn">deprecated</Badge>
+												) : null}
+											</Link>
+										</Td>
+										<Td>{i.enabled_streams.length}</Td>
+										<Td className="text-muted-foreground">
+											{i.vendor_app_id ? "Customer-owned" : "Platform default"}
+										</Td>
+										<Td>
+											<Badge tone={i.write_back_enabled ? "accent" : "neutral"}>
+												{i.write_back_enabled ? "on" : "off"}
+											</Badge>
+										</Td>
+										<Td>
+											<When value={i.created_at} />
+										</Td>
+									</Tr>
+								))}
 							</tbody>
 						</Table>
 					</Card>
-				)}
+				</QueryState>
+				<VendorApps />
 			</PageBody>
 		</>
 	);
 }
 
-type Tab = IntegrationTab;
-
-const TAB_VALUES = INTEGRATION_TABS.map((t) => t.value);
+function VendorApps() {
+	const { client, env } = useEnv();
+	const queryClient = useQueryClient();
+	const apps = useQuery({
+		queryFn: () => unwrap(client.GET("/v1/vendor_apps")),
+		queryKey: ["vendor_apps", env.id],
+	});
+	const [open, setOpen] = useState(false);
+	const [form, setForm] = useState({
+		api_base_url: "",
+		app_id: "",
+		base_url: "",
+		client_id: "",
+		client_secret: "",
+		name: "",
+		private_key: "",
+		slug: "",
+		webhook_secret: "",
+	});
+	const create = useMutation({
+		mutationFn: () =>
+			unwrap(
+				client.POST("/v1/vendor_apps", {
+					body: {
+						base_url: form.base_url,
+						config: {
+							api_base_url: form.api_base_url || undefined,
+							app_id: form.app_id,
+							client_id: form.client_id,
+							permission_tier: "read",
+							slug: form.slug,
+						},
+						connector_id: "GITHUB",
+						name: form.name,
+						secrets: {
+							client_secret: form.client_secret,
+							private_key: form.private_key,
+						},
+						webhook_secret: form.webhook_secret || null,
+					},
+				})
+			),
+		onError: (e) =>
+			toast.error("Couldn't register the app", { description: errorText(e) }),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: ["vendor_apps", env.id],
+			});
+			setOpen(false);
+			toast.success("Vendor app registered", {
+				description: "Secrets were sealed to this environment's key.",
+			});
+		},
+	});
+	const set =
+		(k: keyof typeof form) =>
+		(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+			setForm({ ...form, [k]: e.target.value });
+	return (
+		<Section
+			action={
+				<Button onClick={() => setOpen(true)} size="sm" variant="outline">
+					Register a GitHub App
+				</Button>
+			}
+			description="App registrations connections authenticate through. Platform apps are shared; register your own for GitHub Enterprise Server or GHE.com."
+			title="Vendor apps"
+		>
+			<QueryState query={apps}>
+				<Card>
+					<Table>
+						<thead>
+							<Tr>
+								<Th>Name</Th>
+								<Th>Connector</Th>
+								<Th>Base URL</Th>
+								<Th>Owner</Th>
+								<Th>Secrets</Th>
+							</Tr>
+						</thead>
+						<tbody>
+							{apps.data?.map((a) => (
+								<Tr key={a.id}>
+									<Td className="font-medium">{a.name}</Td>
+									<Td>{a.connector_id}</Td>
+									<Td className="font-mono text-xs">{a.base_url}</Td>
+									<Td>
+										<Badge tone={a.owner === "platform" ? "neutral" : "accent"}>
+											{a.owner}
+										</Badge>
+									</Td>
+									<Td className="text-muted-foreground text-xs">
+										{a.secrets_set ? "set" : "missing"} · webhook{" "}
+										{a.webhook_secret_set ? "set" : "missing"}
+									</Td>
+								</Tr>
+							))}
+						</tbody>
+					</Table>
+				</Card>
+			</QueryState>
+			<Dialog onOpenChange={setOpen} open={open}>
+				<DialogContent
+					description="Secrets are write-only: sealed before the request returns and never shown again."
+					footer={
+						<>
+							<Button onClick={() => setOpen(false)}>Cancel</Button>
+							<Button
+								disabled={create.isPending}
+								onClick={() => create.mutate()}
+								variant="primary"
+							>
+								Register
+							</Button>
+						</>
+					}
+					title="Register a GitHub App"
+				>
+					<div className="grid gap-3">
+						<Field htmlFor="va-name" label="Name">
+							<Input id="va-name" onChange={set("name")} value={form.name} />
+						</Field>
+						<Field
+							help="https://github.example.com (GHES) or https://acme.ghe.com"
+							htmlFor="va-base"
+							label="Base URL"
+						>
+							<Input
+								id="va-base"
+								onChange={set("base_url")}
+								value={form.base_url}
+							/>
+						</Field>
+						<Field
+							help="GHES: https://host/api/v3 · GHE.com: https://api.acme.ghe.com"
+							htmlFor="va-api"
+							label="API base URL"
+						>
+							<Input
+								id="va-api"
+								onChange={set("api_base_url")}
+								value={form.api_base_url}
+							/>
+						</Field>
+						<div className="grid grid-cols-2 gap-3">
+							<Field htmlFor="va-appid" label="App ID">
+								<Input
+									id="va-appid"
+									onChange={set("app_id")}
+									value={form.app_id}
+								/>
+							</Field>
+							<Field htmlFor="va-slug" label="Slug">
+								<Input id="va-slug" onChange={set("slug")} value={form.slug} />
+							</Field>
+						</div>
+						<Field htmlFor="va-client" label="Client ID">
+							<Input
+								id="va-client"
+								onChange={set("client_id")}
+								value={form.client_id}
+							/>
+						</Field>
+						<Field htmlFor="va-cs" label="Client secret">
+							<Input
+								id="va-cs"
+								onChange={set("client_secret")}
+								type="password"
+								value={form.client_secret}
+							/>
+						</Field>
+						<Field htmlFor="va-pk" label="Private key (PEM)">
+							<Textarea
+								className="font-mono text-xs"
+								id="va-pk"
+								onChange={set("private_key")}
+								rows={4}
+								value={form.private_key}
+							/>
+						</Field>
+						<Field htmlFor="va-wh" label="Webhook secret">
+							<Input
+								id="va-wh"
+								onChange={set("webhook_secret")}
+								type="password"
+								value={form.webhook_secret}
+							/>
+						</Field>
+					</div>
+				</DialogContent>
+			</Dialog>
+		</Section>
+	);
+}
 
 export function IntegrationView({ id }: { id: string }) {
-	const { env } = useEnv();
-	const href = useHref();
-	const integration = env.integrations.find((i) => i.id === id);
-	if (!integration) {
-		return (
-			<PageBody>
-				<EmptyState
-					action={
-						<Link className={buttonVariants()} href={href("/integrations")}>
-							Back to integrations
-						</Link>
-					}
-					description={`No integration "${id}" is enabled in ${env.name}.`}
-					title="Integration not found"
-				/>
-			</PageBody>
-		);
-	}
-	return <IntegrationDetail integration={integration} />;
-}
-
-function IntegrationDetail({ integration }: { integration: Integration }) {
-	const { env } = useEnv();
-	const href = useHref();
-	const [tab, setTab] = useSearchParam<Tab>("tab", TAB_VALUES, "connections");
-	const p = providerOrThrow(integration.provider);
-	const conns = env.connections.filter(
-		(c) => c.integrationId === integration.id
-	);
-	return (
-		<>
-			<div className="border-border bg-background border-b">
-				<div className="px-4 pt-6 sm:px-8">
-					<Link
-						className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
-						href={href("/integrations")}
-					>
-						<ArrowLeftIcon className="size-3.5" />
-						Integrations
-					</Link>
-					<div className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
-						<div className="flex items-center gap-4">
-							<ProviderLogo provider={p} size={48} />
-							<div className="grid gap-1">
-								<h1 className="tracking-heading text-2xl font-semibold">
-									{p.name}
-								</h1>
-								<p className="text-muted-foreground text-sm">
-									<span className="font-mono">{integration.id}</span> ·{" "}
-									{AUTH_LABELS[p.auth]} ·{" "}
-									{FREQUENCY_LABELS[integration.syncFrequency]}
-								</p>
-							</div>
-						</div>
-						<div className="flex gap-2">
-							<Link
-								className={buttonVariants()}
-								href={href(`/catalog/${p.slug}`)}
-							>
-								Catalog page
-							</Link>
-							<Link
-								className={buttonVariants({ variant: "primary" })}
-								href={href(`/connections?new=1&integration=${integration.id}`)}
-							>
-								<PlusIcon />
-								Add connection
-							</Link>
-						</div>
-					</div>
-					<div>
-						<Tabs
-							onChange={setTab}
-							tabs={[
-								{
-									count: conns.length,
-									label: "Connections",
-									value: "connections",
-								},
-								{ label: "Configuration", value: "configuration" },
-								{ label: "Settings", value: "settings" },
-							]}
-							value={tab}
-						/>
-					</div>
-				</div>
-			</div>
-			<PageBody>
-				{tab === "connections" ? (
-					<ConnectionsTab integration={integration} />
-				) : null}
-				{tab === "configuration" ? (
-					<ConfigurationTab integration={integration} />
-				) : null}
-				{tab === "settings" ? <SettingsTab integration={integration} /> : null}
-			</PageBody>
-		</>
-	);
-}
-
-function ConnectionsTab({ integration }: { integration: Integration }) {
-	const { env } = useEnv();
-	const href = useHref();
-	const conns = env.connections.filter(
-		(c) => c.integrationId === integration.id
-	);
-	if (conns.length === 0) {
-		return (
-			<EmptyState
-				action={
-					<Link
-						className={buttonVariants({ variant: "primary" })}
-						href={href(`/connections?new=1&integration=${integration.id}`)}
-					>
-						Add connection
-					</Link>
-				}
-				description={
-					integration.allowSandbox
-						? "Start with a sandbox connection: no credentials, realistic data."
-						: "Send a customer a Connect link to create the first one."
-				}
-				title="No connections yet"
-			/>
-		);
-	}
-	return (
-		<EmbeddedConnections connections={conns} integrationId={integration.id} />
-	);
-}
-
-/** The same table as the connections page, with its filters in memory
- * (zustand) instead of the URL, which already names the tab. */
-function EmbeddedConnections({
-	connections,
-	integrationId,
-}: {
-	connections: Connection[];
-	integrationId: string;
-}) {
-	const adapter = useZustandAdapter(
-		useEmbeddedFilterStore,
-		filterSchema.definition,
-		{ id: "integration-connections" }
-	);
-	return (
-		<DataTableStoreProvider adapter={adapter}>
-			<ConnectionsTable
-				connections={connections}
-				omitFilters={INTEGRATION_FIXED_FILTERS}
-				tableId={`integration-connections:${integrationId}`}
-			/>
-		</DataTableStoreProvider>
-	);
-}
-
-function ConfigurationTab({ integration }: { integration: Integration }) {
-	const { env } = useEnv();
-	const p = providerOrThrow(integration.provider);
-	const toggleModel = (m: ModelKey): void => {
-		const models = integration.models.includes(m)
-			? integration.models.filter((x) => x !== m)
-			: [...integration.models, m];
-		updateIntegration(env.slug, integration.id, { models });
-		toast.success("Models updated", {
-			description: "Applies from each connection's next sync.",
-		});
-	};
-	const toggleScope = (scope: string): void => {
-		const writeScopes = integration.writeScopes.includes(scope)
-			? integration.writeScopes.filter((x) => x !== scope)
-			: [...integration.writeScopes, scope];
-		updateIntegration(env.slug, integration.id, { writeScopes });
-	};
-	return (
-		<div className="grid max-w-3xl gap-6">
-			<Card>
-				<CardHeader
-					description="Customers see these scopes in SecureFabric Connect before they connect."
-					title="Models"
-				/>
-				<ul className="divide-border divide-y">
-					{p.models.map((m) => (
-						<li
-							className="flex items-center justify-between gap-4 px-5 py-4"
-							key={m}
-						>
-							<div className="grid gap-0.5">
-								<span className="flex items-center gap-2 text-sm">
-									<span className="font-mono">{MODELS[m].name}</span>
-									<span className="text-2xs text-muted-foreground font-mono">
-										{MODELS[m].scope}
-									</span>
-								</span>
-								<span className="text-muted-foreground text-xs">
-									{MODELS[m].description}
-								</span>
-							</div>
-							<Switch
-								ariaLabel={`Sync ${MODELS[m].name}`}
-								checked={integration.models.includes(m)}
-								onChange={() => toggleModel(m)}
-							/>
-						</li>
-					))}
-				</ul>
-			</Card>
-			{p.writeActions.length > 0 ? (
-				<Card>
-					<CardHeader
-						description="Off by default. Connections stay read-only until a customer approves a write scope."
-						title="Write actions"
-					/>
-					<ul className="divide-border divide-y">
-						{p.writeActions.map((a) => (
-							<li
-								className="flex items-center justify-between gap-4 px-5 py-4"
-								key={a.scope}
-							>
-								<div className="grid gap-0.5">
-									<span className="text-sm">{a.name}</span>
-									<span className="text-2xs text-muted-foreground font-mono">
-										{a.endpoint} · {a.scope}
-									</span>
-								</div>
-								<Switch
-									ariaLabel={a.name}
-									checked={integration.writeScopes.includes(a.scope)}
-									onChange={() => toggleScope(a.scope)}
-								/>
-							</li>
-						))}
-					</ul>
-				</Card>
-			) : null}
-			<Card>
-				<CardHeader
-					description="Incremental syncs fetch only what changed. Connections can override this."
-					title="Sync frequency"
-				/>
-				<div className="px-5 py-4 sm:w-80">
-					<Select
-						ariaLabel="Sync frequency"
-						onChange={(v) => {
-							updateIntegration(env.slug, integration.id, { syncFrequency: v });
-							toast.success("Sync frequency updated");
-						}}
-						options={(Object.keys(FREQUENCY_LABELS) as SyncFrequency[]).map(
-							(f) => ({ label: FREQUENCY_LABELS[f], value: f })
-						)}
-						value={integration.syncFrequency}
-					/>
-				</div>
-			</Card>
-			<Card>
-				<div className="flex items-start justify-between gap-4 px-5 py-4">
-					<div className="grid gap-1">
-						<p className="text-sm font-medium">Allow sandbox connections</p>
-						<p className="text-muted-foreground text-sm">
-							Lets you and your customers connect without vendor credentials and
-							read generated data.
-						</p>
-					</div>
-					<Switch
-						ariaLabel="Allow sandbox connections"
-						checked={integration.allowSandbox}
-						onChange={(v) =>
-							updateIntegration(env.slug, integration.id, { allowSandbox: v })
-						}
-					/>
-				</div>
-			</Card>
-		</div>
-	);
-}
-
-const KEY_CHARS = /[^a-z0-9-]/gu;
-
-function SettingsTab({ integration }: { integration: Integration }) {
-	const { env } = useEnv();
+	const { client, env } = useEnv();
 	const href = useHref();
 	const router = useRouter();
-	const [key, setKey] = useState(integration.id);
-	const count = env.connections.filter(
-		(c) => c.integrationId === integration.id
-	).length;
+	const queryClient = useQueryClient();
+	const integration = useQuery({
+		queryFn: () =>
+			unwrap(
+				client.GET("/v1/integrations/{integration_id}", {
+					params: { path: { integration_id: id } },
+				})
+			),
+		queryKey: ["integrations", env.id, id],
+	});
+	const connector = useQuery({
+		enabled: Boolean(integration.data),
+		queryFn: () =>
+			unwrap(
+				client.GET("/v1/connectors/{connector_id}", {
+					params: {
+						path: { connector_id: integration.data?.connector_id ?? "" },
+					},
+				})
+			),
+		queryKey: ["connectors", integration.data?.connector_id],
+	});
+	const apps = useQuery({
+		queryFn: () => unwrap(client.GET("/v1/vendor_apps")),
+		queryKey: ["vendor_apps", env.id],
+	});
+	const update = useMutation({
+		mutationFn: (body: Partial<Integration>) =>
+			unwrap(
+				client.PATCH("/v1/integrations/{integration_id}", {
+					body: body as never,
+					params: { path: { integration_id: id } },
+				})
+			),
+		onError: (e) => toast.error("Couldn't save", { description: errorText(e) }),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: ["integrations", env.id],
+			});
+			toast.success("Saved");
+		},
+	});
+	const remove = useMutation({
+		mutationFn: () =>
+			unwrap(
+				client.DELETE("/v1/integrations/{integration_id}", {
+					params: { path: { integration_id: id } },
+				})
+			),
+		onError: (e) =>
+			toast.error("Couldn't delete", { description: errorText(e) }),
+		onSuccess: () => router.push(href("/integrations")),
+	});
+	const i = integration.data;
+	const streams = (connector.data?.streams ?? []) as {
+		name: string;
+		title: string;
+		interval: { default: number; min: number; max: number };
+	}[];
 	return (
-		<div className="grid max-w-3xl gap-6">
-			<Card>
-				<CardHeader
-					description="Used as integrationId in connect sessions and the API. Renaming breaks code that hard-codes the old ID."
-					title="Integration ID"
-				/>
-				<form
-					className="flex flex-col gap-2 px-5 py-4 sm:flex-row"
-					onSubmit={(e) => {
-						e.preventDefault();
-						if (!key || key === integration.id) {
-							return;
+		<QueryState query={integration}>
+			{i ? (
+				<>
+					<PageHeader
+						actions={
+							<Button onClick={() => remove.mutate()} variant="outline">
+								Delete integration
+							</Button>
 						}
-						if (env.integrations.some((i) => i.id === key)) {
-							toast.error(`"${key}" is already used in ${env.name}`);
-							return;
+						description={`${i.connector_id} ${i.connector_version} · key ${i.key}`}
+						title={
+							<span className="flex items-center gap-3">
+								<ConnectorLogo id={i.connector_id} size={32} />
+								{i.display_name}
+							</span>
 						}
-						updateIntegration(env.slug, integration.id, { id: key });
-						toast.success("Integration ID updated");
-						router.replace(href(`/integrations/${key}`));
-					}}
-				>
-					<Input
-						aria-label="Integration ID"
-						className="font-mono"
-						onChange={(e) =>
-							setKey(e.target.value.toLowerCase().replace(KEY_CHARS, ""))
-						}
-						value={key}
 					/>
-					<Button type="submit">Save</Button>
-				</form>
-			</Card>
-			<Card>
-				<CardHeader
-					description="For OAuth integrations, register this redirect URI in the vendor's app settings."
-					title="Callback URL"
-				/>
-				<div className="px-5 py-4">
-					<CopyField label="Callback URL" value={env.callbackUrl} />
-				</div>
-			</Card>
-			<Card className="border-destructive/30">
-				<CardHeader
-					description={`Deletes the integration and its ${count} connection${count === 1 ? "" : "s"} in ${env.name}. Stored credentials are destroyed.`}
-					title="Delete integration"
-				/>
-				<div className="flex justify-end px-5 py-4">
-					<Button
-						onClick={() => {
-							deleteIntegration(env.slug, integration.id);
-							toast.success("Integration deleted");
-							router.push(href("/integrations"));
-						}}
-						variant="destructive"
-					>
-						<Trash2Icon />
-						Delete integration
-					</Button>
-				</div>
-			</Card>
-		</div>
+					<PageBody className="grid gap-8">
+						<Section
+							description="Streams that run for every connection of this integration, and their default interval"
+							title="Streams"
+						>
+							<Card>
+								<Table>
+									<thead>
+										<Tr>
+											<Th>Stream</Th>
+											<Th>Enabled</Th>
+											<Th>Interval (minutes)</Th>
+										</Tr>
+									</thead>
+									<tbody>
+										{streams.map((s) => {
+											const on = i.enabled_streams.includes(s.name);
+											const current =
+												i.stream_intervals[s.name] ?? s.interval.default;
+											return (
+												<Tr key={s.name}>
+													<Td>
+														<div className="font-medium">{s.title}</div>
+														<div className="text-muted-foreground font-mono text-xs">
+															{s.name}
+														</div>
+													</Td>
+													<Td>
+														<Switch
+															ariaLabel={`Enable ${s.name}`}
+															checked={on}
+															onChange={(v) =>
+																update.mutate({
+																	enabled_streams: v
+																		? [...i.enabled_streams, s.name]
+																		: i.enabled_streams.filter(
+																				(x) => x !== s.name
+																			),
+																})
+															}
+														/>
+													</Td>
+													<Td>
+														<Input
+															className="w-28"
+															defaultValue={current / 60}
+															max={s.interval.max / 60}
+															min={s.interval.min / 60}
+															onBlur={(e) => {
+																const v = Math.round(
+																	Number(e.target.value) * 60
+																);
+																if (v && v !== current) {
+																	update.mutate({
+																		stream_intervals: {
+																			...i.stream_intervals,
+																			[s.name]: v,
+																		},
+																	});
+																}
+															}}
+															type="number"
+														/>
+													</Td>
+												</Tr>
+											);
+										})}
+									</tbody>
+								</Table>
+							</Card>
+						</Section>
+						<Section title="Vendor app and write-back">
+							<Card className="grid gap-4 p-5">
+								<Field
+									help="Which app registration connections authenticate through"
+									label="Vendor app"
+								>
+									<Select
+										onChange={(v) =>
+											update.mutate({
+												vendor_app_id: v === "default" ? null : v,
+											})
+										}
+										options={[
+											{ label: "Platform default", value: "default" },
+											...(apps.data ?? [])
+												.filter(
+													(a) =>
+														a.owner !== "platform" &&
+														a.connector_id === i.connector_id
+												)
+												.map((a) => ({ label: a.name, value: a.id })),
+										]}
+										value={i.vendor_app_id ?? "default"}
+									/>
+								</Field>
+								<div className="flex items-center justify-between gap-4">
+									<div className="grid gap-0.5">
+										<span className="text-sm font-medium">Write-back</span>
+										<span className="text-muted-foreground text-xs">
+											Lets POST
+											/v1/vulnerability_findings/&#123;id&#125;/actions change
+											state at the vendor. GitHub uses the read-and-write app.
+										</span>
+									</div>
+									<Switch
+										ariaLabel="Write-back"
+										checked={i.write_back_enabled}
+										onChange={(v) => update.mutate({ write_back_enabled: v })}
+									/>
+								</div>
+							</Card>
+						</Section>
+					</PageBody>
+				</>
+			) : null}
+		</QueryState>
 	);
 }

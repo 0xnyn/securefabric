@@ -1,8 +1,11 @@
 "use client";
 
+import { unwrap } from "@securefabric/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { Fragment } from "react";
+import { Fragment, useMemo, useState } from "react";
+import { errorText } from "@/components/kit";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -11,6 +14,8 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import { Field, Input } from "@/components/ui/primitives";
 import { Separator } from "@/components/ui/separator";
 import {
 	SidebarInset,
@@ -18,11 +23,9 @@ import {
 	SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { API_URL } from "@/lib/api";
-import { getProvider } from "@/lib/catalog";
-import { NAV_ITEMS, SETTINGS_ITEM } from "@/lib/nav";
-import { refresh, useLoadState, useWorkspace } from "@/lib/store";
-import type { Environment, Workspace } from "@/lib/types";
+import { API_URL, api, envClient } from "@/lib/api";
+import { NAV_ITEMS, OPERATOR_ITEM, SETTINGS_ITEM } from "@/lib/nav";
+import type { Environment } from "@/lib/types";
 import { AppSidebar } from "./app-sidebar";
 import { CommandPalette } from "./command-palette";
 import { useCommandStore } from "./command-store";
@@ -37,30 +40,19 @@ interface Crumb {
 	label: string;
 }
 
-/** The name a detail page's id stands for, so the trail reads "Connections
- * › Acme Corp" rather than a connection ID. */
-function detailLabel(env: Environment, section: string, id: string): string {
-	switch (section) {
-		case "connections":
-			return env.connections.find((c) => c.id === id)?.customer.orgName ?? id;
-		case "catalog":
-			return getProvider(id)?.name ?? id;
-		case "integrations": {
-			const integration = env.integrations.find((i) => i.id === id);
-			return integration ? (getProvider(integration.provider)?.name ?? id) : id;
-		}
-		default:
-			return id;
-	}
-}
-
 function useCrumbs(env: Environment): Crumb[] {
 	const pathname = usePathname();
 	const [, , section = "", id] = pathname.split("/");
 	const base = `/${env.slug}`;
-	const item = [...NAV_ITEMS, SETTINGS_ITEM].find(
+	const item = [...NAV_ITEMS, SETTINGS_ITEM, OPERATOR_ITEM].find(
 		(n) => n.href === (section ? `/${section}` : "")
 	);
+	if (section === "jobs") {
+		return [
+			{ href: `${base}/connections`, label: "Connections" },
+			{ label: `Job ${id?.slice(0, 8) ?? ""}` },
+		];
+	}
 	if (!item) {
 		return [];
 	}
@@ -69,7 +61,7 @@ function useCrumbs(env: Environment): Crumb[] {
 	}
 	return [
 		{ href: `${base}${item.href}`, label: item.label },
-		{ label: detailLabel(env, section, decodeURIComponent(id)) },
+		{ label: decodeURIComponent(id).slice(0, 36) },
 	];
 }
 
@@ -87,7 +79,7 @@ function Header({ env }: { env: Environment }) {
 						</BreadcrumbLink>
 					</BreadcrumbItem>
 					{crumbs.map((c, i) => (
-						<Fragment key={c.label}>
+						<Fragment key={c.href ?? c.label}>
 							<BreadcrumbSeparator
 								className={i === 0 ? "hidden sm:inline-flex" : undefined}
 							/>
@@ -110,8 +102,7 @@ function Header({ env }: { env: Environment }) {
 	);
 }
 
-/** Overlays that any page, the keyboard or the palette can open. */
-function GlobalOverlays({ workspace }: { workspace: Workspace }) {
+function GlobalOverlays() {
 	const createEnvOpen = useCommandStore((s) => s.createEnvOpen);
 	const setCreateEnvOpen = useCommandStore((s) => s.setCreateEnvOpen);
 	return (
@@ -122,13 +113,12 @@ function GlobalOverlays({ workspace }: { workspace: Workspace }) {
 			<CreateEnvironmentDialog
 				onOpenChange={setCreateEnvOpen}
 				open={createEnvOpen}
-				workspace={workspace}
 			/>
 		</>
 	);
 }
 
-function LoadingShell() {
+export function LoadingShell() {
 	return (
 		<div className="bg-sidebar flex h-svh">
 			<div className="hidden w-64 shrink-0 flex-col gap-3 p-4 md:flex">
@@ -144,63 +134,104 @@ function LoadingShell() {
 			<div className="bg-background m-0 grid flex-1 content-start gap-4 p-10 md:m-2 md:ml-0 md:rounded-xl">
 				<Skeleton className="h-8 w-56" />
 				<Skeleton className="h-4 w-96 max-w-full" />
-				<div className="grid gap-4 pt-6 md:grid-cols-4">
-					<Skeleton className="h-28" />
-					<Skeleton className="h-28" />
-					<Skeleton className="h-28" />
-					<Skeleton className="h-28" />
-				</div>
 			</div>
 		</div>
 	);
 }
 
-/** The API can't be reached and nothing has loaded yet. */
-function ApiOffline({ error }: { error: string }) {
+function Centered({ children }: { children: React.ReactNode }) {
 	return (
 		<div className="flex min-h-svh flex-col items-center justify-center gap-4 px-6 text-center">
 			<Logo className="size-8" />
+			{children}
+		</div>
+	);
+}
+
+function ApiOffline({ error, retry }: { error: string; retry: () => void }) {
+	return (
+		<Centered>
 			<h1 className="text-xl font-semibold">
 				Can't reach the SecureFabric API
 			</h1>
 			<p className="text-muted-foreground max-w-md text-sm">
-				The dash reads everything from{" "}
-				<span className="text-foreground font-mono">{API_URL}</span>. Start the
-				stack with <span className="text-foreground font-mono">make dev</span>{" "}
-				(or <span className="text-foreground font-mono">make dev-api</span>),
-				then check{" "}
-				<span className="text-foreground font-mono">make status</span>.
+				The dashboard reads everything from{" "}
+				<span className="text-foreground font-mono">{API_URL}</span>. Start it
+				with <span className="text-foreground font-mono">make dev</span>, then
+				check <span className="text-foreground font-mono">make status</span>.
 			</p>
 			<p className="text-muted-foreground font-mono text-xs">{error}</p>
-			<button
-				className="border-border hover:bg-muted rounded-md border px-3 py-1.5 text-sm"
-				onClick={() => refresh()}
-				type="button"
-			>
+			<Button onClick={retry} variant="outline">
 				Retry now
-			</button>
-		</div>
+			</Button>
+		</Centered>
+	);
+}
+
+/** First sign-in with no account: name it; dev and prod are created for you. */
+function Onboarding() {
+	const queryClient = useQueryClient();
+	const [name, setName] = useState("");
+	const onboard = useMutation({
+		mutationFn: () =>
+			unwrap(
+				api.POST("/v1/onboarding", { body: { account_name: name.trim() } })
+			),
+		onSuccess: () => queryClient.invalidateQueries(),
+	});
+	return (
+		<Centered>
+			<h1 className="text-xl font-semibold">Welcome to SecureFabric</h1>
+			<p className="text-muted-foreground max-w-sm text-sm">
+				Name your account. We create a Development and a Production environment,
+				each with its own keys and vault.
+			</p>
+			<form
+				className="grid w-full max-w-sm gap-3 text-left"
+				onSubmit={(e) => {
+					e.preventDefault();
+					if (name.trim().length >= 2) {
+						onboard.mutate();
+					}
+				}}
+			>
+				<Field htmlFor="account-name" label="Account name">
+					<Input
+						autoFocus
+						id="account-name"
+						onChange={(e) => setName(e.target.value)}
+						value={name}
+					/>
+				</Field>
+				{onboard.isError ? (
+					<p className="text-destructive text-sm">{errorText(onboard.error)}</p>
+				) : null}
+				<Button
+					disabled={onboard.isPending || name.trim().length < 2}
+					type="submit"
+					variant="primary"
+				>
+					Create account
+				</Button>
+			</form>
+		</Centered>
 	);
 }
 
 function MissingEnv({
 	slug,
-	workspace,
+	environments,
 }: {
 	slug: string;
-	workspace: Workspace;
+	environments: Environment[];
 }) {
 	return (
-		<div className="flex min-h-svh flex-col items-center justify-center gap-4 px-6 text-center">
-			<Logo className="size-8" />
+		<Centered>
 			<h1 className="text-xl font-semibold">
 				Environment <span className="font-mono">{slug}</span> doesn't exist
 			</h1>
-			<p className="text-muted-foreground max-w-sm text-sm">
-				It may have been deleted, or the workspace was reset.
-			</p>
-			<div className="flex gap-2">
-				{workspace.environments.map((e) => (
+			<div className="flex flex-wrap justify-center gap-2">
+				{environments.map((e) => (
 					<Link
 						className="border-border hover:bg-muted rounded-md border px-3 py-1.5 text-sm"
 						href={`/${e.slug}`}
@@ -210,41 +241,73 @@ function MissingEnv({
 					</Link>
 				))}
 			</div>
-		</div>
+		</Centered>
 	);
 }
 
+export function useAccount() {
+	const me = useQuery({
+		queryFn: () => unwrap(api.GET("/v1/me")),
+		queryKey: ["me"],
+		retry: 1,
+	});
+	const environments = useQuery({
+		enabled: Boolean(me.data && !me.data.needs_onboarding),
+		queryFn: () => unwrap(api.GET("/v1/environments")),
+		queryKey: ["environments"],
+	});
+	return { environments, me };
+}
+
 /**
- * The app frame: an inset sidebar and a content panel.
- *
- * The frame is exactly the viewport and never scrolls; the panel's `main`
- * does. That keeps the sidebar and header in place, and gives full-height
- * pages (the logs table) a definite height to fill.
+ * The app frame: an inset sidebar and a content panel. The frame never
+ * scrolls; the panel's `main` does.
  */
 export function EnvShell({ children }: { children: React.ReactNode }) {
-	const workspace = useWorkspace();
-	const load = useLoadState();
+	const { me, environments } = useAccount();
 	const params = useParams<{ env: string }>();
-	if (!workspace) {
-		return load.status === "offline" ? (
-			<ApiOffline error={load.error} />
+	const env = environments.data?.find(
+		(e) => e.slug === params.env || e.id === params.env
+	);
+	const client = useMemo(() => (env ? envClient(env.id) : null), [env]);
+	if (me.isError) {
+		return (
+			<ApiOffline error={errorText(me.error)} retry={() => me.refetch()} />
+		);
+	}
+	if (me.data?.needs_onboarding) {
+		return <Onboarding />;
+	}
+	if (!(me.data && environments.data)) {
+		return environments.isError ? (
+			<ApiOffline
+				error={errorText(environments.error)}
+				retry={() => environments.refetch()}
+			/>
 		) : (
 			<LoadingShell />
 		);
 	}
-	const env = workspace.environments.find((e) => e.slug === params.env);
-	if (!env) {
-		return <MissingEnv slug={params.env} workspace={workspace} />;
+	if (!(env && client)) {
+		return <MissingEnv environments={environments.data} slug={params.env} />;
 	}
 	return (
-		<EnvContext value={{ env, workspace }}>
+		<EnvContext
+			value={{
+				client,
+				devMode: me.data.kind === "api_key",
+				env,
+				environments: environments.data,
+				me: me.data,
+			}}
+		>
 			<SidebarProvider className="h-svh overflow-hidden">
 				<AppSidebar />
 				<SidebarInset className="min-h-0 overflow-hidden">
 					<Header env={env} />
 					<div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
 				</SidebarInset>
-				<GlobalOverlays workspace={workspace} />
+				<GlobalOverlays />
 			</SidebarProvider>
 		</EnvContext>
 	);

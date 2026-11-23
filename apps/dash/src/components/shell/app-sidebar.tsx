@@ -49,7 +49,13 @@ import {
 	SidebarRail,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import { focusOf, isActive, NAV_GROUPS, SETTINGS_ITEM } from "@/lib/nav";
+import {
+	focusOf,
+	isActive,
+	NAV_GROUPS,
+	OPERATOR_ITEM,
+	SETTINGS_ITEM,
+} from "@/lib/nav";
 import type { Environment } from "@/lib/types";
 import { useCommandStore } from "./command-store";
 import { FocusedNav } from "./focused-nav";
@@ -62,7 +68,7 @@ function EnvDot({ env, className }: { env: Environment; className?: string }) {
 			aria-hidden="true"
 			className={cn(
 				"size-2 shrink-0 rounded-full",
-				env.isProduction ? "bg-ds-success" : "bg-ds-accent",
+				env.is_production ? "bg-ds-success" : "bg-ds-accent",
 				className
 			)}
 		/>
@@ -77,9 +83,10 @@ function EnvDot({ env, className }: { env: Environment; className?: string }) {
  * section you are in, so comparing Dev and Production logs is one click.
  */
 function WorkspaceSwitcher() {
-	const { env, workspace } = useEnv();
+	const { env, environments, me } = useEnv();
 	const router = useRouter();
 	const pathname = usePathname();
+	const accountName = me.account?.name ?? "SecureFabric";
 	const setCreateEnvOpen = useCommandStore((s) => s.setCreateEnvOpen);
 	const rest = pathname.split("/").slice(2).join("/");
 	return (
@@ -103,7 +110,7 @@ function WorkspaceSwitcher() {
 								<EnvDot env={env} />
 							</span>
 							<span className="text-muted-foreground truncate text-xs">
-								{workspace.team.name} · {workspace.team.plan}
+								{accountName} · {me.account?.plan ?? "free"}
 							</span>
 						</span>
 						<ChevronsUpDownIcon className="text-muted-foreground ml-auto size-4" />
@@ -115,7 +122,7 @@ function WorkspaceSwitcher() {
 					>
 						<DropdownMenuGroup>
 							<DropdownMenuLabel>Environments</DropdownMenuLabel>
-							{workspace.environments.map((e) => (
+							{environments.map((e) => (
 								<DropdownMenuItem
 									key={e.id}
 									onClick={() =>
@@ -142,11 +149,11 @@ function WorkspaceSwitcher() {
 							<DropdownMenuLabel>Team</DropdownMenuLabel>
 							<DropdownMenuItem>
 								<span className="bg-primary text-2xs text-primary-foreground flex size-4 items-center justify-center rounded-full font-semibold">
-									{workspace.team.name[0]}
+									{accountName[0]}
 								</span>
-								<span className="flex-1">{workspace.team.name}</span>
+								<span className="flex-1">{accountName}</span>
 								<span className="text-muted-foreground text-xs">
-									{workspace.team.plan}
+									{me.account?.plan ?? "free"}
 								</span>
 							</DropdownMenuItem>
 							<DropdownMenuItem
@@ -196,6 +203,7 @@ function SearchRow() {
 function PrimaryNav() {
 	const pathname = usePathname();
 	const href = useHref();
+	const { me } = useEnv();
 	return (
 		<>
 			{NAV_GROUPS.map((group) => (
@@ -221,6 +229,25 @@ function PrimaryNav() {
 					</SidebarGroupContent>
 				</SidebarGroup>
 			))}
+			{me.is_operator ? (
+				<SidebarGroup>
+					<SidebarGroupLabel>Operators</SidebarGroupLabel>
+					<SidebarGroupContent>
+						<SidebarMenu>
+							<SidebarMenuItem>
+								<SidebarMenuButton
+									isActive={isActive(pathname, OPERATOR_ITEM.href)}
+									render={<Link href={href(OPERATOR_ITEM.href)} />}
+									tooltip={OPERATOR_ITEM.label}
+								>
+									<OPERATOR_ITEM.icon />
+									<span>{OPERATOR_ITEM.label}</span>
+								</SidebarMenuButton>
+							</SidebarMenuItem>
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</SidebarGroup>
+			) : null}
 		</>
 	);
 }
@@ -309,7 +336,7 @@ function FeedbackDialog({
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }) {
-	const { workspace } = useEnv();
+	const { me } = useEnv();
 	const [kind, setKind] = useState<FeedbackKind>("idea");
 	const [message, setMessage] = useState("");
 	const close = (): void => {
@@ -320,7 +347,9 @@ function FeedbackDialog({
 	const send = (): void => {
 		close();
 		toast.success("Feedback sent", {
-			description: `Thanks. We reply to ${workspace.user.email} within a working day.`,
+			description: me.email
+				? `Thanks. We reply to ${me.email} within a working day.`
+				: "Thanks. We read every message.",
 		});
 	};
 	return (
@@ -388,7 +417,9 @@ function FeedbackDialog({
 }
 
 function UserMenu() {
-	const { workspace } = useEnv();
+	const { me, devMode } = useEnv();
+	const email = me.email ?? (devMode ? "development API key" : "");
+	const name = me.name ?? (devMode ? "Developer mode" : email);
 	const href = useHref();
 	const router = useRouter();
 	const { theme, setTheme } = useTheme();
@@ -405,13 +436,11 @@ function UserMenu() {
 							/>
 						}
 					>
-						<PersonAvatar seed={workspace.user.email} />
+						<PersonAvatar seed={email || me.actor_id} />
 						<span className="grid min-w-0 flex-1 text-left leading-tight">
-							<span className="truncate font-medium">
-								{workspace.user.name}
-							</span>
+							<span className="truncate font-medium">{name}</span>
 							<span className="text-muted-foreground truncate text-xs">
-								{workspace.user.email}
+								{email}
 							</span>
 						</span>
 						<ChevronsUpDownIcon className="text-muted-foreground ml-auto size-4" />
@@ -466,11 +495,16 @@ function UserMenu() {
 						</div>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem
-							onClick={() =>
-								toast.info("Sessions are managed by your identity provider", {
-									description: `Sign out of ${workspace.team.name} SSO to end this session.`,
-								})
-							}
+							onClick={() => {
+								if (devMode) {
+									toast.info("Developer mode", {
+										description:
+											"The dashboard is using SF_DEV_API_KEY. Unset it to sign in with WorkOS.",
+									});
+									return;
+								}
+								window.location.assign("/logout");
+							}}
 						>
 							<LogOutIcon />
 							Sign out

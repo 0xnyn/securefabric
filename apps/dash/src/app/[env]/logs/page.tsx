@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { LogsView } from "@/components/views/logs/logs-view";
+import { LogsView } from "@/components/views/logs";
 
 export const metadata: Metadata = { title: "Logs" };
 

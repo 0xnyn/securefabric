@@ -49,11 +49,32 @@ export const buttonVariants = cva(
 export type ButtonProps = ButtonPrimitive.Props &
 	VariantProps<typeof buttonVariants>;
 
-export function Button({ className, size, variant, ...props }: ButtonProps) {
+/** Whether `render` still produces a native `<button>` (Base UI needs to know:
+ * a link styled as a button must not get button semantics). */
+function rendersNativeButton(render: ButtonProps["render"]): boolean {
+	if (render === undefined) {
+		return true;
+	}
+	return (
+		typeof render === "object" &&
+		render !== null &&
+		"type" in render &&
+		render.type === "button"
+	);
+}
+
+export function Button({
+	className,
+	size,
+	variant,
+	nativeButton,
+	...props
+}: ButtonProps) {
 	return (
 		<ButtonPrimitive
 			className={cn(buttonVariants({ size, variant }), className)}
 			data-slot="button"
+			nativeButton={nativeButton ?? rendersNativeButton(props.render)}
 			{...props}
 		/>
 	);

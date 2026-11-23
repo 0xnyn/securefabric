@@ -45,7 +45,7 @@ export function Field({
 	children,
 	className,
 }: {
-	label: string;
+	label: React.ReactNode;
 	htmlFor?: string;
 	help?: React.ReactNode;
 	children: React.ReactNode;

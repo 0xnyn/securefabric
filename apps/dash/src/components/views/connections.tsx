@@ -1,80 +1,222 @@
 "use client";
 
-import { PlugZapIcon, PlusIcon } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { unwrap } from "@securefabric/client";
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { PageBody, PageHeader } from "@/components/common";
+import {
+	ConnectorLogo,
+	HealthBadge,
+	Pager,
+	QueryState,
+	StatusBadge,
+	useCursorStack,
+	When,
+} from "@/components/kit";
 import { useEnv, useHref } from "@/components/shell/env-context";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/primitives";
-import { useNuqsAdapter } from "@/lib/store/adapters/nuqs";
-import { DataTableStoreProvider } from "@/lib/store/provider/DataTableStoreProvider";
+import { Select } from "@/components/ui/overlay";
+import { Card, Table, Td, Th, Tr } from "@/components/ui/primitives";
+import { HEALTH, STATE_TONES } from "@/lib/types";
 import { AddConnectionDialog } from "./add-connection";
-import { ConnectionsTable } from "./connections/connections-table";
-import { filterSchema } from "./connections/schema";
 
-/**
- * Filters live in the URL, so the sidebar's views (`?status=attention`,
- * `?kind=sandbox`) and ⌘K open a filtered list, and a pasted link reopens it.
- */
-export function ConnectionsView() {
-	const { env } = useEnv();
+const ALL = "all";
+
+/** The connection table, optionally for one organization (CON-13 filters). */
+export function ConnectionsTable({
+	organizationId,
+}: {
+	organizationId?: string;
+}) {
+	const { client, env } = useEnv();
 	const href = useHref();
-	const router = useRouter();
-	const params = useSearchParams();
-	const adapter = useNuqsAdapter(filterSchema.definition, {
-		id: "connections",
+	const pages = useCursorStack();
+	const [vendor, setVendor] = useState(ALL);
+	const [state, setState] = useState(ALL);
+	const [health, setHealth] = useState(ALL);
+	const connections = useQuery({
+		queryFn: () =>
+			unwrap(
+				client.GET("/v1/connections", {
+					params: {
+						query: {
+							cursor: pages.cursor,
+							healthStatusCodes: health === ALL ? undefined : health,
+							limit: 50,
+							organizationId,
+							state: state === ALL ? undefined : state,
+							vendor: vendor === ALL ? undefined : vendor,
+						},
+					},
+				})
+			),
+		queryKey: [
+			"connections",
+			env.id,
+			organizationId,
+			vendor,
+			state,
+			health,
+			pages.cursor,
+		],
 	});
-	const [adding, setAdding] = useState(params.get("new") === "1");
+	const orgs = useQuery({
+		enabled: !organizationId,
+		queryFn: () =>
+			unwrap(
+				client.GET("/v1/organizations", { params: { query: { limit: 500 } } })
+			),
+		queryKey: ["organizations", env.id, "all"],
+	});
+	const orgName = new Map((orgs.data?.items ?? []).map((o) => [o.id, o.name]));
+	const reset =
+		<T,>(fn: (v: T) => void) =>
+		(v: T) => {
+			pages.reset();
+			fn(v);
+		};
+	return (
+		<div className="grid gap-3">
+			<div className="flex flex-wrap gap-2">
+				<Select
+					ariaLabel="Vendor"
+					className="w-40"
+					onChange={reset(setVendor)}
+					options={[
+						{ label: "All vendors", value: ALL },
+						{ label: "GitHub", value: "GITHUB" },
+						{ label: "Sandbox", value: "SANDBOX" },
+					]}
+					size="sm"
+					value={vendor}
+				/>
+				<Select
+					ariaLabel="State"
+					className="w-40"
+					onChange={reset(setState)}
+					options={[ALL, "PENDING", "ACTIVE", "PAUSED", "DELETED"].map((s) => ({
+						label: s === ALL ? "All states" : s.toLowerCase(),
+						value: s,
+					}))}
+					size="sm"
+					value={state}
+				/>
+				<Select
+					ariaLabel="Health"
+					className="w-48"
+					onChange={reset(setHealth)}
+					options={[
+						{ label: "Any health", value: ALL },
+						...Object.entries(HEALTH).map(([k, v]) => ({
+							label: v.label,
+							value: k,
+						})),
+					]}
+					size="sm"
+					value={health}
+				/>
+			</div>
+			<QueryState
+				empty={{
+					description:
+						"Add a connection, or send your customer a connect link.",
+					title: "No connections",
+					when: (connections.data?.items.length ?? 0) === 0,
+				}}
+				query={connections}
+			>
+				<Card>
+					<Table>
+						<thead>
+							<Tr>
+								<Th>Connection</Th>
+								{organizationId ? null : <Th>Organization</Th>}
+								<Th>State</Th>
+								<Th>Health</Th>
+								<Th>Updated</Th>
+							</Tr>
+						</thead>
+						<tbody>
+							{connections.data?.items.map((c) => (
+								<Tr className="hover:bg-muted/40" key={c.id}>
+									<Td>
+										<Link
+											className="flex items-center gap-3"
+											href={href(`/connections/${c.id}`)}
+										>
+											<ConnectorLogo id={c.vendor} />
+											<span className="grid">
+												<span className="font-medium">
+													{c.identifier ?? c.vendor}
+												</span>
+												<span className="text-muted-foreground font-mono text-xs">
+													{c.id.slice(0, 8)}
+												</span>
+											</span>
+											{c.is_sandbox ? (
+												<span className="text-muted-foreground text-xs">
+													sandbox
+												</span>
+											) : null}
+										</Link>
+									</Td>
+									{organizationId ? null : (
+										<Td>
+											<Link
+												className="hover:underline"
+												href={href(`/organizations/${c.organization_id}`)}
+											>
+												{orgName.get(c.organization_id) ??
+													c.organization_id.slice(0, 8)}
+											</Link>
+										</Td>
+									)}
+									<Td>
+										<StatusBadge tones={STATE_TONES} value={c.state} />
+									</Td>
+									<Td>
+										<HealthBadge health={c.health} />
+									</Td>
+									<Td>
+										<When value={c.updated_at} />
+									</Td>
+								</Tr>
+							))}
+						</tbody>
+					</Table>
+				</Card>
+				<Pager
+					count={connections.data?.items.length}
+					hasNext={Boolean(connections.data?.next_cursor)}
+					onNext={() => pages.next(connections.data?.next_cursor)}
+					onPrev={pages.prev}
+					page={pages.page}
+				/>
+			</QueryState>
+		</div>
+	);
+}
 
-	const setOpen = (open: boolean): void => {
-		setAdding(open);
-		if (!open && params.get("new")) {
-			router.replace(href("/connections"));
-		}
-	};
-
+export function ConnectionsView() {
+	const params = useSearchParams();
+	const [open, setOpen] = useState(params.get("new") === "1");
 	return (
 		<>
 			<PageHeader
 				actions={
-					<Button onClick={() => setAdding(true)} variant="primary">
-						<PlusIcon />
+					<Button onClick={() => setOpen(true)} variant="primary">
 						Add connection
 					</Button>
 				}
-				description="One connection per customer account in a tool. Pass its ID in the X-Connection-Id header to read that customer's data."
+				description="One vendor tenant each: its health, what it can read, and when it last synced."
 				title="Connections"
 			/>
 			<PageBody>
-				{env.connections.length === 0 ? (
-					<EmptyState
-						action={
-							<Button onClick={() => setAdding(true)} variant="primary">
-								<PlusIcon />
-								Add connection
-							</Button>
-						}
-						description="Connect a sandbox account to read realistic data now, or send a customer a Connect link."
-						icon={<PlugZapIcon className="size-4" />}
-						title="No connections yet"
-					/>
-				) : (
-					<DataTableStoreProvider adapter={adapter}>
-						{/* Keyed by environment: switching resets selection and paging. */}
-						<ConnectionsTable
-							connections={env.connections}
-							key={env.slug}
-							tableId={`connections:${env.slug}`}
-						/>
-					</DataTableStoreProvider>
-				)}
+				<ConnectionsTable />
 			</PageBody>
-			<AddConnectionDialog
-				initialIntegration={params.get("integration")}
-				onOpenChange={setOpen}
-				open={adding}
-			/>
+			<AddConnectionDialog onOpenChange={setOpen} open={open} />
 		</>
 	);
 }

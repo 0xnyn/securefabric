@@ -1,65 +1,98 @@
 "use client";
 
+import { unwrap } from "@securefabric/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { errorText } from "@/components/kit";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, Select, Switch } from "@/components/ui/overlay";
+import { Dialog, DialogContent, Switch } from "@/components/ui/overlay";
 import { Field, Input } from "@/components/ui/primitives";
-import { createEnvironment, slugifyEnv } from "@/lib/store";
-import type { Workspace } from "@/lib/types";
+import { api } from "@/lib/api";
 
-/** Opened from the environment switcher and from the ⌘K palette. */
+const SLUG = /[^a-z0-9]+/gu;
+
+export function slugifyEnv(value: string): string {
+	return (
+		value
+			.toLowerCase()
+			.replace(SLUG, "-")
+			.replace(/^-+|-+$/gu, "")
+			.slice(0, 40) || "env"
+	);
+}
+
+/** Opened from the environment switcher and from the ⌘K palette (`POST /v1/environments`). */
 export function CreateEnvironmentDialog({
 	open,
 	onOpenChange,
-	workspace,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	workspace: Workspace;
 }) {
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const [name, setName] = useState("Staging");
 	const [slug, setSlug] = useState("staging");
 	const [slugEdited, setSlugEdited] = useState(false);
 	const [isProduction, setIsProduction] = useState(false);
-	const [copyFrom, setCopyFrom] = useState<string>("dev");
-	const submit = async (e: React.FormEvent): Promise<void> => {
-		e.preventDefault();
-		if (!name.trim()) {
-			return;
-		}
-		const created = await createEnvironment({
-			copyFrom: copyFrom === "none" ? null : copyFrom,
-			isProduction,
-			name: name.trim(),
-			slug: slugifyEnv(slug || name),
-		});
-		onOpenChange(false);
-		toast.success(`Environment "${name}" created`, {
-			description: "It has its own keys, integrations, connections and logs.",
-		});
-		router.push(`/${created}`);
-	};
+	const create = useMutation({
+		mutationFn: () =>
+			unwrap(
+				api.POST("/v1/environments", {
+					body: {
+						is_production: isProduction,
+						name: name.trim(),
+						slug: slugifyEnv(slug || name),
+					},
+				})
+			),
+		onError: (e) =>
+			toast.error("Couldn't create the environment", {
+				description: errorText(e),
+			}),
+		onSuccess: async (env) => {
+			await queryClient.invalidateQueries({ queryKey: ["environments"] });
+			onOpenChange(false);
+			toast.success(`Environment "${env.name}" created`, {
+				description:
+					"It has its own keys, vault key, integrations, connections and logs.",
+			});
+			router.push(`/${env.slug}`);
+		},
+	});
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent
-				description="Environments isolate keys, integrations, connections, webhooks and logs. Use one per stage of your pipeline."
+				description="Environments isolate keys, data, webhooks and the vault key. Use one per stage of your pipeline."
 				footer={
 					<>
 						<Button onClick={() => onOpenChange(false)}>Cancel</Button>
-						<Button form="create-env" type="submit" variant="primary">
+						<Button
+							disabled={create.isPending}
+							form="create-env"
+							type="submit"
+							variant="primary"
+						>
 							Create environment
 						</Button>
 					</>
 				}
 				title="Create environment"
 			>
-				<form className="grid gap-5" id="create-env" onSubmit={submit}>
+				<form
+					className="grid gap-5"
+					id="create-env"
+					onSubmit={(e) => {
+						e.preventDefault();
+						if (name.trim()) {
+							create.mutate();
+						}
+					}}
+				>
 					<Field htmlFor="env-name" label="Name">
 						<Input
-							autoFocus
 							id="env-name"
 							onChange={(e) => {
 								setName(e.target.value);
@@ -71,7 +104,7 @@ export function CreateEnvironmentDialog({
 						/>
 					</Field>
 					<Field
-						help={`URLs and API references use the slug: /${slug || "…"}/connections`}
+						help="Used in URLs and the X-Environment-Id header."
 						htmlFor="env-slug"
 						label="Slug"
 					>
@@ -80,42 +113,21 @@ export function CreateEnvironmentDialog({
 							id="env-slug"
 							onChange={(e) => {
 								setSlugEdited(true);
-								setSlug(slugifyEnv(e.target.value));
+								setSlug(e.target.value);
 							}}
 							value={slug}
 						/>
 					</Field>
-					<Field
-						help="Copies enabled integrations, environment variables and Connect branding. Connections and keys are never copied."
-						label="Start from"
-					>
-						<Select
-							ariaLabel="Copy settings from"
-							onChange={setCopyFrom}
-							options={[
-								{ label: "Empty environment", value: "none" },
-								...workspace.environments.map((e) => ({
-									label: `Copy from ${e.name}`,
-									value: e.slug,
-								})),
-							]}
-							value={copyFrom}
-						/>
-					</Field>
-					<div className="border-border flex items-start justify-between gap-4 rounded-lg border p-4">
-						<div className="grid gap-1">
-							<label className="text-sm font-medium" htmlFor="env-prod">
-								Production environment
-							</label>
-							<p className="text-muted-foreground text-sm">
-								Issues <span className="text-code font-mono">sk_live_</span>{" "}
-								keys, disables sandbox connections and limits Contributors to
-								read-only.
-							</p>
+					<div className="flex items-center justify-between gap-4">
+						<div className="grid gap-0.5">
+							<span className="text-sm font-medium">Production</span>
+							<span className="text-muted-foreground text-xs">
+								API keys are issued as sfk_live_….
+							</span>
 						</div>
 						<Switch
+							ariaLabel="Production"
 							checked={isProduction}
-							id="env-prod"
 							onChange={setIsProduction}
 						/>
 					</div>

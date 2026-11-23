@@ -4,13 +4,9 @@ import { color } from "@securefabric/tokens/tokens";
 import { cn } from "@securefabric/ui/lib/utils";
 import BoringAvatar from "boring-avatars";
 import { CheckIcon, CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
-import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
-import { getProvider, type Provider } from "@/lib/catalog";
 import { mask } from "@/lib/format";
-import { HEALTH, type HealthCode, type OperationStatus } from "@/lib/types";
-import { Badge, Dot, type Tone } from "./ui/primitives";
 
 // ---------------------------------------------------------------------------
 // Copy
@@ -99,7 +95,6 @@ export function CopyField({
 const JSON_LINE =
 	/^(?<indent>\s*)(?<key>"[^"]+":\s?)?(?<value>.*?)(?<comma>,?)$/u;
 const COMMENT_LINE = /^\s*(?:\/\/|#)/u;
-const WHITESPACE = /\s+/u;
 
 function CodeLine({ line, json }: { line: string; json: boolean }) {
 	if (COMMENT_LINE.test(line)) {
@@ -218,120 +213,6 @@ export function CodeTabs({
 				</div>
 			}
 		/>
-	);
-}
-
-// ---------------------------------------------------------------------------
-// Logos
-
-export function ProviderLogo({
-	provider,
-	size = 32,
-	className,
-}: {
-	provider: Provider | string;
-	size?: number;
-	className?: string;
-}) {
-	const p = typeof provider === "string" ? getProvider(provider) : provider;
-	const name = p?.name ?? String(provider);
-	const style = { height: size, width: size };
-	if (p?.logo) {
-		return (
-			<span
-				className={cn(
-					"border-border bg-ds-bg inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md border",
-					className
-				)}
-				style={{ ...style, padding: Math.round(size * 0.15) }}
-			>
-				<Image
-					alt=""
-					className="size-full object-contain"
-					height={size}
-					src={`/integrations/${p.logo}`}
-					unoptimized
-					width={size}
-				/>
-			</span>
-		);
-	}
-	const initials = name
-		.split(WHITESPACE)
-		.map((w) => w[0])
-		.join("")
-		.slice(0, 2)
-		.toUpperCase();
-	return (
-		<span
-			aria-hidden="true"
-			className={cn(
-				"border-border bg-muted text-muted-foreground inline-flex shrink-0 items-center justify-center rounded-md border font-semibold",
-				className
-			)}
-			style={{ ...style, fontSize: Math.max(9, size * 0.34) }}
-		>
-			{initials}
-		</span>
-	);
-}
-
-// ---------------------------------------------------------------------------
-// Status
-
-export function HealthBadge({ health }: { health: HealthCode }) {
-	const info = HEALTH[health];
-	return (
-		<Badge tone={info.tone === "ok" ? "ok" : info.tone}>
-			<Dot className="size-1.5" tone={info.tone} />
-			{info.label}
-		</Badge>
-	);
-}
-
-const OP_TONES: Record<OperationStatus, Tone> = {
-	failed: "error",
-	running: "busy",
-	success: "ok",
-	warning: "warn",
-};
-
-const OP_LABELS: Record<OperationStatus, string> = {
-	failed: "Failed",
-	running: "Running",
-	success: "Success",
-	warning: "Warning",
-};
-
-export function OpStatus({ status }: { status: OperationStatus }) {
-	return (
-		<span className="inline-flex items-center gap-2 text-sm">
-			<Dot tone={OP_TONES[status]} />
-			{OP_LABELS[status]}
-		</span>
-	);
-}
-
-const SEVERITY_TONES: Record<string, string> = {
-	critical: "bg-ds-warn",
-	high: "bg-ds-severity-high",
-	info: "bg-ds-line-accent",
-	low: "bg-ds-muted",
-	medium: "bg-ds-severity-medium",
-};
-
-export function Severity({ value }: { value: string }) {
-	return (
-		<span className="inline-flex items-center gap-1.5 text-sm capitalize">
-			<span
-				aria-hidden="true"
-				className={cn(
-					"h-3 w-1 rounded-full",
-					SEVERITY_TONES[value] ?? "bg-ds-muted"
-				)}
-			/>
-			{value}
-		</span>
 	);
 }
 

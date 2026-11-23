@@ -1,25 +1,20 @@
 "use client";
 
+import { unwrap } from "@securefabric/client";
+import { useQuery } from "@tanstack/react-query";
 import {
-	ArrowRightIcon,
-	BoxesIcon,
-	CopyIcon,
+	Building2Icon,
+	CableIcon,
 	KeyboardIcon,
 	LayersIcon,
 	MoonIcon,
 	PanelLeftIcon,
 	PlusIcon,
-	RefreshCwIcon,
-	RotateCcwIcon,
-	ScrollTextIcon,
 	SunIcon,
-	TerminalIcon,
 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import type { ReactNode } from "react";
-import { toast } from "sonner";
-import { ProviderLogo } from "@/components/common";
 import { useEnv, useHref } from "@/components/shell/env-context";
 import {
 	Command,
@@ -33,18 +28,9 @@ import {
 	CommandShortcut,
 } from "@/components/ui/command";
 import { useSidebar } from "@/components/ui/sidebar";
-import { getProvider, PROVIDERS } from "@/lib/catalog";
-import { ENDPOINTS } from "@/lib/endpoints";
-import { LOG_VIEWS } from "@/lib/log-views";
-import { NAV_ITEMS, SETTINGS_SECTIONS } from "@/lib/nav";
-import { resetPlayground, triggerSync } from "@/lib/store";
-import { HEALTH } from "@/lib/types";
+import { NAV_ITEMS, OPERATOR_ITEM, SETTINGS_SECTIONS } from "@/lib/nav";
 import { useCommandStore } from "./command-store";
 import { ShortcutKeys } from "./shortcut-keys";
-
-/** The catalog has ~70 tools: noise under a heading nobody scrolled to,
- * but the fastest way to reach one once two letters are typed. */
-const CATALOG_MIN_QUERY = 2;
 
 /** A prefix match on the label beats a substring buried in the keywords. */
 function score(value: string, search: string, keywords?: string[]): number {
@@ -60,84 +46,6 @@ function score(value: string, search: string, keywords?: string[]): number {
 		return 0.7;
 	}
 	return keywords?.some((k) => k.toLowerCase().includes(needle)) ? 0.4 : 0;
-}
-
-/**
- * Items relevant to the page you're on, listed first. Someone pressing ⌘K
- * on a connection most likely wants to do something to that connection.
- */
-function useSuggestions(
-	run: (fn: () => void) => void,
-	go: (path: string) => void
-) {
-	const pathname = usePathname();
-	const { env } = useEnv();
-	const [, , section, id] = pathname.split("/");
-	const items: {
-		id: string;
-		label: string;
-		icon: ReactNode;
-		onSelect: () => void;
-	}[] = [];
-
-	if (section === "connections" && id) {
-		const conn = env.connections.find((c) => c.id === id);
-		if (conn) {
-			items.push(
-				{
-					icon: <RefreshCwIcon />,
-					id: "sync",
-					label: `Sync ${conn.customer.orgName} now`,
-					onSelect: () =>
-						run(() => {
-							triggerSync(env.slug, conn.id);
-							toast.success("Sync started");
-						}),
-				},
-				{
-					icon: <ScrollTextIcon />,
-					id: "logs",
-					label: "Open this connection's logs",
-					onSelect: () => go(`/logs?connection=${conn.id}`),
-				},
-				{
-					icon: <TerminalIcon />,
-					id: "try",
-					label: "Try the API with this connection",
-					onSelect: () => go(`/playground?connection=${conn.id}`),
-				},
-				{
-					icon: <CopyIcon />,
-					id: "copy",
-					label: "Copy connection ID",
-					onSelect: () =>
-						run(() => {
-							navigator.clipboard.writeText(conn.id);
-							toast.success("Connection ID copied");
-						}),
-				}
-			);
-		}
-	}
-	if (section === "logs") {
-		for (const view of LOG_VIEWS.slice(1, 4)) {
-			items.push({
-				icon: <view.icon />,
-				id: `view:${view.id}`,
-				label: `Show ${view.label.toLowerCase()}`,
-				onSelect: () => go(`/logs?${view.query}`),
-			});
-		}
-	}
-	if (section === "integrations" && id) {
-		items.push({
-			icon: <PlusIcon />,
-			id: "add",
-			label: `Add a connection to ${id}`,
-			onSelect: () => go(`/connections?new=1&integration=${id}`),
-		});
-	}
-	return items;
 }
 
 function Item({
@@ -173,36 +81,41 @@ function Item({
 	);
 }
 
-/**
- * ⌘K: the fastest path to anything.
- *
- * Built on cmdk, which gets the tedious parts right (filtering, the arrow
- * loop across groups, keeping the selection in view). What's left is
- * deciding what belongs in the list, and in what order: what fits this page,
- * then commands (someone typing "new" wants to make something), then places,
- * then the things in this environment by name.
- */
+/** ⌘K: commands, places, and connections and organizations by name (live from the API). */
 export function CommandPalette() {
 	const { open, setOpen, query, setQuery, setHelpOpen, setCreateEnvOpen } =
 		useCommandStore();
 	const router = useRouter();
 	const href = useHref();
-	const { env, workspace } = useEnv();
+	const { env, client, me } = useEnv();
 	const { resolvedTheme, setTheme } = useTheme();
 	const { toggleSidebar } = useSidebar();
-
+	const connections = useQuery({
+		enabled: open,
+		queryFn: () =>
+			unwrap(
+				client.GET("/v1/connections", { params: { query: { limit: 100 } } })
+			),
+		queryKey: ["palette", env.id, "connections"],
+	});
+	const orgs = useQuery({
+		enabled: open,
+		queryFn: () =>
+			unwrap(
+				client.GET("/v1/organizations", { params: { query: { limit: 100 } } })
+			),
+		queryKey: ["palette", env.id, "organizations"],
+	});
+	const orgName = new Map((orgs.data?.items ?? []).map((o) => [o.id, o.name]));
 	const run = (fn: () => void): void => {
 		setOpen(false);
 		fn();
 	};
 	const go = (path: string): void => run(() => router.push(href(path)));
-	const suggestions = useSuggestions(run, go);
-	const searchingCatalog = query.trim().length >= CATALOG_MIN_QUERY;
-
 	return (
 		<CommandDialog
 			className="sm:max-w-xl"
-			description="Search pages, connections, integrations and commands"
+			description="Search pages, connections, organizations and commands"
 			onOpenChange={setOpen}
 			open={open}
 			title="Command palette"
@@ -215,256 +128,124 @@ export function CommandPalette() {
 				/>
 				<CommandList className="max-h-[min(26rem,60svh)]">
 					<CommandEmpty>Nothing matches “{query}”.</CommandEmpty>
-
-					{suggestions.length > 0 ? (
-						<CommandGroup heading="Suggested">
-							{suggestions.map((s) => (
-								<Item
-									icon={s.icon}
-									key={s.id}
-									onSelect={s.onSelect}
-									value={s.label}
-								>
-									{s.label}
-								</Item>
-							))}
-						</CommandGroup>
-					) : null}
-
 					<CommandGroup heading="Commands">
 						<Item
 							icon={<PlusIcon />}
-							keywords={["new", "create", "sandbox"]}
+							keywords={["new", "create", "connect", "sandbox"]}
 							onSelect={() => go("/connections?new=1")}
 							value="Add connection"
 						>
 							Add connection
 						</Item>
 						<Item
-							icon={<BoxesIcon />}
-							keywords={["new", "enable", "catalog"]}
-							onSelect={() => go("/catalog")}
-							value="Enable an integration"
+							icon={<Building2Icon />}
+							keywords={["new", "customer"]}
+							onSelect={() => go("/organizations?new=1")}
+							value="Add organization"
 						>
-							Enable an integration
+							Add organization
 						</Item>
 						<Item
 							icon={<LayersIcon />}
 							keywords={["new", "staging", "production"]}
-							onSelect={() => setCreateEnvOpen(true)}
+							onSelect={() => run(() => setCreateEnvOpen(true))}
 							value="Create environment"
 						>
 							Create environment
 						</Item>
 						<Item
 							icon={resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />}
-							keywords={["dark", "light", "appearance", "theme"]}
+							keywords={["theme", "dark", "light"]}
 							onSelect={() =>
 								run(() => setTheme(resolvedTheme === "dark" ? "light" : "dark"))
 							}
-							shortcut="theme"
 							value="Toggle theme"
 						>
-							Switch to {resolvedTheme === "dark" ? "light" : "dark"} theme
+							Toggle theme
 						</Item>
 						<Item
 							icon={<PanelLeftIcon />}
-							keywords={["collapse", "expand", "navigation"]}
 							onSelect={() => run(toggleSidebar)}
-							shortcut="sidebar"
 							value="Toggle sidebar"
 						>
 							Toggle sidebar
 						</Item>
 						<Item
 							icon={<KeyboardIcon />}
-							keywords={["help", "keys", "hotkeys"]}
-							onSelect={() => setHelpOpen(true)}
-							shortcut="help"
+							onSelect={() => run(() => setHelpOpen(true))}
 							value="Keyboard shortcuts"
 						>
 							Keyboard shortcuts
 						</Item>
-						<Item
-							icon={<CopyIcon />}
-							keywords={["api key", "sk_", "token"]}
-							onSelect={() =>
-								run(() => {
-									navigator.clipboard.writeText(env.keys.secret);
-									toast.success(`${env.name} secret key copied`);
-								})
-							}
-							value="Copy secret key"
-						>
-							Copy {env.name} secret key
-						</Item>
-						<Item
-							icon={<RotateCcwIcon />}
-							keywords={["reset", "seed", "clear"]}
-							onSelect={() =>
-								run(() => {
-									resetPlayground();
-									router.push("/dev");
-									toast.success("Workspace reset");
-								})
-							}
-							value="Reset workspace"
-						>
-							Reset workspace
-						</Item>
 					</CommandGroup>
-
 					<CommandSeparator />
 					<CommandGroup heading="Go to">
-						{NAV_ITEMS.map((item) => (
+						{NAV_ITEMS.map((n) => (
 							<Item
-								icon={<item.icon />}
-								key={item.href}
-								keywords={[item.description]}
-								onSelect={() => go(item.href)}
-								shortcut={`go:${item.href || "/"}`}
-								value={item.label}
+								icon={<n.icon />}
+								key={n.href}
+								keywords={[n.description]}
+								onSelect={() => go(n.href)}
+								value={n.label}
 							>
-								{item.label}
+								{n.label}
 							</Item>
 						))}
-					</CommandGroup>
-
-					{env.connections.length > 0 ? (
-						<CommandGroup heading="Connections">
-							{env.connections.map((c) => (
-								<Item
-									hint={HEALTH[c.health].label}
-									icon={<ProviderLogo provider={c.provider} size={16} />}
-									key={c.id}
-									keywords={[
-										c.id,
-										c.customer.email,
-										c.integrationId,
-										"connection",
-									]}
-									onSelect={() => go(`/connections/${c.id}`)}
-									value={c.customer.orgName}
-								>
-									{c.customer.orgName}
-								</Item>
-							))}
-						</CommandGroup>
-					) : null}
-
-					{env.integrations.length > 0 ? (
-						<CommandGroup heading="Integrations">
-							{env.integrations.map((i) => (
-								<Item
-									hint={getProvider(i.provider)?.name}
-									icon={<ProviderLogo provider={i.provider} size={16} />}
-									key={i.id}
-									keywords={[
-										getProvider(i.provider)?.name ?? "",
-										"integration",
-									]}
-									onSelect={() => go(`/integrations/${i.id}`)}
-									value={i.id}
-								>
-									<span className="font-mono">{i.id}</span>
-								</Item>
-							))}
-						</CommandGroup>
-					) : null}
-
-					<CommandGroup heading="Log views">
-						{LOG_VIEWS.map((v) => (
+						{me.is_operator ? (
 							<Item
-								icon={<v.icon />}
-								key={v.id}
-								keywords={[v.description, "logs"]}
-								onSelect={() => go(`/logs${v.query ? `?${v.query}` : ""}`)}
-								value={`Logs: ${v.label}`}
+								icon={<OPERATOR_ITEM.icon />}
+								keywords={["admin", "operator", OPERATOR_ITEM.description]}
+								onSelect={() => go(OPERATOR_ITEM.href)}
+								value={OPERATOR_ITEM.label}
 							>
-								Logs: {v.label}
+								{OPERATOR_ITEM.label}
 							</Item>
-						))}
-					</CommandGroup>
-
-					<CommandGroup heading="API endpoints">
-						{ENDPOINTS.map((e) => (
-							<Item
-								hint={<span className="font-mono">{e.method}</span>}
-								icon={<TerminalIcon />}
-								key={e.id}
-								keywords={[e.path, e.description, "api", "endpoint"]}
-								onSelect={() => go(`/playground?endpoint=${e.id}`)}
-								value={e.title}
-							>
-								{e.title}
-							</Item>
-						))}
-					</CommandGroup>
-
-					{searchingCatalog ? (
-						<CommandGroup heading="Catalog">
-							{PROVIDERS.map((p) => (
-								<Item
-									hint={p.status === "soon" ? "Coming soon" : undefined}
-									icon={<ProviderLogo provider={p} size={16} />}
-									key={p.slug}
-									keywords={[p.description, ...p.categories]}
-									onSelect={() => go(`/catalog/${p.slug}`)}
-									value={p.name}
-								>
-									{p.name}
-								</Item>
-							))}
-						</CommandGroup>
-					) : null}
-
-					<CommandGroup heading="Settings">
+						) : null}
 						{SETTINGS_SECTIONS.map((s) => (
 							<Item
 								icon={<s.icon />}
 								key={s.value}
-								keywords={[s.description, "settings"]}
+								keywords={["settings", s.description]}
 								onSelect={() => go(`/settings?tab=${s.value}`)}
 								value={`Settings: ${s.label}`}
 							>
-								{s.label}
-								<span className="text-muted-foreground"> · Settings</span>
+								Settings: {s.label}
 							</Item>
 						))}
 					</CommandGroup>
-
-					{workspace.environments.length > 1 ? (
-						<CommandGroup heading="Switch environment">
-							{workspace.environments
-								.filter((e) => e.id !== env.id)
-								.map((e) => (
-									<Item
-										icon={<ArrowRightIcon />}
-										key={e.id}
-										keywords={[e.slug, "environment", "switch"]}
-										onSelect={() => run(() => router.push(`/${e.slug}`))}
-										value={`Switch to ${e.name}`}
-									>
-										Switch to {e.name}
-									</Item>
-								))}
+					{(connections.data?.items.length ?? 0) > 0 ? (
+						<CommandGroup heading="Connections">
+							{connections.data?.items.map((c) => (
+								<Item
+									hint={c.vendor}
+									icon={<CableIcon />}
+									key={c.id}
+									keywords={[c.id, c.identifier ?? "", c.vendor]}
+									onSelect={() => go(`/connections/${c.id}`)}
+									value={`${orgName.get(c.organization_id) ?? "Connection"} ${c.identifier ?? c.id}`}
+								>
+									{orgName.get(c.organization_id) ?? c.identifier ?? c.id}
+								</Item>
+							))}
+						</CommandGroup>
+					) : null}
+					{(orgs.data?.items.length ?? 0) > 0 ? (
+						<CommandGroup heading="Organizations">
+							{orgs.data?.items.map((o) => (
+								<Item
+									hint={o.identifier}
+									icon={<Building2Icon />}
+									key={o.id}
+									keywords={[o.id, o.identifier]}
+									onSelect={() => go(`/organizations/${o.id}`)}
+									value={`${o.name} ${o.identifier}`}
+								>
+									{o.name}
+								</Item>
+							))}
 						</CommandGroup>
 					) : null}
 				</CommandList>
-				<div className="border-border text-muted-foreground flex items-center gap-4 border-t px-3 py-2 text-xs">
-					<span className="flex items-center gap-1.5">
-						<ShortcutKeys keys={["↑", "↓"]} /> Navigate
-					</span>
-					<span className="flex items-center gap-1.5">
-						<ShortcutKeys keys={["↵"]} /> Open
-					</span>
-					<span className="flex items-center gap-1.5">
-						<ShortcutKeys keys={["esc"]} /> Close
-					</span>
-					<span className="ml-auto flex items-center gap-1.5">
-						<ShortcutKeys keys={["?"]} /> Shortcuts
-					</span>
-				</div>
 			</Command>
 		</CommandDialog>
 	);
