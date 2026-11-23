@@ -16,18 +16,20 @@ import {
 	ShieldCheckIcon,
 	ShieldEllipsisIcon,
 	SlidersHorizontalIcon,
-	TerminalIcon,
 	UsersIcon,
 	WebhookIcon,
 } from "lucide-react";
+import type { Access, Requirement } from "@/lib/access";
 
 /** One place in the app. `href` is relative to the environment
- * (`/dev` + href). `shortcut` is the second key of the "G then X" chord. */
+ * (`/dev` + href). `shortcut` is the second key of the "G then X" chord.
+ * `requires` hides it from people whose role can't use it (lib/access.ts). */
 export interface NavItem {
 	description: string;
 	href: string;
 	icon: LucideIcon;
 	label: string;
+	requires?: Requirement;
 	shortcut: string;
 }
 
@@ -36,6 +38,9 @@ export interface NavGroup {
 	/** Omitted for the first group, which needs no heading. */
 	label?: string;
 }
+
+/** The public documentation: guides, connector pages and the API reference. */
+export const DOCS_URL = "https://docs.securefabric.dev";
 
 /**
  * The main sidebar, grouped by job: connect tools, read the data they produce,
@@ -46,7 +51,7 @@ export const NAV_GROUPS: NavGroup[] = [
 	{
 		items: [
 			{
-				description: "Health, freshness, findings and recent jobs",
+				description: "Sync health, new findings and recent activity",
 				href: "",
 				icon: HouseIcon,
 				label: "Overview",
@@ -57,31 +62,35 @@ export const NAV_GROUPS: NavGroup[] = [
 	{
 		items: [
 			{
-				description: "Every connector, from its manifest",
+				description: "Every tool you can connect, and what each one syncs",
 				href: "/catalog",
 				icon: BoxesIcon,
 				label: "Catalog",
 				shortcut: "A",
 			},
 			{
-				description: "Connectors enabled in this environment",
+				description: "Tools turned on for this environment",
 				href: "/integrations",
 				icon: BlocksIcon,
 				label: "Integrations",
+				requires: { scope: "provisioning:read" },
 				shortcut: "I",
 			},
 			{
-				description: "Your customers and their connections",
+				description: "Your customers and the tools they've connected",
 				href: "/organizations",
 				icon: Building2Icon,
 				label: "Organizations",
+				requires: { scope: "provisioning:read" },
 				shortcut: "G",
 			},
 			{
-				description: "Vendor tenants, their health and sync status",
+				description:
+					"Each customer's connected tool, with its health and last sync",
 				href: "/connections",
 				icon: CableIcon,
 				label: "Connections",
+				requires: { scope: "provisioning:read" },
 				shortcut: "C",
 			},
 		],
@@ -90,17 +99,20 @@ export const NAV_GROUPS: NavGroup[] = [
 	{
 		items: [
 			{
-				description: "Vulnerability findings across connections",
+				description: "Vulnerabilities found by every connected tool",
 				href: "/findings",
 				icon: ShieldAlertIcon,
 				label: "Findings",
+				requires: { scope: "data:read" },
 				shortcut: "F",
 			},
 			{
-				description: "Repositories, hosts, images and more",
+				description:
+					"Repositories, hosts, images and the other things findings affect",
 				href: "/resources",
 				icon: DatabaseIcon,
 				label: "Resources",
+				requires: { scope: "data:read" },
 				shortcut: "R",
 			},
 		],
@@ -109,50 +121,48 @@ export const NAV_GROUPS: NavGroup[] = [
 	{
 		items: [
 			{
-				description: "Syncs, verifications, webhooks and actions",
+				description: "What ran, when and how it went, with each request log",
 				href: "/logs",
 				icon: ScrollTextIcon,
 				label: "Logs",
+				requires: { scope: "provisioning:read" },
 				shortcut: "L",
 			},
 			{
-				description: "API calls, sync volume and usage",
+				description: "API calls, records synced and usage over time",
 				href: "/metrics",
 				icon: ChartColumnIcon,
 				label: "Metrics",
+				requires: { scope: "provisioning:read" },
 				shortcut: "M",
 			},
 			{
-				description: "Endpoints, deliveries and replay",
+				description:
+					"Endpoints that receive events, and every delivery attempt",
 				href: "/webhooks",
 				icon: WebhookIcon,
 				label: "Webhooks",
+				requires: { scope: "webhooks:manage" },
 				shortcut: "W",
 			},
-		],
-		label: "Observe",
-	},
-	{
-		items: [
 			{
-				description: "API, database, workers and queues",
+				description: "Whether SecureFabric and your syncs are running normally",
 				href: "/status",
 				icon: ActivityIcon,
 				label: "Status",
 				shortcut: "S",
 			},
+		],
+		label: "Monitor",
+	},
+	{
+		items: [
 			{
-				description: "Send any API request with your credentials",
-				href: "/playground",
-				icon: TerminalIcon,
-				label: "Request console",
-				shortcut: "P",
-			},
-			{
-				description: "API keys and their scopes",
+				description: "Keys your servers use to call the API",
 				href: "/keys",
 				icon: KeyRoundIcon,
-				label: "Keys",
+				label: "API keys",
+				requires: { scope: "keys:manage" },
 				shortcut: "K",
 			},
 		],
@@ -161,7 +171,7 @@ export const NAV_GROUPS: NavGroup[] = [
 ];
 
 export const SETTINGS_ITEM: NavItem = {
-	description: "Environment, connect UI and team",
+	description: "Environment, connect page branding, team and audit log",
 	href: "/settings",
 	icon: SettingsIcon,
 	label: "Settings",
@@ -179,6 +189,14 @@ export const OPERATOR_ITEM: Omit<NavItem, "shortcut"> = {
 	icon: ShieldEllipsisIcon,
 	label: "Operator console",
 };
+
+/** The nav groups this person can use: empty groups drop out. */
+export function visibleNavGroups(access: Access): NavGroup[] {
+	return NAV_GROUPS.map((g) => ({
+		...g,
+		items: g.items.filter((i) => access.allows(i.requires)),
+	})).filter((g) => g.items.length > 0);
+}
 
 export const NAV_ITEMS: NavItem[] = [
 	...NAV_GROUPS.flatMap((g) => g.items),
@@ -205,29 +223,33 @@ export const SETTINGS_SECTIONS: {
 	label: string;
 	icon: LucideIcon;
 	description: string;
+	requires?: Requirement;
 }[] = [
 	{
-		description: "Name and allowed redirect origins",
+		description:
+			"Name this environment and choose where the connect page can redirect people.",
 		icon: SlidersHorizontalIcon,
 		label: "General",
 		value: "general",
 	},
 	{
-		description: "Branding for the hosted connect flow",
+		description:
+			"Make the connect page your customers see look like your product.",
 		icon: PaletteIcon,
-		label: "Connect UI",
+		label: "Connect page",
 		value: "connect",
 	},
 	{
-		description: "Members and roles",
+		description: "Invite teammates and choose their roles.",
 		icon: UsersIcon,
 		label: "Team",
 		value: "team",
 	},
 	{
-		description: "Who did what in this environment",
+		description: "Who changed what in this environment, and when.",
 		icon: ShieldCheckIcon,
 		label: "Audit log",
+		requires: { admin: true },
 		value: "audit",
 	},
 ];
