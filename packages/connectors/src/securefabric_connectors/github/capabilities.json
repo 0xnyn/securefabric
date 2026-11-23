@@ -1,0 +1,140 @@
+{
+  "connector": "GITHUB",
+  "streams": {
+    "code_scanning_alerts": {
+      "coverage": {
+        "analytic": 1.0,
+        "cve_ids": 0.0,
+        "description": 1.0,
+        "exploitable": 0.0,
+        "has_fix": 0.0,
+        "product": 1.0,
+        "reachability": 0.0,
+        "remediation": 0.0,
+        "resource_related": 1.0,
+        "severity": 1.0,
+        "state_changed_at": 0.6,
+        "title": 1.0,
+        "vulnerabilities": 0.0
+      },
+      "records": 10,
+      "values_emitted": {
+        "exploitable": [],
+        "has_fix": [],
+        "reachability": [],
+        "severity": [
+          "CRITICAL",
+          "HIGH",
+          "MEDIUM"
+        ],
+        "state": [
+          "CLOSED",
+          "IGNORED",
+          "OPEN"
+        ],
+        "type": [
+          "CODE"
+        ]
+      }
+    },
+    "dependabot_alerts": {
+      "coverage": {
+        "analytic": 0.0,
+        "cve_ids": 0.75,
+        "description": 1.0,
+        "exploitable": 0.0,
+        "has_fix": 1.0,
+        "product": 1.0,
+        "reachability": 0.5,
+        "remediation": 0.833,
+        "resource_related": 1.0,
+        "severity": 1.0,
+        "state_changed_at": 0.5,
+        "title": 1.0,
+        "vulnerabilities": 1.0
+      },
+      "records": 12,
+      "values_emitted": {
+        "exploitable": [],
+        "has_fix": [
+          "False",
+          "True"
+        ],
+        "reachability": [
+          "POTENTIALLY_REACHABLE",
+          "REACHABLE",
+          "UNREACHABLE"
+        ],
+        "severity": [
+          "CRITICAL",
+          "HIGH",
+          "LOW",
+          "MEDIUM"
+        ],
+        "state": [
+          "CLOSED",
+          "IGNORED",
+          "OPEN"
+        ],
+        "type": [
+          "DEPENDENCY"
+        ]
+      }
+    },
+    "repositories": {
+      "coverage": {
+        "cloud_metadata": 0.0,
+        "data": 1.0,
+        "groups": 1.0,
+        "name": 1.0,
+        "tags": 1.0,
+        "url": 1.0
+      },
+      "records": 6,
+      "values_emitted": {
+        "state": [
+          "ACTIVE",
+          "INACTIVE"
+        ],
+        "type": [
+          "REPOSITORY"
+        ]
+      }
+    },
+    "secret_scanning_alerts": {
+      "coverage": {
+        "analytic": 1.0,
+        "cve_ids": 0.0,
+        "description": 0.0,
+        "exploitable": 0.0,
+        "has_fix": 0.0,
+        "product": 1.0,
+        "reachability": 0.0,
+        "remediation": 0.0,
+        "resource_related": 1.0,
+        "severity": 1.0,
+        "state_changed_at": 0.75,
+        "title": 1.0,
+        "vulnerabilities": 0.0
+      },
+      "records": 8,
+      "values_emitted": {
+        "exploitable": [],
+        "has_fix": [],
+        "reachability": [],
+        "severity": [
+          "UNKNOWN"
+        ],
+        "state": [
+          "CLOSED",
+          "IGNORED",
+          "OPEN"
+        ],
+        "type": [
+          "SECRET"
+        ]
+      }
+    }
+  },
+  "version": "1.0.0"
+}

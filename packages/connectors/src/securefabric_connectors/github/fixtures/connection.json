@@ -1,0 +1,23 @@
+{
+  "account_id": 360072203,
+  "account_login": "securefabric",
+  "account_type": "Organization",
+  "events": [
+    "code_scanning_alert",
+    "dependabot_alert",
+    "repository",
+    "secret_scanning_alert",
+    "secret_scanning_alert_location",
+    "security_and_analysis"
+  ],
+  "installation_id": 185025712,
+  "listing_mode": "org",
+  "permissions": {
+    "administration": "read",
+    "metadata": "read",
+    "secret_scanning_alerts": "read",
+    "security_events": "read",
+    "vulnerability_alerts": "read"
+  },
+  "repository_selection": "all"
+}

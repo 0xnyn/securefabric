@@ -1,0 +1,278 @@
+[
+  {
+    "cloud_metadata": null,
+    "data": {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "id": 700000,
+      "language": "Python",
+      "owner": "acme-sec",
+      "pushed_at": "2026-03-01T00:00:00Z",
+      "repo_url": "https://github.com/acme-sec/api-server.git",
+      "security_features": {
+        "advanced_security": "enabled",
+        "code_security": null,
+        "dependabot_security_updates": "enabled",
+        "secret_scanning": "enabled",
+        "secret_scanning_push_protection": "disabled"
+      },
+      "visibility": "public"
+    },
+    "groups": [
+      {
+        "name": "acme-sec",
+        "uid": "9001"
+      }
+    ],
+    "meta_derived": [],
+    "name": "acme-sec/api-server",
+    "natural_key": "repo:700000",
+    "object": "resource",
+    "state": "ACTIVE",
+    "tags": [
+      {
+        "key": "topic",
+        "source": "github",
+        "value": "team-0"
+      }
+    ],
+    "type": "REPOSITORY",
+    "url": "https://github.com/acme-sec/api-server",
+    "vendor_attributes_data": {
+      "node_id": "R_700000",
+      "vendor": "GITHUB"
+    },
+    "vendor_id": "700000"
+  },
+  {
+    "cloud_metadata": null,
+    "data": {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "id": 700001,
+      "language": "JavaScript",
+      "owner": "acme-sec",
+      "pushed_at": "2026-02-28T00:00:00Z",
+      "repo_url": "https://github.com/acme-sec/web-app.git",
+      "security_features": {
+        "advanced_security": "enabled",
+        "code_security": null,
+        "dependabot_security_updates": "enabled",
+        "secret_scanning": "enabled",
+        "secret_scanning_push_protection": "disabled"
+      },
+      "visibility": "public"
+    },
+    "groups": [
+      {
+        "name": "acme-sec",
+        "uid": "9001"
+      }
+    ],
+    "meta_derived": [],
+    "name": "acme-sec/web-app",
+    "natural_key": "repo:700001",
+    "object": "resource",
+    "state": "ACTIVE",
+    "tags": [
+      {
+        "key": "topic",
+        "source": "github",
+        "value": "team-1"
+      }
+    ],
+    "type": "REPOSITORY",
+    "url": "https://github.com/acme-sec/web-app",
+    "vendor_attributes_data": {
+      "node_id": "R_700001",
+      "vendor": "GITHUB"
+    },
+    "vendor_id": "700001"
+  },
+  {
+    "cloud_metadata": null,
+    "data": {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "id": 700002,
+      "language": "Go",
+      "owner": "acme-sec",
+      "pushed_at": "2026-02-27T00:00:00Z",
+      "repo_url": "https://github.com/acme-sec/payments.git",
+      "security_features": {
+        "advanced_security": "enabled",
+        "code_security": null,
+        "dependabot_security_updates": "enabled",
+        "secret_scanning": "enabled",
+        "secret_scanning_push_protection": "disabled"
+      },
+      "visibility": "public"
+    },
+    "groups": [
+      {
+        "name": "acme-sec",
+        "uid": "9001"
+      }
+    ],
+    "meta_derived": [],
+    "name": "acme-sec/payments",
+    "natural_key": "repo:700002",
+    "object": "resource",
+    "state": "ACTIVE",
+    "tags": [
+      {
+        "key": "topic",
+        "source": "github",
+        "value": "team-0"
+      }
+    ],
+    "type": "REPOSITORY",
+    "url": "https://github.com/acme-sec/payments",
+    "vendor_attributes_data": {
+      "node_id": "R_700002",
+      "vendor": "GITHUB"
+    },
+    "vendor_id": "700002"
+  },
+  {
+    "cloud_metadata": null,
+    "data": {
+      "archived": false,
+      "default_branch": "main",
+      "fork": true,
+      "id": 700003,
+      "language": "Java",
+      "owner": "acme-sec",
+      "pushed_at": "2026-02-26T00:00:00Z",
+      "repo_url": "https://github.com/acme-sec/infra.git",
+      "security_features": {
+        "advanced_security": "enabled",
+        "code_security": null,
+        "dependabot_security_updates": "enabled",
+        "secret_scanning": "enabled",
+        "secret_scanning_push_protection": "disabled"
+      },
+      "visibility": "public"
+    },
+    "groups": [
+      {
+        "name": "acme-sec",
+        "uid": "9001"
+      }
+    ],
+    "meta_derived": [],
+    "name": "acme-sec/infra",
+    "natural_key": "repo:700003",
+    "object": "resource",
+    "state": "ACTIVE",
+    "tags": [
+      {
+        "key": "topic",
+        "source": "github",
+        "value": "team-1"
+      }
+    ],
+    "type": "REPOSITORY",
+    "url": "https://github.com/acme-sec/infra",
+    "vendor_attributes_data": {
+      "node_id": "R_700003",
+      "vendor": "GITHUB"
+    },
+    "vendor_id": "700003"
+  },
+  {
+    "cloud_metadata": null,
+    "data": {
+      "archived": true,
+      "default_branch": "main",
+      "fork": false,
+      "id": 700004,
+      "language": "Python",
+      "owner": "acme-sec",
+      "pushed_at": "2026-02-25T00:00:00Z",
+      "repo_url": "https://github.com/acme-sec/legacy-archive.git",
+      "security_features": {
+        "advanced_security": "enabled",
+        "code_security": null,
+        "dependabot_security_updates": "enabled",
+        "secret_scanning": "enabled",
+        "secret_scanning_push_protection": "disabled"
+      },
+      "visibility": "public"
+    },
+    "groups": [
+      {
+        "name": "acme-sec",
+        "uid": "9001"
+      }
+    ],
+    "meta_derived": [],
+    "name": "acme-sec/legacy-archive",
+    "natural_key": "repo:700004",
+    "object": "resource",
+    "state": "INACTIVE",
+    "tags": [
+      {
+        "key": "topic",
+        "source": "github",
+        "value": "team-0"
+      }
+    ],
+    "type": "REPOSITORY",
+    "url": "https://github.com/acme-sec/legacy-archive",
+    "vendor_attributes_data": {
+      "node_id": "R_700004",
+      "vendor": "GITHUB"
+    },
+    "vendor_id": "700004"
+  },
+  {
+    "cloud_metadata": null,
+    "data": {
+      "archived": false,
+      "default_branch": null,
+      "fork": false,
+      "id": 700005,
+      "language": "JavaScript",
+      "owner": "acme-sec",
+      "pushed_at": "2026-02-24T00:00:00Z",
+      "repo_url": "https://github.com/acme-sec/empty-repo.git",
+      "security_features": {
+        "advanced_security": "enabled",
+        "code_security": null,
+        "dependabot_security_updates": "enabled",
+        "secret_scanning": "enabled",
+        "secret_scanning_push_protection": "disabled"
+      },
+      "visibility": "public"
+    },
+    "groups": [
+      {
+        "name": "acme-sec",
+        "uid": "9001"
+      }
+    ],
+    "meta_derived": [],
+    "name": "acme-sec/empty-repo",
+    "natural_key": "repo:700005",
+    "object": "resource",
+    "state": "ACTIVE",
+    "tags": [
+      {
+        "key": "topic",
+        "source": "github",
+        "value": "team-1"
+      }
+    ],
+    "type": "REPOSITORY",
+    "url": "https://github.com/acme-sec/empty-repo",
+    "vendor_attributes_data": {
+      "node_id": "R_700005",
+      "vendor": "GITHUB"
+    },
+    "vendor_id": "700005"
+  }
+]

@@ -1,0 +1,1388 @@
+[
+  {
+    "analytic": null,
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2021-23301"
+    ],
+    "description": "Versions of lib-1 are vulnerable.",
+    "exploitable": null,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "dependabot:700001:1",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Dependabot",
+      "vendor_name": "GitHub"
+    },
+    "reachability": "UNREACHABLE",
+    "remediation": "Upgrade `lib-1` to `4.17.21` or later.",
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": "4.17.21",
+          "name": "lib-1",
+          "package_manager": "pip",
+          "path": "requirements.txt",
+          "reachability": "UNREACHABLE",
+          "version": null
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "acme-sec/web-app",
+        "natural_key": "repo:700001",
+        "role": "primary",
+        "stream": "repositories",
+        "type": "REPOSITORY"
+      }
+    ],
+    "severity": "HIGH",
+    "state": "CLOSED",
+    "state_changed_at": "2025-12-04T00:00:00Z",
+    "ticket": null,
+    "title": "Prototype pollution in lib-1",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-02T00:00:00Z",
+      "data": {
+        "dismissed_by": null,
+        "dismissed_comment": null,
+        "dismissed_reason": null,
+        "epss": {
+          "percentage": 0.00045,
+          "percentile": "0.12"
+        },
+        "ghsa_id": "GHSA-0001-abcd-efgh",
+        "manifest_path": "requirements.txt",
+        "published_at": "2025-11-22T00:00:00Z",
+        "relationship": "direct",
+        "repository_full_name": "acme-sec/web-app",
+        "scope": "runtime",
+        "vendor": "GITHUB",
+        "vulnerable_version_range": "< 4.17.21",
+        "withdrawn_at": null
+      },
+      "id": "1",
+      "severity": "high",
+      "state": "fixed",
+      "updated_at": "2025-12-02T01:00:00Z",
+      "url": "https://github.com/acme-sec/web-app/security/dependabot/1",
+      "vulnerability_identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-0001-abcd-efgh"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2021-23301"
+        }
+      ]
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 9.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": "Prototype pollution in lib-1",
+        "last_modified": "2025-12-02T00:00:00Z",
+        "published": "2025-11-22T00:00:00Z",
+        "references": [
+          {
+            "source": "github",
+            "tags": [],
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-23301"
+          }
+        ],
+        "source_identifier": "GHSA-0001-abcd-efgh",
+        "status": null,
+        "uid": "CVE-2021-23301",
+        "weaknesses": [
+          "CWE-1321"
+        ]
+      }
+    ]
+  },
+  {
+    "analytic": null,
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2021-23302"
+    ],
+    "description": "Versions of lib-2 are vulnerable.",
+    "exploitable": null,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "dependabot:700002:2",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Dependabot",
+      "vendor_name": "GitHub"
+    },
+    "reachability": "POTENTIALLY_REACHABLE",
+    "remediation": "Upgrade `lib-2` to `4.17.22` or later.",
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": "4.17.22",
+          "name": "lib-2",
+          "package_manager": "maven",
+          "path": "pom.xml",
+          "reachability": "POTENTIALLY_REACHABLE",
+          "version": null
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "acme-sec/payments",
+        "natural_key": "repo:700002",
+        "role": "primary",
+        "stream": "repositories",
+        "type": "REPOSITORY"
+      }
+    ],
+    "severity": "MEDIUM",
+    "state": "IGNORED",
+    "state_changed_at": "2025-12-04T00:00:00Z",
+    "ticket": null,
+    "title": "Prototype pollution in lib-2",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-03T00:00:00Z",
+      "data": {
+        "dismissed_by": "octocat",
+        "dismissed_comment": null,
+        "dismissed_reason": "tolerable_risk",
+        "epss": {
+          "percentage": 0.00045,
+          "percentile": "0.12"
+        },
+        "ghsa_id": "GHSA-0002-abcd-efgh",
+        "manifest_path": "pom.xml",
+        "published_at": "2025-11-23T00:00:00Z",
+        "relationship": "direct",
+        "repository_full_name": "acme-sec/payments",
+        "scope": "development",
+        "vendor": "GITHUB",
+        "vulnerable_version_range": "< 4.17.21",
+        "withdrawn_at": null
+      },
+      "id": "2",
+      "severity": "medium",
+      "state": "dismissed",
+      "updated_at": "2025-12-03T02:00:00Z",
+      "url": "https://github.com/acme-sec/payments/security/dependabot/2",
+      "vulnerability_identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-0002-abcd-efgh"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2021-23302"
+        }
+      ]
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 9.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": "Prototype pollution in lib-2",
+        "last_modified": "2025-12-03T00:00:00Z",
+        "published": "2025-11-23T00:00:00Z",
+        "references": [
+          {
+            "source": "github",
+            "tags": [],
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-23302"
+          }
+        ],
+        "source_identifier": "GHSA-0002-abcd-efgh",
+        "status": null,
+        "uid": "CVE-2021-23302",
+        "weaknesses": [
+          "CWE-1321"
+        ]
+      }
+    ]
+  },
+  {
+    "analytic": null,
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2021-23303"
+    ],
+    "description": "Versions of lib-3 are vulnerable.",
+    "exploitable": null,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "dependabot:700003:3",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Dependabot",
+      "vendor_name": "GitHub"
+    },
+    "reachability": null,
+    "remediation": "Upgrade `lib-3` to `4.17.23` or later.",
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": "4.17.23",
+          "name": "lib-3",
+          "package_manager": "go",
+          "path": "go.mod",
+          "reachability": null,
+          "version": null
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "acme-sec/infra",
+        "natural_key": "repo:700003",
+        "role": "primary",
+        "stream": "repositories",
+        "type": "REPOSITORY"
+      }
+    ],
+    "severity": "LOW",
+    "state": "IGNORED",
+    "state_changed_at": "2025-12-07T00:00:00Z",
+    "ticket": null,
+    "title": "Prototype pollution in lib-3",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-04T00:00:00Z",
+      "data": {
+        "dismissed_by": null,
+        "dismissed_comment": null,
+        "dismissed_reason": null,
+        "epss": {
+          "percentage": 0.00045,
+          "percentile": "0.12"
+        },
+        "ghsa_id": "GHSA-0003-abcd-efgh",
+        "manifest_path": "go.mod",
+        "published_at": "2025-11-24T00:00:00Z",
+        "relationship": "direct",
+        "repository_full_name": "acme-sec/infra",
+        "scope": "runtime",
+        "vendor": "GITHUB",
+        "vulnerable_version_range": "< 4.17.21",
+        "withdrawn_at": null
+      },
+      "id": "3",
+      "severity": "low",
+      "state": "auto_dismissed",
+      "updated_at": "2025-12-04T03:00:00Z",
+      "url": "https://github.com/acme-sec/infra/security/dependabot/3",
+      "vulnerability_identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-0003-abcd-efgh"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2021-23303"
+        }
+      ]
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 9.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": "Prototype pollution in lib-3",
+        "last_modified": "2025-12-04T00:00:00Z",
+        "published": "2025-11-24T00:00:00Z",
+        "references": [
+          {
+            "source": "github",
+            "tags": [],
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-23303"
+          }
+        ],
+        "source_identifier": "GHSA-0003-abcd-efgh",
+        "status": null,
+        "uid": "CVE-2021-23303",
+        "weaknesses": [
+          "CWE-1321"
+        ]
+      }
+    ]
+  },
+  {
+    "analytic": null,
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Versions of lib-4 are vulnerable.",
+    "exploitable": null,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "dependabot:700000:4",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Dependabot",
+      "vendor_name": "GitHub"
+    },
+    "reachability": null,
+    "remediation": "Upgrade `lib-4` to `4.17.24` or later.",
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": "4.17.24",
+          "name": "lib-4",
+          "package_manager": "npm",
+          "path": "package-lock.json",
+          "reachability": null,
+          "version": null
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "acme-sec/api-server",
+        "natural_key": "repo:700000",
+        "role": "primary",
+        "stream": "repositories",
+        "type": "REPOSITORY"
+      }
+    ],
+    "severity": "CRITICAL",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Prototype pollution in lib-4",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-05T00:00:00Z",
+      "data": {
+        "dismissed_by": null,
+        "dismissed_comment": null,
+        "dismissed_reason": null,
+        "epss": {
+          "percentage": 0.00045,
+          "percentile": "0.12"
+        },
+        "ghsa_id": "GHSA-0004-abcd-efgh",
+        "manifest_path": "package-lock.json",
+        "published_at": "2025-11-25T00:00:00Z",
+        "relationship": "direct",
+        "repository_full_name": "acme-sec/api-server",
+        "scope": "development",
+        "vendor": "GITHUB",
+        "vulnerable_version_range": "< 4.17.21",
+        "withdrawn_at": null
+      },
+      "id": "4",
+      "severity": "critical",
+      "state": "open",
+      "updated_at": "2025-12-05T04:00:00Z",
+      "url": "https://github.com/acme-sec/api-server/security/dependabot/4",
+      "vulnerability_identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-0004-abcd-efgh"
+        }
+      ]
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 9.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": "Prototype pollution in lib-4",
+        "last_modified": "2025-12-05T00:00:00Z",
+        "published": "2025-11-25T00:00:00Z",
+        "references": [
+          {
+            "source": "github",
+            "tags": [],
+            "url": "https://nvd.nist.gov/vuln/detail/none"
+          }
+        ],
+        "source_identifier": "GHSA-0004-abcd-efgh",
+        "status": null,
+        "uid": "GHSA-0004-abcd-efgh",
+        "weaknesses": [
+          "CWE-1321"
+        ]
+      }
+    ]
+  },
+  {
+    "analytic": null,
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2021-23305"
+    ],
+    "description": "Versions of lib-5 are vulnerable.",
+    "exploitable": null,
+    "has_fix": false,
+    "meta_derived": [],
+    "natural_key": "dependabot:700001:5",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Dependabot",
+      "vendor_name": "GitHub"
+    },
+    "reachability": "REACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": null,
+          "name": "lib-5",
+          "package_manager": "pip",
+          "path": "requirements.txt",
+          "reachability": "REACHABLE",
+          "version": null
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "acme-sec/web-app",
+        "natural_key": "repo:700001",
+        "role": "primary",
+        "stream": "repositories",
+        "type": "REPOSITORY"
+      }
+    ],
+    "severity": "HIGH",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Prototype pollution in lib-5",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-06T00:00:00Z",
+      "data": {
+        "dismissed_by": null,
+        "dismissed_comment": null,
+        "dismissed_reason": null,
+        "epss": {
+          "percentage": 0.00045,
+          "percentile": "0.12"
+        },
+        "ghsa_id": "GHSA-0005-abcd-efgh",
+        "manifest_path": "requirements.txt",
+        "published_at": "2025-11-26T00:00:00Z",
+        "relationship": "direct",
+        "repository_full_name": "acme-sec/web-app",
+        "scope": "runtime",
+        "vendor": "GITHUB",
+        "vulnerable_version_range": "< 4.17.21",
+        "withdrawn_at": null
+      },
+      "id": "5",
+      "severity": "high",
+      "state": "open",
+      "updated_at": "2025-12-06T05:00:00Z",
+      "url": "https://github.com/acme-sec/web-app/security/dependabot/5",
+      "vulnerability_identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-0005-abcd-efgh"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2021-23305"
+        }
+      ]
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 9.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": "Prototype pollution in lib-5",
+        "last_modified": "2025-12-06T00:00:00Z",
+        "published": "2025-11-26T00:00:00Z",
+        "references": [
+          {
+            "source": "github",
+            "tags": [],
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-23305"
+          }
+        ],
+        "source_identifier": "GHSA-0005-abcd-efgh",
+        "status": null,
+        "uid": "CVE-2021-23305",
+        "weaknesses": [
+          "CWE-1321"
+        ]
+      }
+    ]
+  },
+  {
+    "analytic": null,
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2021-23306"
+    ],
+    "description": "Versions of lib-6 are vulnerable.",
+    "exploitable": null,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "dependabot:700002:6",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Dependabot",
+      "vendor_name": "GitHub"
+    },
+    "reachability": null,
+    "remediation": "Upgrade `lib-6` to `4.17.26` or later.",
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": "4.17.26",
+          "name": "lib-6",
+          "package_manager": "maven",
+          "path": "pom.xml",
+          "reachability": null,
+          "version": null
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "acme-sec/payments",
+        "natural_key": "repo:700002",
+        "role": "primary",
+        "stream": "repositories",
+        "type": "REPOSITORY"
+      }
+    ],
+    "severity": "MEDIUM",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Prototype pollution in lib-6",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-07T00:00:00Z",
+      "data": {
+        "dismissed_by": null,
+        "dismissed_comment": null,
+        "dismissed_reason": null,
+        "epss": {
+          "percentage": 0.00045,
+          "percentile": "0.12"
+        },
+        "ghsa_id": "GHSA-0006-abcd-efgh",
+        "manifest_path": "pom.xml",
+        "published_at": "2025-11-27T00:00:00Z",
+        "relationship": "direct",
+        "repository_full_name": "acme-sec/payments",
+        "scope": "development",
+        "vendor": "GITHUB",
+        "vulnerable_version_range": "< 4.17.21",
+        "withdrawn_at": null
+      },
+      "id": "6",
+      "severity": "medium",
+      "state": "open",
+      "updated_at": "2025-12-07T06:00:00Z",
+      "url": "https://github.com/acme-sec/payments/security/dependabot/6",
+      "vulnerability_identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-0006-abcd-efgh"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2021-23306"
+        }
+      ]
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 9.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": "Prototype pollution in lib-6",
+        "last_modified": "2025-12-07T00:00:00Z",
+        "published": "2025-11-27T00:00:00Z",
+        "references": [
+          {
+            "source": "github",
+            "tags": [],
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-23306"
+          }
+        ],
+        "source_identifier": "GHSA-0006-abcd-efgh",
+        "status": null,
+        "uid": "CVE-2021-23306",
+        "weaknesses": [
+          "CWE-1321"
+        ]
+      }
+    ]
+  },
+  {
+    "analytic": null,
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2021-23307"
+    ],
+    "description": "Versions of lib-7 are vulnerable.",
+    "exploitable": null,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "dependabot:700003:7",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Dependabot",
+      "vendor_name": "GitHub"
+    },
+    "reachability": "POTENTIALLY_REACHABLE",
+    "remediation": "Upgrade `lib-7` to `4.17.27` or later.",
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": "4.17.27",
+          "name": "lib-7",
+          "package_manager": "go",
+          "path": "go.mod",
+          "reachability": "POTENTIALLY_REACHABLE",
+          "version": null
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "acme-sec/infra",
+        "natural_key": "repo:700003",
+        "role": "primary",
+        "stream": "repositories",
+        "type": "REPOSITORY"
+      }
+    ],
+    "severity": "LOW",
+    "state": "CLOSED",
+    "state_changed_at": "2025-12-10T00:00:00Z",
+    "ticket": null,
+    "title": "Prototype pollution in lib-7",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-08T00:00:00Z",
+      "data": {
+        "dismissed_by": null,
+        "dismissed_comment": null,
+        "dismissed_reason": null,
+        "epss": {
+          "percentage": 0.00045,
+          "percentile": "0.12"
+        },
+        "ghsa_id": "GHSA-0007-abcd-efgh",
+        "manifest_path": "go.mod",
+        "published_at": "2025-11-28T00:00:00Z",
+        "relationship": "direct",
+        "repository_full_name": "acme-sec/infra",
+        "scope": "runtime",
+        "vendor": "GITHUB",
+        "vulnerable_version_range": "< 4.17.21",
+        "withdrawn_at": null
+      },
+      "id": "7",
+      "severity": "low",
+      "state": "fixed",
+      "updated_at": "2025-12-08T07:00:00Z",
+      "url": "https://github.com/acme-sec/infra/security/dependabot/7",
+      "vulnerability_identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-0007-abcd-efgh"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2021-23307"
+        }
+      ]
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 9.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": "Prototype pollution in lib-7",
+        "last_modified": "2025-12-08T00:00:00Z",
+        "published": "2025-11-28T00:00:00Z",
+        "references": [
+          {
+            "source": "github",
+            "tags": [],
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-23307"
+          }
+        ],
+        "source_identifier": "GHSA-0007-abcd-efgh",
+        "status": null,
+        "uid": "CVE-2021-23307",
+        "weaknesses": [
+          "CWE-1321"
+        ]
+      }
+    ]
+  },
+  {
+    "analytic": null,
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Versions of lib-8 are vulnerable.",
+    "exploitable": null,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "dependabot:700000:8",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Dependabot",
+      "vendor_name": "GitHub"
+    },
+    "reachability": null,
+    "remediation": "Upgrade `lib-8` to `4.17.28` or later.",
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": "4.17.28",
+          "name": "lib-8",
+          "package_manager": "npm",
+          "path": "package-lock.json",
+          "reachability": null,
+          "version": null
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "acme-sec/api-server",
+        "natural_key": "repo:700000",
+        "role": "primary",
+        "stream": "repositories",
+        "type": "REPOSITORY"
+      }
+    ],
+    "severity": "CRITICAL",
+    "state": "IGNORED",
+    "state_changed_at": "2025-12-10T00:00:00Z",
+    "ticket": null,
+    "title": "Prototype pollution in lib-8",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-09T00:00:00Z",
+      "data": {
+        "dismissed_by": "octocat",
+        "dismissed_comment": null,
+        "dismissed_reason": "tolerable_risk",
+        "epss": {
+          "percentage": 0.00045,
+          "percentile": "0.12"
+        },
+        "ghsa_id": "GHSA-0008-abcd-efgh",
+        "manifest_path": "package-lock.json",
+        "published_at": "2025-11-29T00:00:00Z",
+        "relationship": "direct",
+        "repository_full_name": "acme-sec/api-server",
+        "scope": "development",
+        "vendor": "GITHUB",
+        "vulnerable_version_range": "< 4.17.21",
+        "withdrawn_at": null
+      },
+      "id": "8",
+      "severity": "critical",
+      "state": "dismissed",
+      "updated_at": "2025-12-09T08:00:00Z",
+      "url": "https://github.com/acme-sec/api-server/security/dependabot/8",
+      "vulnerability_identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-0008-abcd-efgh"
+        }
+      ]
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 9.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": "Prototype pollution in lib-8",
+        "last_modified": "2025-12-09T00:00:00Z",
+        "published": "2025-11-29T00:00:00Z",
+        "references": [
+          {
+            "source": "github",
+            "tags": [],
+            "url": "https://nvd.nist.gov/vuln/detail/none"
+          }
+        ],
+        "source_identifier": "GHSA-0008-abcd-efgh",
+        "status": null,
+        "uid": "GHSA-0008-abcd-efgh",
+        "weaknesses": [
+          "CWE-1321"
+        ]
+      }
+    ]
+  },
+  {
+    "analytic": null,
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2021-23309"
+    ],
+    "description": "Versions of lib-9 are vulnerable.",
+    "exploitable": null,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "dependabot:700001:9",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Dependabot",
+      "vendor_name": "GitHub"
+    },
+    "reachability": null,
+    "remediation": "Upgrade `lib-9` to `4.17.29` or later.",
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": "4.17.29",
+          "name": "lib-9",
+          "package_manager": "pip",
+          "path": "requirements.txt",
+          "reachability": null,
+          "version": null
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "acme-sec/web-app",
+        "natural_key": "repo:700001",
+        "role": "primary",
+        "stream": "repositories",
+        "type": "REPOSITORY"
+      }
+    ],
+    "severity": "HIGH",
+    "state": "IGNORED",
+    "state_changed_at": "2025-12-13T00:00:00Z",
+    "ticket": null,
+    "title": "Prototype pollution in lib-9",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-10T00:00:00Z",
+      "data": {
+        "dismissed_by": null,
+        "dismissed_comment": null,
+        "dismissed_reason": null,
+        "epss": {
+          "percentage": 0.00045,
+          "percentile": "0.12"
+        },
+        "ghsa_id": "GHSA-0009-abcd-efgh",
+        "manifest_path": "requirements.txt",
+        "published_at": "2025-11-30T00:00:00Z",
+        "relationship": "direct",
+        "repository_full_name": "acme-sec/web-app",
+        "scope": "runtime",
+        "vendor": "GITHUB",
+        "vulnerable_version_range": "< 4.17.21",
+        "withdrawn_at": null
+      },
+      "id": "9",
+      "severity": "high",
+      "state": "auto_dismissed",
+      "updated_at": "2025-12-10T09:00:00Z",
+      "url": "https://github.com/acme-sec/web-app/security/dependabot/9",
+      "vulnerability_identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-0009-abcd-efgh"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2021-23309"
+        }
+      ]
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 9.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": "Prototype pollution in lib-9",
+        "last_modified": "2025-12-10T00:00:00Z",
+        "published": "2025-11-30T00:00:00Z",
+        "references": [
+          {
+            "source": "github",
+            "tags": [],
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-23309"
+          }
+        ],
+        "source_identifier": "GHSA-0009-abcd-efgh",
+        "status": null,
+        "uid": "CVE-2021-23309",
+        "weaknesses": [
+          "CWE-1321"
+        ]
+      }
+    ]
+  },
+  {
+    "analytic": null,
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2021-23310"
+    ],
+    "description": "Versions of lib-10 are vulnerable.",
+    "exploitable": null,
+    "has_fix": false,
+    "meta_derived": [],
+    "natural_key": "dependabot:700002:10",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Dependabot",
+      "vendor_name": "GitHub"
+    },
+    "reachability": "REACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": null,
+          "name": "lib-10",
+          "package_manager": "maven",
+          "path": "pom.xml",
+          "reachability": "REACHABLE",
+          "version": null
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "acme-sec/payments",
+        "natural_key": "repo:700002",
+        "role": "primary",
+        "stream": "repositories",
+        "type": "REPOSITORY"
+      }
+    ],
+    "severity": "MEDIUM",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Prototype pollution in lib-10",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-11T00:00:00Z",
+      "data": {
+        "dismissed_by": null,
+        "dismissed_comment": null,
+        "dismissed_reason": null,
+        "epss": {
+          "percentage": 0.00045,
+          "percentile": "0.12"
+        },
+        "ghsa_id": "GHSA-0010-abcd-efgh",
+        "manifest_path": "pom.xml",
+        "published_at": "2025-12-01T00:00:00Z",
+        "relationship": "direct",
+        "repository_full_name": "acme-sec/payments",
+        "scope": "development",
+        "vendor": "GITHUB",
+        "vulnerable_version_range": "< 4.17.21",
+        "withdrawn_at": null
+      },
+      "id": "10",
+      "severity": "medium",
+      "state": "open",
+      "updated_at": "2025-12-11T10:00:00Z",
+      "url": "https://github.com/acme-sec/payments/security/dependabot/10",
+      "vulnerability_identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-0010-abcd-efgh"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2021-23310"
+        }
+      ]
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 9.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": "Prototype pollution in lib-10",
+        "last_modified": "2025-12-11T00:00:00Z",
+        "published": "2025-12-01T00:00:00Z",
+        "references": [
+          {
+            "source": "github",
+            "tags": [],
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-23310"
+          }
+        ],
+        "source_identifier": "GHSA-0010-abcd-efgh",
+        "status": null,
+        "uid": "CVE-2021-23310",
+        "weaknesses": [
+          "CWE-1321"
+        ]
+      }
+    ]
+  },
+  {
+    "analytic": null,
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2021-23311"
+    ],
+    "description": "Versions of lib-11 are vulnerable.",
+    "exploitable": null,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "dependabot:700003:11",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Dependabot",
+      "vendor_name": "GitHub"
+    },
+    "reachability": "UNREACHABLE",
+    "remediation": "Upgrade `lib-11` to `4.17.31` or later.",
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": "4.17.31",
+          "name": "lib-11",
+          "package_manager": "go",
+          "path": "go.mod",
+          "reachability": "UNREACHABLE",
+          "version": null
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "acme-sec/infra",
+        "natural_key": "repo:700003",
+        "role": "primary",
+        "stream": "repositories",
+        "type": "REPOSITORY"
+      }
+    ],
+    "severity": "LOW",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Prototype pollution in lib-11",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-12T00:00:00Z",
+      "data": {
+        "dismissed_by": null,
+        "dismissed_comment": null,
+        "dismissed_reason": null,
+        "epss": {
+          "percentage": 0.00045,
+          "percentile": "0.12"
+        },
+        "ghsa_id": "GHSA-0011-abcd-efgh",
+        "manifest_path": "go.mod",
+        "published_at": "2025-12-02T00:00:00Z",
+        "relationship": "direct",
+        "repository_full_name": "acme-sec/infra",
+        "scope": "runtime",
+        "vendor": "GITHUB",
+        "vulnerable_version_range": "< 4.17.21",
+        "withdrawn_at": null
+      },
+      "id": "11",
+      "severity": "low",
+      "state": "open",
+      "updated_at": "2025-12-12T11:00:00Z",
+      "url": "https://github.com/acme-sec/infra/security/dependabot/11",
+      "vulnerability_identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-0011-abcd-efgh"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2021-23311"
+        }
+      ]
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 9.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": "Prototype pollution in lib-11",
+        "last_modified": "2025-12-12T00:00:00Z",
+        "published": "2025-12-02T00:00:00Z",
+        "references": [
+          {
+            "source": "github",
+            "tags": [],
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-23311"
+          }
+        ],
+        "source_identifier": "GHSA-0011-abcd-efgh",
+        "status": null,
+        "uid": "CVE-2021-23311",
+        "weaknesses": [
+          "CWE-1321"
+        ]
+      }
+    ]
+  },
+  {
+    "analytic": null,
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Versions of lib-12 are vulnerable.",
+    "exploitable": null,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "dependabot:700000:12",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Dependabot",
+      "vendor_name": "GitHub"
+    },
+    "reachability": null,
+    "remediation": "Upgrade `lib-12` to `4.17.32` or later.",
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": "4.17.32",
+          "name": "lib-12",
+          "package_manager": "npm",
+          "path": "package-lock.json",
+          "reachability": null,
+          "version": null
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "acme-sec/api-server",
+        "natural_key": "repo:700000",
+        "role": "primary",
+        "stream": "repositories",
+        "type": "REPOSITORY"
+      }
+    ],
+    "severity": "CRITICAL",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Prototype pollution in lib-12",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-13T00:00:00Z",
+      "data": {
+        "dismissed_by": null,
+        "dismissed_comment": null,
+        "dismissed_reason": null,
+        "epss": {
+          "percentage": 0.00045,
+          "percentile": "0.12"
+        },
+        "ghsa_id": "GHSA-0012-abcd-efgh",
+        "manifest_path": "package-lock.json",
+        "published_at": "2025-12-03T00:00:00Z",
+        "relationship": "direct",
+        "repository_full_name": "acme-sec/api-server",
+        "scope": "development",
+        "vendor": "GITHUB",
+        "vulnerable_version_range": "< 4.17.21",
+        "withdrawn_at": null
+      },
+      "id": "12",
+      "severity": "critical",
+      "state": "open",
+      "updated_at": "2025-12-13T12:00:00Z",
+      "url": "https://github.com/acme-sec/api-server/security/dependabot/12",
+      "vulnerability_identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-0012-abcd-efgh"
+        }
+      ]
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 9.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": "Prototype pollution in lib-12",
+        "last_modified": "2025-12-13T00:00:00Z",
+        "published": "2025-12-03T00:00:00Z",
+        "references": [
+          {
+            "source": "github",
+            "tags": [],
+            "url": "https://nvd.nist.gov/vuln/detail/none"
+          }
+        ],
+        "source_identifier": "GHSA-0012-abcd-efgh",
+        "status": null,
+        "uid": "GHSA-0012-abcd-efgh",
+        "weaknesses": [
+          "CWE-1321"
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,268 @@
+# GitHub Advanced Security (docs/plan/06-github-connector.md).
+id: GITHUB
+version: 1.0.0
+display_name: GitHub Advanced Security
+description: >-
+  Code scanning, secret scanning and Dependabot alerts, with the repositories and
+  branches they attach to, on github.com, GHE.com and GitHub Enterprise Server.
+categories: [ appsec, code ]
+status: beta
+logo: /integrations/github.svg
+docs_url: https://docs.securefabric.dev/connectors/github
+api_version: "2022-11-28"
+
+auth:
+  mode: APP
+  vendor_app: required
+  connect: redirect
+  token_refresh_margin_s: 600 # one-hour installation tokens refresh at 10 minutes left
+
+connection_config:
+  type: object
+  properties:
+    installation_id: { type: integer, readOnly: true }
+    account_login: { type: string, readOnly: true }
+    account_id: { type: integer, readOnly: true }
+    account_type: { enum: [ Organization, User ], readOnly: true }
+    repository_selection: { enum: [ all, selected ], readOnly: true }
+    listing_mode: { enum: [ org, per_repo ], readOnly: true }
+
+credentials: { type: object, properties: {} }
+
+options:
+  type: object
+  properties:
+    secret_locations:
+      title: Secret locations
+      description: "first: the first detected location only. all: every location (one extra request per alert with more locations)."
+      enum: [ first, all ]
+      default: first
+    branch_scope:
+      title: Branches
+      description: "default: the default branch of each repository (no extra requests). protected and all list branches per repository."
+      enum: [ default, protected, all ]
+      default: default
+    include_archived:
+      title: Include alerts on archived repositories
+      type: boolean
+      default: true
+    secret_severity:
+      title: Secret finding severity
+      description: "GitHub assigns secret alerts no severity. unknown keeps it honest; by_validity derives it (active CRITICAL, unknown HIGH, inactive LOW) and lists severity in _meta.derived."
+      enum: [ unknown, critical, high, medium, low, by_validity ]
+      default: unknown
+    listing_mode:
+      title: Alert listing mode
+      description: "auto picks organization listings for organization installations and per-repository listings otherwise."
+      enum: [ auto, org, per_repo ]
+      default: auto
+
+regions:
+  - { id: github.com, api_base: "https://api.github.com", label: GitHub.com }
+  - {
+      id: ghe.com,
+      api_base: "https://api.{subdomain}.ghe.com",
+      label: GitHub Enterprise Cloud with data residency,
+    }
+  - {
+      id: ghes,
+      api_base: "https://{host}/api/v3",
+      label: GitHub Enterprise Server,
+    }
+
+http:
+  default_headers:
+    Accept: application/vnd.github+json
+    X-GitHub-Api-Version: "2022-11-28"
+    User-Agent: SecureFabric
+  retry:
+    statuses: [ 429, "5xx" ]
+    reset_header: x-ratelimit-reset
+    retry_after_header: retry-after
+    remaining_header: x-ratelimit-remaining
+    limit_header: x-ratelimit-limit
+    body_patterns:
+      - {
+          status: 403,
+          contains: "secondary rate limit",
+          treat_as: rate_limited,
+        }
+      - { status: 403, contains: "rate limit exceeded", treat_as: rate_limited }
+      - {
+          status: 429,
+          contains: "secondary rate limit",
+          treat_as: rate_limited,
+        }
+  budget:
+    key: "{vendor_app_id}:{installation_id}"
+    per_hour: 5000
+    per_minute_points: 900
+    max_concurrency: 4
+    max_requests_per_second: 10
+    write_cost: 5
+
+permissions:
+  - { name: "Metadata", access: read, streams: [ repositories, branches ] }
+  - {
+      name: "Administration",
+      access: read,
+      streams: [ repositories ],
+      optional: true,
+    }
+  - {
+      name: "Code scanning alerts",
+      access: read,
+      streams: [ code_scanning_alerts ],
+    }
+  - {
+      name: "Secret scanning alerts",
+      access: read,
+      streams: [ secret_scanning_alerts ],
+    }
+  - { name: "Dependabot alerts", access: read, streams: [ dependabot_alerts ] }
+  - {
+      name: "Code scanning alerts",
+      access: write,
+      actions: [ finding.set_state ],
+      optional: true,
+    }
+  - {
+      name: "Secret scanning alerts",
+      access: write,
+      actions: [ finding.set_state ],
+      optional: true,
+    }
+  - {
+      name: "Dependabot alerts",
+      access: write,
+      actions: [ finding.set_state ],
+      optional: true,
+    }
+
+webhooks:
+  signature_header: x-hub-signature-256
+  signature_prefix: "sha256="
+  algorithm: hmac-sha256
+  delivery_id_header: x-github-delivery
+  event_header: x-github-event
+  tenant_ref_path: installation.id
+  action_path: action
+
+scrub_fields: [ secret ]
+
+passthrough_allowlist:
+  - "GET /installation/repositories"
+  - "GET /repos/{owner}/{repo}"
+  - "GET /repos/{owner}/{repo}/code-scanning/analyses"
+  - "GET /repos/{owner}/{repo}/dependabot/alerts/{number}"
+  - "GET /repos/{owner}/{repo}/code-scanning/alerts/{number}"
+  - "GET /repos/{owner}/{repo}/secret-scanning/alerts/{number}"
+  - "GET /rate_limit"
+
+streams:
+  - name: repositories
+    title: Repositories
+    object: resource
+    resource_types: [ REPOSITORY ]
+    sync_mode: full
+    interval: { default: 3600, min: 900, max: 86400 }
+    deletion: sweep
+    natural_key: "repo:{repository.id}"
+    endpoint: "GET /installation/repositories"
+    webhook_events:
+      [ repository, installation_repositories, security_and_analysis ]
+    supports_targeted: true
+    cost: "One request per 100 repositories."
+  - name: branches
+    title: Branches
+    object: resource
+    resource_types: [ BRANCH ]
+    sync_mode: full
+    interval: { default: 3600, min: 900, max: 86400 }
+    deletion: sweep
+    natural_key: "branch:{repository.id}:{branch name}"
+    endpoint: "GET /installation/repositories"
+    cost: "Free with branch_scope=default. protected and all cost one request per repository per run."
+  - name: code_scanning_alerts
+    # Oldest GHES with the endpoint (checked against github/rest-api-description).
+    min_vendor_version: "3.0"
+    title: Code scanning alerts
+    object: vulnerability_finding
+    finding_types: [ CODE ]
+    sync_mode: incremental
+    interval: { default: 3600, min: 900, max: 86400 }
+    # Daily reconcile (spike S3 fallback): until it is confirmed live that updated_at moves
+    # on every change (auto-dismissal, validity, new location), a full pass catches it.
+    full_every: 86400
+    deletion: vendor_reported
+    natural_key: "code_scanning:{repository.id}:{alert number}"
+    endpoint: "GET /orgs/{org}/code-scanning/alerts"
+    webhook_events: [ code_scanning_alert ]
+    supports_targeted: true
+    capabilities:
+      severity: { supported: true }
+      has_fix:
+        {
+          supported: false,
+          notes: "Copilot Autofix existing is not a fix-available assertion.",
+        }
+      exploitable:
+        { supported: false, notes: "GitHub makes no exploitability assertion." }
+      reachability: { supported: false }
+  - name: secret_scanning_alerts
+    # Oldest GHES with the endpoint (checked against github/rest-api-description).
+    min_vendor_version: "3.1"
+    title: Secret scanning alerts
+    object: vulnerability_finding
+    finding_types: [ SECRET ]
+    sync_mode: incremental
+    interval: { default: 3600, min: 900, max: 86400 }
+    # Daily reconcile (spike S3 fallback): until it is confirmed live that updated_at moves
+    # on every change (auto-dismissal, validity, new location), a full pass catches it.
+    full_every: 86400
+    deletion: vendor_reported
+    natural_key: "secret_scanning:{repository.id}:{alert number}"
+    endpoint: "GET /orgs/{org}/secret-scanning/alerts"
+    webhook_events: [ secret_scanning_alert, secret_scanning_alert_location ]
+    supports_targeted: true
+    capabilities:
+      severity:
+        {
+          supported: false,
+          notes: "GitHub assigns secret alerts no severity. Opt in to a derived value with the secret_severity option.",
+        }
+      has_fix: { supported: false }
+      exploitable: { supported: false }
+      reachability: { supported: false }
+  - name: dependabot_alerts
+    # Oldest GHES with the endpoint (checked against github/rest-api-description).
+    min_vendor_version: "3.8"
+    title: Dependabot alerts
+    object: vulnerability_finding
+    finding_types: [ DEPENDENCY ]
+    sync_mode: incremental
+    interval: { default: 3600, min: 900, max: 86400 }
+    # Daily reconcile (spike S3 fallback): until it is confirmed live that updated_at moves
+    # on every change (auto-dismissal, validity, new location), a full pass catches it.
+    full_every: 86400
+    deletion: vendor_reported
+    natural_key: "dependabot:{repository.id}:{alert number}"
+    endpoint: "GET /orgs/{org}/dependabot/alerts"
+    webhook_events: [ dependabot_alert ]
+    supports_targeted: true
+    capabilities:
+      severity: { supported: true }
+      has_fix: { supported: true }
+      exploitable:
+        { supported: false, notes: "GitHub makes no exploitability assertion." }
+      reachability:
+        {
+          supported: true,
+          notes: "From reachability.verdict where GitHub computed one; null when unavailable or disabled (spike S9).",
+        }
+
+actions:
+  - name: finding.set_state
+    object: vulnerability_finding
+    requires_permission_tier: read_write
+    reasons: [ false_positive, accepted_risk, test_code, revoked ]
