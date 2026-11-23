@@ -50,3 +50,6 @@ next-env.d.ts
 
 # Vendor app private keys never belong in the repo.
 *.pem
+
+# Demo videos shipped with vendored agent skills
+.agents/skills/**/*.mp4
