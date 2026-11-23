@@ -178,20 +178,66 @@ export function exchangeCode(code: string): Promise<Session> {
 }
 
 /**
- * A session whose access token is good for at least a minute, refreshing it
- * with the rotating refresh token when needed. Returns `[session, changed]`.
+ * How long before expiry to refresh: a minute, but never more than a fifth of
+ * the token's lifetime. A fixed margin at or above the lifetime (short-lived
+ * tokens configured in WorkOS) would refresh on every request.
+ */
+export function refreshMargin(token: string): number {
+	const claims = jwtClaims(token);
+	const lifetime = Number(claims.exp ?? 0) - Number(claims.iat ?? 0);
+	if (!(lifetime > 0)) {
+		return REFRESH_MARGIN_S;
+	}
+	return Math.min(REFRESH_MARGIN_S, Math.max(1, lifetime / 5));
+}
+
+/**
+ * Refreshes in flight or just finished, keyed by the refresh token they used.
+ *
+ * WorkOS refresh tokens are single use. A page fires several API calls at once
+ * (and refetches them all on tab focus), and each carries the same cookie: if
+ * each refreshed on its own, one would win and the rest would fail with
+ * `invalid_grant`, answer 401 and delete the cookie the winner just set, so
+ * the user is bounced to sign-in. Every request holding the same refresh token
+ * shares one refresh instead, and requests that still carry the old cookie
+ * (sent before the browser stored the new one) get the same new session.
+ */
+const refreshes = new Map<string, { at: number; next: Promise<Session> }>();
+const REFRESH_REUSE_MS = 2 * 60 * 1000;
+
+function refreshOnce(refreshToken: string): Promise<Session> {
+	const now = Date.now();
+	for (const [token, entry] of refreshes) {
+		if (now - entry.at > REFRESH_REUSE_MS) {
+			refreshes.delete(token);
+		}
+	}
+	const existing = refreshes.get(refreshToken);
+	if (existing) {
+		return existing.next;
+	}
+	const next = authenticate({
+		grant_type: "refresh_token",
+		refresh_token: refreshToken,
+	});
+	refreshes.set(refreshToken, { at: now, next });
+	// A failed refresh is not reused: the next request may retry it.
+	next.catch(() => refreshes.delete(refreshToken));
+	return next;
+}
+
+/**
+ * A session whose access token is not about to expire, refreshing it with the
+ * rotating refresh token when needed. Returns `[session, changed]`.
  */
 export async function freshSession(
 	session: Session
 ): Promise<[Session, boolean]> {
 	const exp = Number(jwtClaims(session.access_token).exp ?? 0);
-	if (exp - Date.now() / 1000 > REFRESH_MARGIN_S) {
+	if (exp - Date.now() / 1000 > refreshMargin(session.access_token)) {
 		return [session, false];
 	}
-	const next = await authenticate({
-		grant_type: "refresh_token",
-		refresh_token: session.refresh_token,
-	});
+	const next = await refreshOnce(session.refresh_token);
 	return [next, true];
 }
 

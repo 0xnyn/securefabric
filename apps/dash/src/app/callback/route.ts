@@ -7,6 +7,8 @@ import {
 	seal,
 } from "@/lib/session";
 
+const MAX_COOKIE_BYTES = 3800;
+
 /** WorkOS redirects here with `code` and our `state` after hosted sign-in. */
 export async function GET(request: NextRequest) {
 	const params = request.nextUrl.searchParams;
@@ -28,8 +30,17 @@ export async function GET(request: NextRequest) {
 		const returnTo = expected.returnTo.startsWith("/")
 			? expected.returnTo
 			: "/";
+		const sealed = await seal(session);
+		if (sealed.length > MAX_COOKIE_BYTES) {
+			// Browsers silently drop cookies over ~4 KB. Setting it anyway would send
+			// you back to sign-in, which signs you straight in again: a loop.
+			return new NextResponse(
+				`Sign-in failed: the session cookie would be ${sealed.length} bytes, over the ${MAX_COOKIE_BYTES}-byte browser limit. Trim the claims WorkOS puts in the access token (roles, permissions, custom claims).`,
+				{ status: 500 }
+			);
+		}
 		const response = NextResponse.redirect(new URL(returnTo, request.url));
-		response.cookies.set(SESSION_COOKIE, await seal(session), COOKIE_OPTIONS);
+		response.cookies.set(SESSION_COOKIE, sealed, COOKIE_OPTIONS);
 		response.cookies.delete(STATE_COOKIE);
 		return response;
 	} catch (error) {

@@ -59,6 +59,47 @@ function problem(status: number, code: string, detail: string): NextResponse {
 }
 
 const TRAILING_SLASH = /\/$/u;
+const UPSTREAM_TIMEOUT_MS = 60_000;
+
+/** Send the request to the API; a problem response if it is down or hung. */
+async function forward(
+	request: NextRequest,
+	target: string,
+	headers: Headers
+): Promise<Response | NextResponse> {
+	const body = ["GET", "HEAD"].includes(request.method)
+		? undefined
+		: await request.arrayBuffer();
+	try {
+		return await fetch(target, {
+			body,
+			cache: "no-store",
+			headers,
+			method: request.method,
+			redirect: "manual",
+			// An API that accepts the connection but never answers (a dev server
+			// whose reload failed to import) must surface as an error, not as a
+			// dashboard that loads forever.
+			signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+		});
+	} catch (error) {
+		const timedOut =
+			error instanceof DOMException && error.name === "TimeoutError";
+		return NextResponse.json(
+			{
+				code: timedOut ? "api_timeout" : "api_unreachable",
+				detail: timedOut
+					? `${API_URL} did not answer within ${UPSTREAM_TIMEOUT_MS / 1000} s`
+					: `Can't reach ${API_URL}`,
+				errors: [],
+				status: timedOut ? 504 : 502,
+				title: timedOut ? "Gateway timeout" : "Bad gateway",
+				type: "about:blank",
+			},
+			{ status: timedOut ? 504 : 502 }
+		);
+	}
+}
 
 async function handle(
 	request: NextRequest,
@@ -100,30 +141,9 @@ async function handle(
 			return res;
 		}
 	}
-	const body = ["GET", "HEAD"].includes(request.method)
-		? undefined
-		: await request.arrayBuffer();
-	let upstream: Response;
-	try {
-		upstream = await fetch(target, {
-			body,
-			cache: "no-store",
-			headers,
-			method: request.method,
-			redirect: "manual",
-		});
-	} catch {
-		return NextResponse.json(
-			{
-				code: "api_unreachable",
-				detail: `Can't reach ${API_URL}`,
-				errors: [],
-				status: 502,
-				title: "Bad gateway",
-				type: "about:blank",
-			},
-			{ status: 502 }
-		);
+	const upstream = await forward(request, target, headers);
+	if (upstream instanceof NextResponse) {
+		return upstream;
 	}
 	const out = new Headers();
 	for (const name of FORWARD_RESPONSE) {

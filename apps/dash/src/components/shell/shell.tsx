@@ -1,6 +1,6 @@
 "use client";
 
-import { unwrap } from "@securefabric/client";
+import { ClientResponseError, unwrap } from "@securefabric/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { API_URL, api, envClient } from "@/lib/api";
+import { needsSignIn, retryUnlessAuth } from "@/lib/auth";
 import { NAV_ITEMS, OPERATOR_ITEM, SETTINGS_ITEM } from "@/lib/nav";
 import type { Environment } from "@/lib/types";
 import { AppSidebar } from "./app-sidebar";
@@ -148,7 +149,60 @@ function Centered({ children }: { children: React.ReactNode }) {
 	);
 }
 
-function ApiOffline({ error, retry }: { error: string; retry: () => void }) {
+/** The proxy's own errors when the API is down or hung (app/api/sf). */
+const UNREACHABLE = new Set(["api_unreachable", "api_timeout"]);
+
+/**
+ * `/v1/me` or `/v1/environments` failed. Says which of three things went wrong:
+ * the API is down, the session is gone (the query cache is already sending you
+ * to sign-in), or the API rejects the session, which signing in again won't fix.
+ */
+function AccountError({ error, retry }: { error: unknown; retry: () => void }) {
+	const detail = (
+		<p className="text-muted-foreground font-mono text-xs">
+			{errorText(error)}
+		</p>
+	);
+	if (needsSignIn(error)) {
+		return (
+			<Centered>
+				<h1 className="text-xl font-semibold">Your session ended</h1>
+				<p className="text-muted-foreground max-w-md text-sm">
+					Sign in again to continue.
+				</p>
+				{detail}
+				<Button render={<a href="/logout" />} variant="primary">
+					Sign in again
+				</Button>
+			</Centered>
+		);
+	}
+	if (
+		error instanceof ClientResponseError &&
+		!UNREACHABLE.has(error.code) &&
+		error.status !== 502 &&
+		error.status !== 504
+	) {
+		return (
+			<Centered>
+				<h1 className="text-xl font-semibold">The API rejected the request</h1>
+				<p className="text-muted-foreground max-w-md text-sm">
+					{error.status === 401 || error.status === 403
+						? "You are signed in, but the API does not accept this session. Check that WORKOS_CLIENT_ID and WORKOS_API_KEY are the same in the root .env (API) and apps/dash/.env.local (dashboard), then restart make dev."
+						: "The API answered with an error. Its log has the details for the request id below."}
+				</p>
+				{detail}
+				<div className="flex gap-2">
+					<Button onClick={retry} variant="outline">
+						Retry now
+					</Button>
+					<Button render={<a href="/logout" />} variant="outline">
+						Sign out
+					</Button>
+				</div>
+			</Centered>
+		);
+	}
 	return (
 		<Centered>
 			<h1 className="text-xl font-semibold">
@@ -160,7 +214,7 @@ function ApiOffline({ error, retry }: { error: string; retry: () => void }) {
 				with <span className="text-foreground font-mono">make dev</span>, then
 				check <span className="text-foreground font-mono">make status</span>.
 			</p>
-			<p className="text-muted-foreground font-mono text-xs">{error}</p>
+			{detail}
 			<Button onClick={retry} variant="outline">
 				Retry now
 			</Button>
@@ -249,7 +303,7 @@ export function useAccount() {
 	const me = useQuery({
 		queryFn: () => unwrap(api.GET("/v1/me")),
 		queryKey: ["me"],
-		retry: 1,
+		retry: (count, error) => count < 1 && retryUnlessAuth(count, error),
 	});
 	const environments = useQuery({
 		enabled: Boolean(me.data && !me.data.needs_onboarding),
@@ -271,17 +325,15 @@ export function EnvShell({ children }: { children: React.ReactNode }) {
 	);
 	const client = useMemo(() => (env ? envClient(env.id) : null), [env]);
 	if (me.isError) {
-		return (
-			<ApiOffline error={errorText(me.error)} retry={() => me.refetch()} />
-		);
+		return <AccountError error={me.error} retry={() => me.refetch()} />;
 	}
 	if (me.data?.needs_onboarding) {
 		return <Onboarding />;
 	}
 	if (!(me.data && environments.data)) {
 		return environments.isError ? (
-			<ApiOffline
-				error={errorText(environments.error)}
+			<AccountError
+				error={environments.error}
 				retry={() => environments.refetch()}
 			/>
 		) : (

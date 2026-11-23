@@ -14,8 +14,14 @@ export default function Home() {
 	const { environments, me } = useAccount();
 	const first =
 		environments.data?.find((e) => e.slug === "dev") ?? environments.data?.[0];
+	// No environment to land in (onboarding, an error, or an account with none):
+	// `/dev` renders the shell, which explains each case. Without the empty
+	// case this page would show the loading skeleton forever.
 	const fallback =
-		me.data?.needs_onboarding || environments.isError || me.isError;
+		me.data?.needs_onboarding ||
+		environments.isError ||
+		me.isError ||
+		environments.data?.length === 0;
 	let target: string | null = null;
 	if (first) {
 		target = `/${first.slug}`;
