@@ -5,10 +5,14 @@
   "extraPaths": [
     "apps/api/src",
     "apps/worker/src",
+    "packages/cdk/src",
+    "packages/connectors/src",
     "packages/core/src",
     "packages/db/src",
     "packages/domain/src",
-    "packages/tasks/src"
+    "packages/schema/src",
+    "packages/tasks/src",
+    "tools/github-seed/src"
   ],
   "exclude": ["**/__pycache__", ".venv", "**/node_modules"]
 }

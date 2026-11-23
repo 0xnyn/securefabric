@@ -1,23 +1,36 @@
 [project]
 name = "securefabric-domain"
 version = "0.1.0"
-description = "SecureFabric control-plane domain: workspace, environments, integrations, connections, syncs"
+description = "SecureFabric platform services: tenancy, catalog, vault, connections, sync, records, events, obs, actions"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "absurd-sdk>=0.5.1",
+    "httpx2>=2.16.2",
+    "jsonschema>=4.23",
+    "minio>=7.2",
     "psycopg[binary]>=3.3",
     "pydantic>=2.14",
+    "pyjwt[crypto]>=2.10",
+    "securefabric-cdk",
+    "securefabric-connectors",
     "securefabric-core",
     "securefabric-db",
+    "securefabric-schema",
+    "securefabric-tasks",
 ]
 
 [project.scripts]
-securefabric-seed = "securefabric_domain.seed:main"
+securefabric-admin = "securefabric_domain.admin:main"
 
 [build-system]
 requires = ["uv_build>=0.9.15,<0.10"]
 build-backend = "uv_build"
 
 [tool.uv.sources]
+securefabric-cdk = { workspace = true }
+securefabric-connectors = { workspace = true }
 securefabric-core = { workspace = true }
 securefabric-db = { workspace = true }
+securefabric-schema = { workspace = true }
+securefabric-tasks = { workspace = true }

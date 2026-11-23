@@ -5,7 +5,7 @@
   "scripts": {
     "build": "turbo run build",
     "check": "ultracite check",
-    "check-generated": "turbo run check-generated check-catalog",
+    "check-generated": "turbo run check-generated",
     "check-tokens": "turbo run check-tokens",
     "dev": "turbo run dev",
     "dev:api": "turbo run dev --filter=api",
@@ -18,7 +18,7 @@
     "prepare": "husky",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "verify": "turbo run lint typecheck test check-generated check-catalog check-tokens && ultracite check"
+    "verify": "turbo run lint typecheck test check-generated check-tokens && ultracite check"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",

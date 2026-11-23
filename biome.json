@@ -29,8 +29,11 @@
       "!.vscode",
       "!.zed",
       "!packages/tokens/src/theme.css",
-      "!packages/client/src/v1.ts",
-      "!packages/domain/src/securefabric_domain/catalog.json",
+      "!!packages/client/src/v1.ts",
+      "!packages/connectors/src/**/golden/*.json",
+      "!packages/connectors/src/**/capabilities.json",
+      "!packages/connectors/src/**/fixtures",
+      "!packages/schema/tests/leen",
       "!uv.lock",
       "!pnpm-lock.yaml"
     ]

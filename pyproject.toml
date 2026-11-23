@@ -8,9 +8,12 @@ requires-python = ">=3.13"
 # (editable) into one shared .venv for local dev, tests and type-checking.
 dependencies = [
     "securefabric-api",
+    "securefabric-cdk",
+    "securefabric-connectors",
     "securefabric-core",
     "securefabric-db",
     "securefabric-domain",
+    "securefabric-schema",
     "securefabric-tasks",
     "securefabric-worker",
 ]
@@ -25,23 +28,32 @@ package = false
 members = [
     "apps/api",
     "apps/worker",
+    "packages/cdk",
+    "packages/connectors",
     "packages/core",
     "packages/db",
     "packages/domain",
+    "packages/schema",
     "packages/tasks",
 ]
 
 [tool.uv.sources]
 securefabric-api = { workspace = true }
+securefabric-cdk = { workspace = true }
+securefabric-connectors = { workspace = true }
 securefabric-core = { workspace = true }
 securefabric-db = { workspace = true }
 securefabric-domain = { workspace = true }
+securefabric-schema = { workspace = true }
 securefabric-tasks = { workspace = true }
 securefabric-worker = { workspace = true }
 
 [dependency-groups]
 dev = [
     "httpx2>=2.16.2",
+    "hypothesis>=6.140",
+    "types-jsonschema>=4.23",
+    "types-pyyaml>=6.0",
     "mypy>=2.4.1",
     "pre-commit>=4.7.0",
     "pytest>=9.2.0",
@@ -77,15 +89,29 @@ select = [
     "PT",      # pytest style
 ]
 
+# N818: the connector error taxonomy is the plan's closed set (AuthRejected, RateLimited, ...).
+# S101: asserts narrow types after single-row fetches; they never guard behaviour.
+ignore = ["N818", "S101"]
+
+[tool.ruff.lint.pycodestyle]
+# The formatter wraps code at 100; SQL and prose inside strings may run to 120.
+max-line-length = 120
+
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["S101"]
+"**/tests/**" = ["S101", "PT018", "S105", "S106", "S107", "PT028", "PT012", "ASYNC240"]
+"packages/domain/src/securefabric_domain/conformance.py" = ["PT018"]
+# Leen V2 query parameters are camelCase on the wire (updatedSince, organizationId, ...).
+"apps/api/src/securefabric_api/routes/**" = ["N803"]
 
 [tool.ruff.lint.isort]
 known-first-party = [
     "securefabric_api",
+    "securefabric_cdk",
+    "securefabric_connectors",
     "securefabric_core",
     "securefabric_db",
     "securefabric_domain",
+    "securefabric_schema",
     "securefabric_tasks",
     "securefabric_worker",
 ]
@@ -100,9 +126,14 @@ plugins = ["pydantic.mypy"]
 mypy_path = [
     "apps/api/src",
     "apps/worker/src",
+    "packages/cdk/src",
+    "packages/connectors/src",
+    "packages/connectors/tests",
+    "tools",
     "packages/core/src",
     "packages/db/src",
     "packages/domain/src",
+    "packages/schema/src",
     "packages/tasks/src",
 ]
 explicit_package_bases = true
@@ -110,8 +141,13 @@ warn_unreachable = true
 exclude = ["node_modules/", "\\.next/", "\\.turbo/"]
 
 [[tool.mypy.overrides]]
-module = "tests.*"
+# Test modules (no package): untyped test functions and fixtures are fine, but their
+# bodies are still type-checked.
+module = ["tests.*", "packages.*.tests.*", "apps.*.tests.*", "conftest","fake_github","test_actions","test_connections","test_core","test_data","test_engine","test_github","test_schema","test_status","test_tasks","test_runbooks","test_oauth","test_devtools","test_telemetry","test_crypto","test_query_shape","test_webhook_samples","test_github_seed","github_seed","test_harness_smoke","test_http","test_isolation","test_maintenance","test_migrate","test_openapi","test_operator","test_primitives","test_records","test_rls","test_sandbox_conformance","test_sandbox_export","test_tooling","test_webhooks","test_worker"]
 disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+check_untyped_defs = true
 
 # ---------------------------------------------------------------------------
 # Pytest / coverage
@@ -121,12 +157,15 @@ addopts = "-ra --strict-markers --strict-config --import-mode=importlib"
 testpaths = [
     "apps/api",
     "apps/worker",
+    "packages/cdk",
+    "packages/connectors",
     "packages/core",
     "packages/db",
     "packages/domain",
+    "packages/schema",
     "packages/tasks",
 ]
-norecursedirs = ["node_modules", ".next", ".turbo", ".venv"]
+norecursedirs = ["node_modules", ".next", ".turbo", ".venv", ".hypothesis", ".*"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 markers = [
@@ -137,9 +176,12 @@ markers = [
 branch = true
 source = [
     "securefabric_api",
+    "securefabric_cdk",
+    "securefabric_connectors",
     "securefabric_core",
     "securefabric_db",
     "securefabric_domain",
+    "securefabric_schema",
     "securefabric_tasks",
     "securefabric_worker",
 ]

@@ -52,11 +52,14 @@ if printf '%s\n' "$STAGED" | grep -qE '^(apps/api|packages/(core|domain|tasks))/
   fi
 fi
 
-# --- Provider catalog: the dash's catalog.ts feeds the backend's catalog.json ---
-if printf '%s\n' "$STAGED" | grep -qE '^apps/dash/src/lib/catalog\.ts$|^packages/domain/src/securefabric_domain/catalog\.json$'; then
-  if ! pnpm -s -F dash check-catalog >/dev/null 2>&1; then
-    echo "packages/domain/src/securefabric_domain/catalog.json is out of date with the dash catalog."
-    echo "Run: make generate   (then stage catalog.json)"
-    exit 1
-  fi
+# --- Connector reference pages: generated from manifest, capabilities and mapping ---
+if printf '%s\n' "$STAGED" | grep -qE '^packages/connectors/src/securefabric_connectors/'; then
+  for d in packages/connectors/src/securefabric_connectors/*/; do
+    [ -f "$d/manifest.yaml" ] || continue
+    if ! uv run --frozen securefabric-cdk docs "$d" --check >/dev/null 2>&1; then
+      echo "docs/connectors/ is out of date with $d."
+      echo "Run: make docs-connectors   (then stage docs/connectors/)"
+      exit 1
+    fi
+  done
 fi

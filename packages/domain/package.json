@@ -6,7 +6,7 @@
   "scripts": {
     "fix": "cd ../.. && uv run --frozen ruff check --fix packages/domain && uv run --frozen ruff format packages/domain",
     "lint": "cd ../.. && uv run --frozen ruff check packages/domain && uv run --frozen ruff format --check packages/domain",
-    "seed": "cd ../.. && uv run --frozen securefabric-seed",
+    "seed": "cd ../.. && uv run --frozen securefabric-admin seed",
     "test": "cd ../.. && uv run --frozen pytest packages/domain",
     "typecheck": "cd ../.. && uv run --frozen mypy packages/domain"
   },

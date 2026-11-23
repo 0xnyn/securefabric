@@ -26,9 +26,12 @@ DEFAULT_TEST_URL = "postgresql://securefabric:securefabric@localhost:5432/secure
 _MEMBERS = (
     "apps/api",
     "apps/worker",
+    "packages/cdk",
+    "packages/connectors",
     "packages/core",
     "packages/db",
     "packages/domain",
+    "packages/schema",
     "packages/tasks",
 )
 _db_suffix = ""

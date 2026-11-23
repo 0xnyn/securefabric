@@ -14,7 +14,8 @@ repos:
       - id: check-toml
       - id: check-merge-conflict
       - id: check-added-large-files
-        exclude: ^(pnpm-lock\.yaml|uv\.lock)$
+        # Lockfiles, and connector fixtures recorded from live vendors (replayed by tests).
+        exclude: ^(pnpm-lock\.yaml|uv\.lock|packages/connectors/src/securefabric_connectors/[^/]+/fixtures/.*\.json)$
       - id: detect-private-key
 
   - repo: local
@@ -35,9 +36,17 @@ repos:
         entry: uv run ruff format
         language: system
         types: [ python ]
+      # Two runs, as `make typecheck` does: the root conftest.py and the connector tests'
+      # conftest.py (on mypy_path for fake_github) both map to the module `conftest`.
       - id: mypy
-        name: mypy
-        entry: uv run mypy apps packages conftest.py
+        name: mypy (apps, packages)
+        entry: uv run mypy apps packages
+        language: system
+        types: [ python ]
+        pass_filenames: false
+      - id: mypy-root
+        name: mypy (root conftest, scripts)
+        entry: uv run mypy conftest.py scripts
         language: system
         types: [ python ]
         pass_filenames: false

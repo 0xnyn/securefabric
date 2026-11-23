@@ -65,8 +65,8 @@ status-json: ## The status report as JSON (for scripts and CI)
 	@$(RUN) --frozen python scripts/status.py --json $(ARGS)
 
 .PHONY: status-api
-status-api: ## Ask the running API for its status (GET /api/v1/status)
-	@curl -fsS http://localhost:$${API_PORT:-8000}/api/v1/status | $(RUN) python -m json.tool
+status-api: ## Ask the running API for its status (GET /v1/status; set API_KEY for more)
+	@curl -fsS $${API_KEY:+-H "Authorization: Bearer $${API_KEY}"} http://localhost:$${API_PORT:-8000}/v1/status | $(RUN) python -m json.tool
 
 ##@ Setup
 
@@ -141,7 +141,7 @@ hooks: ## Install git hooks (husky: pre-commit, commit-msg, pre-push)
 
 .PHONY: verify
 verify: lock-check ## Everything CI runs: lockfiles, lint, types, tests, client + token drift
-	$(TURBO) lint typecheck test check-generated check-catalog check-tokens $(TURBO_FILTER)
+	$(TURBO) lint typecheck test check-generated check-tokens $(TURBO_FILTER)
 	$(PNPM) exec ultracite check
 
 .PHONY: check
@@ -184,13 +184,12 @@ lint-commits: ## Check commit messages on this branch follow Conventional Commit
 ##@ End-to-end types (FastAPI → OpenAPI → @securefabric/client)
 
 .PHONY: generate
-generate: ## Regenerate the TS client (v1.ts) and the provider catalog (dash → domain)
-	$(PNPM) -F dash export-catalog
+generate: ## Regenerate the TS client (v1.ts) from the API's OpenAPI document
 	$(PNPM) run generate
 
 .PHONY: check-generated
-check-generated: ## Fail if the TS client or the provider catalog is stale
-	$(TURBO) check-generated check-catalog
+check-generated: ## Fail if the generated TS client is stale
+	$(TURBO) check-generated
 
 .PHONY: watch-client
 watch-client: ## Regenerate the client whenever API/task models change
@@ -215,17 +214,25 @@ test-all: ## Run every test; integration ones need `make db-up`
 test-integration: db-up ## Start Postgres and run integration tests against it
 	TEST_DATABASE_URL=$(TEST_DB_URL) $(RUN) pytest -m integration $(ARGS)
 
-.PHONY: test-api test-worker test-core test-db test-tasks
+.PHONY: test-api test-worker test-core test-db test-tasks test-schema test-cdk test-connectors test-domain
 test-api: ## Run tests for apps/api only (pytest ARGS)
 	$(RUN) pytest apps/api $(ARGS)
 test-worker: ## Run tests for apps/worker only
 	$(RUN) pytest apps/worker $(ARGS)
 test-core: ## Run tests for packages/core only
 	$(RUN) pytest packages/core $(ARGS)
-test-db: ## Run tests for packages/db only
+test-db: ## Run tests for packages/db only (RLS guarantees)
 	$(RUN) pytest packages/db $(ARGS)
 test-tasks: ## Run tests for packages/tasks only
 	$(RUN) pytest packages/tasks $(ARGS)
+test-schema: ## Run tests for packages/schema only
+	$(RUN) pytest packages/schema $(ARGS)
+test-cdk: ## Run tests for packages/cdk only
+	$(RUN) pytest packages/cdk $(ARGS)
+test-connectors: ## Connector conformance, golden output, fixtures (SANDBOX, GitHub)
+	$(RUN) pytest packages/connectors $(ARGS)
+test-domain: ## Run tests for packages/domain only (write path, engine, maintenance)
+	$(RUN) pytest packages/domain $(ARGS)
 
 .PHONY: test-dash test-client
 test-dash: ## Run tests for apps/dash (vitest)
@@ -276,8 +283,8 @@ shell: ## Python REPL with the workspace importable
 ##@ Database (Postgres in Docker)
 
 .PHONY: db-up
-db-up: ## Start Postgres and wait until healthy
-	$(COMPOSE) up -d --wait postgres
+db-up: ## Start Postgres and MinIO (raw page archive) and wait until healthy
+	$(COMPOSE) up -d --wait postgres minio
 
 .PHONY: db-down
 db-down: ## Stop Postgres (data kept)
@@ -292,8 +299,9 @@ db-status: ## Show applied/pending migrations
 	$(RUN) securefabric-migrate --status
 
 .PHONY: seed
-seed: ## Seed the demo workspace the dash shows (no-op if seeded): make seed ARGS=--reset
-	$(RUN) securefabric-seed $(ARGS)
+seed: ## Bootstrap the platform, then seed a demo account, environment and SANDBOX connection
+	$(RUN) securefabric-admin bootstrap
+	$(RUN) securefabric-admin seed $(ARGS)
 
 .PHONY: db-new-migration
 db-new-migration: ## Create a new migration file: make db-new-migration name=add_users
@@ -322,7 +330,7 @@ db-dump: ## Dump the dev database to backups/<timestamp>.sql.gz
 ##@ Absurd (durable tasks)
 
 .PHONY: absurdctl
-absurdctl: ## Run absurdctl in Docker: make absurdctl ARGS="list-tasks --queue default"
+absurdctl: ## Run absurdctl in Docker: make absurdctl ARGS="list-tasks --queue control"
 	$(TOOLS_COMPOSE) run --rm absurdctl $(ARGS)
 
 .PHONY: queues
@@ -335,8 +343,8 @@ queue-create: ## Create a queue: make queue-create q=emails
 	@$(MAKE) absurdctl ARGS="create-queue $(q)"
 
 .PHONY: tasks
-tasks: ## List tasks in a queue: make tasks [q=default]
-	@$(MAKE) absurdctl ARGS="list-tasks --queue $(or $(q),default)"
+tasks: ## List tasks in a queue: make tasks [q=control|sync_interactive|sync_bulk|delivery|maintenance]
+	@$(MAKE) absurdctl ARGS="list-tasks --queue $(or $(q),control)"
 
 .PHONY: task
 task: ## Dump one task with its runs + checkpoints: make task id=<task_id>
@@ -347,19 +355,44 @@ task: ## Dump one task with its runs + checkpoints: make task id=<task_id>
 absurd-cleanup: ## Apply each queue's retention policy now (absurd.cleanup_all_queues)
 	$(COMPOSE) exec -T postgres psql -U securefabric -d securefabric -c "select * from absurd.cleanup_all_queues();"
 
-.PHONY: demo
-demo: ## Spawn a demo provision-tenant workflow via the API and poll it
-	@id=$$(curl -fsS -X POST localhost:8000/api/v1/tenants -H 'content-type: application/json' \
-		-d "{\"tenant_id\":\"demo-$$RANDOM\",\"admin_email\":\"ops@example.com\",\"plan\":\"pro\",\"activation_delay_seconds\":2}" \
-		| $(RUN) python -c "import sys,json; print(json.load(sys.stdin)['task_id'])"); \
-	echo "spawned task $$id"; \
-	for i in $$(seq 1 20); do \
-		body=$$(curl -fsS localhost:8000/api/v1/tasks/$$id); \
-		state=$$(echo "$$body" | $(RUN) python -c "import sys,json; print(json.load(sys.stdin)['state'])"); \
-		printf "  [%02d] %s\n" $$i "$$state"; \
-		if [ "$$state" = "completed" ] || [ "$$state" = "failed" ]; then echo "$$body"; break; fi; \
-		sleep 1; \
+.PHONY: github-seed
+github-seed: ## Seed the GitHub test org (idempotent); ARGS=--check for the preflight only
+	@env $$(grep -E '^(GITHUB_SEED_TOKEN|GITHUB_TEST_ORG)=' .env | xargs) $(RUN) python tools/github_seed.py $(ARGS)
+
+.PHONY: generate-python-client
+generate-python-client: ## Regenerate the Python client (clients/python) from the OpenAPI document
+	$(RUN) python scripts/gen_python_client.py
+
+.PHONY: drill-restore
+drill-restore: ## Backup restore drill: dump, restore into a scratch DB, verify, drop it
+	$(RUN) python tools/drills/restore_drill.py
+
+.PHONY: bench bench-absurd bench-ingest bench-api bench-admission bench-outbox bench-scale-out
+bench: bench-ingest bench-api bench-admission bench-outbox bench-absurd ## Run the benchmark gates (plan part 10, section 8) on the test DB
+bench-absurd: ## Absurd throughput, claim latency and cleanup cost (test DB): ARGS="--tasks 5000"
+	TEST_DATABASE_URL=$(TEST_DB_URL) $(RUN) python tools/bench/absurd_load.py $(ARGS)
+bench-ingest: ## Ingest gate: >= 2,000 records/s per worker (NFR-05)
+	TEST_DATABASE_URL=$(TEST_DB_URL) $(RUN) python tools/bench/ingest.py $(ARGS)
+bench-api: ## Data API gates over HTTP (NFR-04): ARGS="--findings 1000000"
+	TEST_DATABASE_URL=$(TEST_DB_URL) $(RUN) python tools/bench/api_latency.py $(ARGS)
+bench-admission: ## Admission gate: 200 runs/s, lag < 5 s (ARGS=--uncapped to lift caps)
+	TEST_DATABASE_URL=$(TEST_DB_URL) $(RUN) python tools/bench/admission.py --uncapped $(ARGS)
+bench-outbox: ## Outbox gate: 99% of events delivered within 60 s (NFR-03)
+	TEST_DATABASE_URL=$(TEST_DB_URL) $(RUN) python tools/bench/outbox.py $(ARGS)
+bench-scale-out: ## Scale-out gate: 2 sync workers ~ 2x one (NFR-07)
+	TEST_DATABASE_URL=$(TEST_DB_URL) $(RUN) python tools/bench/scale_out.py $(ARGS)
+
+.PHONY: docs-connectors
+docs-connectors: ## Regenerate docs/connectors/*.md (and capabilities.json) from each connector
+	@for d in packages/connectors/src/securefabric_connectors/*/; do \
+		if [ -f "$$d/manifest.yaml" ]; then \
+			$(RUN) securefabric-cdk capabilities "$$d" >/dev/null && $(RUN) securefabric-cdk docs "$$d"; \
+		fi; \
 	done
+
+.PHONY: demo
+demo: ## Trigger an on-demand sync and follow the job: make demo API_KEY=sfk_... CONNECTION=<id>
+	@$(RUN) python scripts/demo.py
 
 .PHONY: habitat
 habitat: ## Start the Habitat dashboard on http://localhost:7890

@@ -37,13 +37,6 @@
       "dependsOn": ["^transit"],
       "inputs": ["src/v1.ts", "package.json"]
     },
-    "check-catalog": {
-      "inputs": [
-        "src/lib/catalog.ts",
-        "scripts/export-catalog.mjs",
-        "$TURBO_ROOT$/packages/domain/src/securefabric_domain/catalog.json"
-      ]
-    },
     "check-tokens": {
       "inputs": ["src/**", "scripts/**", "DESIGN.md"]
     },
