@@ -14,6 +14,7 @@
     "ignoreUnknown": false,
     "includes": [
       "!**/.next",
+      "!**/storybook-static",
       "!**/dist",
       "!**/.turbo",
       "!**/node_modules",
@@ -30,6 +31,8 @@
       "!.zed",
       "!packages/tokens/src/theme.css",
       "!!packages/client/src/v1.ts",
+      "!!apps/docs/api-reference/openapi.json",
+      "!apps/docs/logo/connectors",
       "!packages/connectors/src/**/golden/*.json",
       "!packages/connectors/src/**/capabilities.json",
       "!packages/connectors/src/**/fixtures",
@@ -92,7 +95,7 @@
   "overrides": [
     {
       "includes": [
-        "packages/ui/src/components/**",
+        "packages/ui/src/primitives/**",
         "packages/ui/src/lib/utils.ts"
       ],
       "linter": {

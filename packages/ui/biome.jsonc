@@ -1,0 +1,48 @@
+{
+  "$schema": "../../node_modules/@biomejs/biome/configuration_schema.json",
+  // Nested config: inherits the repo root.
+  "root": false,
+  "extends": "//",
+  "linter": {
+    "rules": {
+      "style": {
+        // The design system knows nothing about the app or the API: no app
+        // aliases, no Next.js, no API client. Anything that needs those
+        // belongs in apps/dash/src/components/domain.
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "patterns": [
+              {
+                "group": [
+                  "@/*",
+                  "next",
+                  "next/*",
+                  "@securefabric/client",
+                  "@securefabric/client/*"
+                ],
+                "message": "packages/ui is app-agnostic. Put components that need the app, Next.js or the API in apps/dash/src/components/domain."
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      // src/primitives is vendored from shadcn/ui (`shadcn add` through
+      // components.json). It stays byte-close to upstream so a re-add is a
+      // reviewable diff, which rewriting it to Ultracite's rules would make
+      // impossible. Formatting still applies; edits we make on purpose are
+      // marked `securefabric:` in a comment. Everything else in this package
+      // (components, patterns, hooks, lib) is ours and fully linted.
+      "includes": [
+        "src/primitives/**",
+        "src/hooks/use-mobile.ts",
+        "src/lib/utils.ts"
+      ],
+      "linter": { "enabled": false }
+    }
+  ]
+}

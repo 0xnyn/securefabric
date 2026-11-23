@@ -1,6 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "base-lyra",
+  "style": "base-vega",
   "rsc": true,
   "tsx": true,
   "tailwind": {
@@ -12,11 +12,11 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@securefabric/ui/components",
+    "components": "@securefabric/ui/primitives",
+    "ui": "@securefabric/ui/primitives",
     "utils": "@securefabric/ui/lib/utils",
     "hooks": "@securefabric/ui/hooks",
-    "lib": "@securefabric/ui/lib",
-    "ui": "@securefabric/ui/components"
+    "lib": "@securefabric/ui/lib"
   },
   "menuColor": "default",
   "menuAccent": "subtle",
