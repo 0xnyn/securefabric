@@ -1,0 +1,25 @@
+[project]
+name = "securefabric-worker"
+version = "0.1.0"
+description = "SecureFabric durable task worker (Absurd)"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "securefabric-core",
+    "securefabric-db",
+    "securefabric-domain",
+    "securefabric-tasks",
+]
+
+[project.scripts]
+securefabric-worker = "securefabric_worker.__main__:main"
+
+[build-system]
+requires = ["uv_build>=0.9.15,<0.10"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+securefabric-core = { workspace = true }
+securefabric-tasks = { workspace = true }
+securefabric-db = { workspace = true }
+securefabric-domain = { workspace = true }

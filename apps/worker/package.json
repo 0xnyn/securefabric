@@ -1,0 +1,20 @@
+{
+  "name": "worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SecureFabric durable task worker (Absurd) (Python; deps in pyproject.toml, managed by uv)",
+  "scripts": {
+    "dev": "cd ../.. && WORKER_LOG_FORMAT=console uv run --frozen watchfiles --filter python --sigint-timeout 20 securefabric-worker apps packages",
+    "fix": "cd ../.. && uv run --frozen ruff check --fix apps/worker && uv run --frozen ruff format apps/worker",
+    "lint": "cd ../.. && uv run --frozen ruff check apps/worker && uv run --frozen ruff format --check apps/worker",
+    "start": "cd ../.. && uv run --frozen securefabric-worker",
+    "test": "cd ../.. && uv run --frozen pytest apps/worker",
+    "typecheck": "cd ../.. && uv run --frozen mypy apps/worker"
+  },
+  "dependencies": {
+    "@securefabric/core": "workspace:*",
+    "@securefabric/db": "workspace:*",
+    "@securefabric/domain": "workspace:*",
+    "@securefabric/tasks": "workspace:*"
+  }
+}
