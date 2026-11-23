@@ -1,0 +1,21 @@
+{
+  "name": "api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SecureFabric HTTP API (FastAPI) (Python; deps in pyproject.toml, managed by uv)",
+  "scripts": {
+    "dev": "cd ../.. && API_RELOAD=true API_LOG_FORMAT=console uv run --frozen securefabric-api",
+    "fix": "cd ../.. && uv run --frozen ruff check --fix apps/api && uv run --frozen ruff format apps/api",
+    "lint": "cd ../.. && uv run --frozen ruff check apps/api && uv run --frozen ruff format --check apps/api",
+    "openapi": "cd ../.. && uv run --frozen securefabric-openapi",
+    "start": "cd ../.. && uv run --frozen securefabric-api",
+    "test": "cd ../.. && uv run --frozen pytest apps/api",
+    "typecheck": "cd ../.. && uv run --frozen mypy apps/api"
+  },
+  "dependencies": {
+    "@securefabric/core": "workspace:*",
+    "@securefabric/db": "workspace:*",
+    "@securefabric/domain": "workspace:*",
+    "@securefabric/tasks": "workspace:*"
+  }
+}
