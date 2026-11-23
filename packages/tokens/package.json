@@ -1,0 +1,24 @@
+{
+  "name": "@securefabric/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./theme.css": "./src/theme.css",
+    "./tokens": "./src/tokens.ts"
+  },
+  "scripts": {
+    "check-tokens": "node scripts/generate.mjs --check && node scripts/check-contrast.mjs && design.md lint DESIGN.md",
+    "contrast": "node scripts/check-contrast.mjs",
+    "generate": "node scripts/generate.mjs",
+    "lint": "biome check .",
+    "lint:design": "design.md lint DESIGN.md",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@google/design.md": "0.4.0",
+    "@securefabric/config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

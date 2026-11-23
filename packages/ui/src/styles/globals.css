@@ -1,0 +1,22 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/* Every colour, radius, font and type step, light and dark, comes from the
+   shared tokens. See packages/tokens/DESIGN.md before adding a value here. */
+@import "@securefabric/tokens/theme.css";
+@source "../../../apps/**/*.{ts,tsx}";
+@source "../**/*.{ts,tsx}";
+
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	body {
+		@apply font-sans bg-background text-foreground;
+	}
+	html {
+		@apply font-sans;
+	}
+}
