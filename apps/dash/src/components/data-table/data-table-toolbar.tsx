@@ -1,16 +1,16 @@
 "use client";
 
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { useControls } from "@/components/data-table/controls";
-import { useDataTable } from "@/components/data-table/data-table-provider";
-import { Button } from "@/components/ui/button";
-import { Kbd } from "@/components/ui/kbd";
+import { Button } from "@securefabric/ui/components/button";
+import { Kbd } from "@securefabric/ui/primitives/kbd";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@securefabric/ui/primitives/tooltip";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { useControls } from "@/components/data-table/controls";
+import { useDataTable } from "@/components/data-table/data-table-provider";
 import { useHotKey } from "@/hooks/use-hot-key";
 import { formatCompactNumber } from "@/lib/table/format";
 import { DataTableFilterControlsDrawer } from "./data-table-filter-controls-drawer";
@@ -50,18 +50,18 @@ export function DataTableToolbar({ renderActions }: DataTableToolbarProps) {
 							{open ? (
 								<>
 									<PanelLeftClose className="h-4 w-4" />
-									<span className="hidden md:block">Hide Controls</span>
+									<span className="hidden md:block">Hide filters</span>
 								</>
 							) : (
 								<>
 									<PanelLeftOpen className="h-4 w-4" />
-									<span className="hidden md:block">Show Controls</span>
+									<span className="hidden md:block">Show filters</span>
 								</>
 							)}
 						</TooltipTrigger>
 						<TooltipContent side="right">
 							<p className="text-nowrap">
-								Toggle controls with{" "}
+								Toggle filters with{" "}
 								<Kbd className="text-muted-foreground group-hover:text-accent-foreground ml-1">
 									<span className="mr-1">⌘⇧</span>
 									<span>B</span>
@@ -82,13 +82,13 @@ export function DataTableToolbar({ renderActions }: DataTableToolbarProps) {
 						<span className="font-mono font-medium">
 							{formatCompactNumber(rows.total)}
 						</span>{" "}
-						row(s) <span className="sr-only sm:not-sr-only">filtered</span>
+						{rows.total === 1 ? "row" : "rows"}
 					</p>
 					<p className="text-muted-foreground block text-sm sm:hidden">
 						<span className="font-mono font-medium">
 							{formatCompactNumber(rows.filtered)}
 						</span>{" "}
-						row(s)
+						{rows.filtered === 1 ? "row" : "rows"}
 					</p>
 				</div>
 			</div>

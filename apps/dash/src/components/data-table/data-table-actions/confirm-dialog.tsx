@@ -1,7 +1,5 @@
 "use client";
 
-import { LoaderCircle } from "lucide-react";
-import * as React from "react";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -11,7 +9,9 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@securefabric/ui/primitives/alert-dialog";
+import { LoaderCircle } from "lucide-react";
+import * as React from "react";
 import type { ActionDescriptor } from "@/lib/actions/types";
 import { interpolate } from "./utils";
 
@@ -36,8 +36,8 @@ export function describeCommand(command: ConfirmingCommandView): {
 
 	if (actual !== undefined) {
 		return {
-			description: `You were shown ${count} ${plural(count, "row")}; the server now counts ${actual}. Apply to ${actual} ${plural(actual, "row")} anyway?`,
-			title: `${action.label}: the matching set changed`,
+			description: `The filters matched ${count} ${plural(count, "row")}; they now match ${actual}. Apply to ${actual} ${plural(actual, "row")} anyway?`,
+			title: `${action.label}: the matching rows changed`,
 		};
 	}
 
@@ -51,7 +51,7 @@ export function describeCommand(command: ConfirmingCommandView): {
 	}
 	if (skipped > 0) {
 		parts.push(
-			`${skipped} selected ${plural(skipped, "row")} ${skipped === 1 ? "does" : "do"} not qualify and will be skipped.`
+			`${skipped} selected ${plural(skipped, "row")} ${skipped === 1 ? "doesn't" : "don't"} qualify and will be skipped.`
 		);
 	}
 	return { description: parts.length > 0 ? parts.join(" ") : null, title };

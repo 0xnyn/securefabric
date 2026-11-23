@@ -1,7 +1,5 @@
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { FilterIcon } from "lucide-react";
-import React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@securefabric/ui/components/button";
 import {
 	Drawer,
 	DrawerClose,
@@ -11,14 +9,16 @@ import {
 	DrawerHeader,
 	DrawerTitle,
 	DrawerTrigger,
-} from "@/components/ui/drawer";
-import { Kbd } from "@/components/ui/kbd";
+} from "@securefabric/ui/primitives/drawer";
+import { Kbd } from "@securefabric/ui/primitives/kbd";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@securefabric/ui/primitives/tooltip";
+import { FilterIcon } from "lucide-react";
+import React from "react";
 import { useHotKey } from "@/hooks/use-hot-key";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { DataTableFilterControls } from "./data-table-filter-controls";
@@ -71,7 +71,7 @@ export function DataTableFilterControlsDrawer() {
 				<VisuallyHidden>
 					<DrawerHeader>
 						<DrawerTitle>Filters</DrawerTitle>
-						<DrawerDescription>Adjust your table filters</DrawerDescription>
+						<DrawerDescription>Narrow down the rows.</DrawerDescription>
 					</DrawerHeader>
 				</VisuallyHidden>
 				<div className="flex-1 overflow-y-auto px-4">

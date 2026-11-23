@@ -227,11 +227,11 @@ describe("describeCommand", () => {
 		expect(
 			describeCommand({ action: discard, count: 7, scope: "ids", skipped: 3 })
 				.description
-		).toBe("3 selected rows do not qualify and will be skipped.");
+		).toBe("3 selected rows don't qualify and will be skipped.");
 		expect(
 			describeCommand({ action: discard, count: 7, scope: "ids", skipped: 1 })
 				.description
-		).toBe("1 selected row does not qualify and will be skipped.");
+		).toBe("1 selected row doesn't qualify and will be skipped.");
 		expect(
 			describeCommand({
 				action: replay,
@@ -253,8 +253,8 @@ describe("describeCommand", () => {
 			})
 		).toEqual({
 			description:
-				"You were shown 40 rows; the server now counts 38. Apply to 38 rows anyway?",
-			title: "Replay: the matching set changed",
+				"The filters matched 40 rows; they now match 38. Apply to 38 rows anyway?",
+			title: "Replay: the matching rows changed",
 		});
 	});
 });

@@ -1,16 +1,16 @@
 import { cn } from "@securefabric/ui/lib/utils";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@securefabric/ui/primitives/tooltip";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import {
 	TOOLTIP_DELAY,
 	TOOLTIP_NOT_HOVERABLE,
 } from "@/components/data-table/ui-compat";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface TextWithTooltipProps {
 	className?: string;

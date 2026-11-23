@@ -1,5 +1,6 @@
 "use client";
 
+import { Checkbox } from "@securefabric/ui/primitives/checkbox";
 import type { ColumnDef, RowData } from "@tanstack/react-table";
 import type { ComponentProps, JSX } from "react";
 import {
@@ -17,7 +18,6 @@ import {
 	DataTableCellTimestamp,
 } from "@/components/data-table/data-table-cell";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import { Checkbox } from "@/components/ui/checkbox";
 import { defineFilters } from "@/lib/filters";
 import type { DataTableFeatures } from "@/lib/table/features";
 import { resolveColumns } from "../col";

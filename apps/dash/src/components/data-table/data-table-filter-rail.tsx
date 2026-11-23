@@ -17,7 +17,7 @@ export function DataTableFilterRail({
 	return (
 		<button
 			aria-expanded={open}
-			aria-label="Toggle Filters"
+			aria-label="Toggle filters"
 			className={cn(
 				// z-30: above the table's own sticky header, which is z-20
 				"absolute inset-y-0 left-0 z-30 hidden w-4 -translate-x-1/2 sm:block",
@@ -29,7 +29,7 @@ export function DataTableFilterRail({
 			data-slot="data-table-filter-rail"
 			onClick={() => setOpen((prev) => !prev)}
 			tabIndex={-1}
-			title="Toggle Filters"
+			title="Toggle filters"
 			type="button"
 			{...props}
 		/>

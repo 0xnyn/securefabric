@@ -1,15 +1,15 @@
 "use client";
 
-import { X } from "lucide-react";
-import { useDataTable } from "@/components/data-table/data-table-provider";
-import { Button } from "@/components/ui/button";
-import { Kbd } from "@/components/ui/kbd";
+import { Button } from "@securefabric/ui/components/button";
+import { Kbd } from "@securefabric/ui/primitives/kbd";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@securefabric/ui/primitives/tooltip";
+import { X } from "lucide-react";
+import { useDataTable } from "@/components/data-table/data-table-provider";
 import { useHotKey } from "@/hooks/use-hot-key";
 import { TOOLTIP_DELAY } from "./ui-compat";
 
@@ -29,11 +29,11 @@ export function DataTableResetButton() {
 					}
 				>
 					<X className="mr-2 h-4 w-4" />
-					Reset
+					Clear
 				</TooltipTrigger>
 				<TooltipContent side="left">
 					<p className="text-nowrap">
-						Reset filters with{" "}
+						Clear filters with{" "}
 						<Kbd className="text-muted-foreground group-hover:text-accent-foreground ml-1">
 							<span className="mr-1">⌘</span>
 							<span>Esc</span>

@@ -2,15 +2,15 @@
 
 import { UTCDate } from "@date-fns/utc";
 import { cn } from "@securefabric/ui/lib/utils";
-import { format, formatDistanceToNowStrict } from "date-fns";
-import { Check, Copy } from "lucide-react";
-import type { ComponentPropsWithoutRef } from "react";
-import { HOVER_CARD_DELAY } from "@/components/data-table/ui-compat";
 import {
 	HoverCard,
 	HoverCardContent,
 	HoverCardTrigger,
-} from "@/components/ui/hover-card";
+} from "@securefabric/ui/primitives/hover-card";
+import { format, formatDistanceToNowStrict } from "date-fns";
+import { Check, Copy } from "lucide-react";
+import type { ComponentPropsWithoutRef } from "react";
+import { HOVER_CARD_DELAY } from "@/components/data-table/ui-compat";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 
 type HoverCardContentProps = ComponentPropsWithoutRef<typeof HoverCardContent>;

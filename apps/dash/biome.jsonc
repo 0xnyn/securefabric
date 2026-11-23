@@ -16,13 +16,7 @@
       // rules would make impossible. Formatting still applies; edits we
       // make on purpose are marked `securefabric:` in a comment.
       "includes": [
-        "src/components/custom/**",
         "src/components/data-table/**",
-        "src/components/ui/**",
-        // Ours, not shadcn's: the playground's own button and kit.
-        "!src/components/ui/button.tsx",
-        "!src/components/ui/overlay.tsx",
-        "!src/components/ui/primitives.tsx",
         "src/hooks/**",
         "src/lib/{actions,constants,data-table,filters,request,store,table,table-schema}/**",
         "src/lib/{colors,compose-refs,date-preset,delimiters,is-array,style}.ts",

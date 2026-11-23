@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import type { DateRange } from "react-day-picker";
-import { DatePickerWithRange } from "@/components/custom/date-picker-with-range";
 import { useDataTable } from "@/components/data-table/data-table-provider";
+import { DatePickerWithRange } from "@/components/data-table/ui/date-picker-with-range";
 import { isArrayOfDates } from "@/lib/is-array";
 import type { DataTableTimerangeFilterField } from "./types";
 

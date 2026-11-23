@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Slider } from "@/components/custom/slider";
-import { useDataTable } from "@/components/data-table/data-table-provider";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
-} from "@/components/ui/input-group";
-import { Label } from "@/components/ui/label";
+} from "@securefabric/ui/primitives/input-group";
+import { Label } from "@securefabric/ui/primitives/label";
+import { useEffect, useState } from "react";
+import { useDataTable } from "@/components/data-table/data-table-provider";
+import { Slider } from "@/components/data-table/ui/slider";
 import { useDebounce } from "@/hooks/use-debounce";
 import { isArrayOfNumbers } from "@/lib/is-array";
 import type { DataTableSliderFilterField } from "./types";

@@ -1,8 +1,8 @@
 "use client";
 
+import { Button } from "@securefabric/ui/components/button";
 import * as React from "react";
 import { DataTableContext } from "@/components/data-table/data-table-provider";
-import { Button } from "@/components/ui/button";
 import { useDataTableActions } from "./provider";
 import { actionsForScope, partitionRows } from "./utils";
 

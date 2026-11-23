@@ -1,6 +1,13 @@
 "use client";
 
+import { Button } from "@securefabric/ui/components/button";
 import { cn } from "@securefabric/ui/lib/utils";
+import {
+	type ChartConfig,
+	ChartContainer,
+	ChartTooltip,
+	ChartTooltipContent,
+} from "@securefabric/ui/primitives/chart";
 import { format } from "date-fns";
 import { ZoomIn } from "lucide-react";
 import type * as React from "react";
@@ -8,13 +15,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Bar, BarChart, CartesianGrid, ReferenceArea, XAxis } from "recharts";
 import { useDataTable } from "@/components/data-table/data-table-provider";
-import { Button } from "@/components/ui/button";
-import {
-	type ChartConfig,
-	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
-} from "@/components/ui/chart";
 import type { BaseChartSchema } from "@/lib/data-table/types";
 import { boxRadiusClassName } from "@/lib/style";
 import type { Box } from "./timeline-chart-utils";

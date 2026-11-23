@@ -1,13 +1,7 @@
 "use client";
 
+import { buttonVariants } from "@securefabric/ui/components/button";
 import { cn } from "@securefabric/ui/lib/utils";
-import { Command as CommandPrimitive } from "cmdk";
-import { formatDistanceToNow } from "date-fns";
-import { LoaderCircle, Search, X } from "lucide-react";
-import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useDataTable } from "@/components/data-table/data-table-provider";
-import { buttonVariants } from "@/components/ui/button";
 import {
 	Command,
 	CommandEmpty,
@@ -15,9 +9,15 @@ import {
 	CommandItem,
 	CommandList,
 	CommandSeparator,
-} from "@/components/ui/command";
-import { Kbd } from "@/components/ui/kbd";
-import { Separator } from "@/components/ui/separator";
+} from "@securefabric/ui/primitives/command";
+import { Kbd } from "@securefabric/ui/primitives/kbd";
+import { Separator } from "@securefabric/ui/primitives/separator";
+import { Command as CommandPrimitive } from "cmdk";
+import { formatDistanceToNow } from "date-fns";
+import { LoaderCircle, Search, X } from "lucide-react";
+import type React from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useDataTable } from "@/components/data-table/data-table-provider";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { getCommandHistoryKey } from "@/lib/constants/local-storage";
 import type { SchemaDefinition } from "@/lib/store/schema/types";
@@ -184,7 +184,7 @@ export function DataTableFilterCommand({
 					{inputValue.trim() ? (
 						<span className="text-foreground">{inputValue}</span>
 					) : (
-						<span>Search data table...</span>
+						<span>Filter rows…</span>
 					)}
 				</span>
 				<Kbd className="text-muted-foreground ml-auto">/</Kbd>
@@ -246,7 +246,7 @@ export function DataTableFilterCommand({
 							}
 						}}
 						onValueChange={setInputValue}
-						placeholder="Search data table..."
+						placeholder="Filter rows, like field:value"
 						ref={inputRef}
 						value={inputValue}
 					/>
@@ -417,7 +417,7 @@ export function DataTableFilterCommand({
 										);
 									})}
 							</CommandGroup>
-							<CommandEmpty>No results found.</CommandEmpty>
+							<CommandEmpty>No filters match.</CommandEmpty>
 						</CommandList>
 						<div
 							className="bg-accent/50 text-accent-foreground flex flex-wrap justify-between gap-3 border-t px-2 py-1.5 text-sm"
@@ -428,7 +428,7 @@ export function DataTableFilterCommand({
 									Use <Kbd>↑</Kbd> <Kbd>↓</Kbd> to navigate
 								</span>
 								<span>
-									<Kbd>Enter</Kbd> to query
+									<Kbd>Enter</Kbd> to apply
 								</span>
 								<span>
 									<Kbd>Esc</Kbd> to close
@@ -438,13 +438,13 @@ export function DataTableFilterCommand({
 									orientation="vertical"
 								/>
 								<span>
-									Union: <Kbd>regions:a,b</Kbd>
+									Any of: <Kbd>field:a,b</Kbd>
 								</span>
 								<span>
-									Range: <Kbd>p95:59-340</Kbd>
+									Range: <Kbd>field:1-10</Kbd>
 								</span>
 								<span>
-									Spaces: <Kbd>name:&quot;a b&quot;</Kbd>
+									Spaces: <Kbd>field:&quot;a b&quot;</Kbd>
 								</span>
 							</div>
 							{lastSearches.length ? (

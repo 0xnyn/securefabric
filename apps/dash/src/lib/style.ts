@@ -1,4 +1,4 @@
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@securefabric/ui/components/button";
 
 /**
  * The unprefixed `rounded` / `rounded-*` utilities of a class string, e.g.

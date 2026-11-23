@@ -229,7 +229,7 @@ describe("DataTableActionsBar", () => {
 		expect(calls).toHaveLength(0);
 		expect(dialog()?.textContent).toContain("Discard 1 messages?");
 		expect(dialog()?.textContent).toContain(
-			"2 selected rows do not qualify and will be skipped."
+			"2 selected rows don't qualify and will be skipped."
 		);
 
 		act(() => dialogButton("Discard").click());
@@ -317,7 +317,9 @@ describe("DataTableActionsBar", () => {
 		act(() => dialogButton("Discard").click());
 		await flush();
 		expect(dialog()).toBeNull();
-		expect(toast.error).toHaveBeenCalledWith("Discard failed: failed");
+		expect(toast.error).toHaveBeenCalledWith("Discard failed", {
+			description: "failed",
+		});
 	});
 
 	it("cancelling the confirmation sends nothing", async () => {
@@ -371,7 +373,9 @@ describe("DataTableActionsBar", () => {
 		mount(<DataTableActionsBar rows={rows} />);
 		act(() => button("replay").click());
 		await flush();
-		expect(toast.error).toHaveBeenCalledWith("Replay failed: failed");
+		expect(toast.error).toHaveBeenCalledWith("Replay failed", {
+			description: "failed",
+		});
 	});
 });
 
@@ -405,8 +409,8 @@ describe("count_mismatch", () => {
 			filter: { level: ["error"] },
 			scope: "filter",
 		});
-		expect(dialog()?.textContent).toContain("the matching set changed");
-		expect(dialog()?.textContent).toContain("now counts 38");
+		expect(dialog()?.textContent).toContain("the matching rows changed");
+		expect(dialog()?.textContent).toContain("now match 38");
 		expect(toast.error).not.toHaveBeenCalled();
 
 		act(() => dialogButton("Apply anyway").click());
@@ -575,7 +579,9 @@ describe("concurrent triggers", () => {
 		act(() => dialogButton("Discard").click());
 		await flush();
 
-		expect(toast.error).toHaveBeenCalledWith("Discard failed: failed");
+		expect(toast.error).toHaveBeenCalledWith("Discard failed", {
+			description: "failed",
+		});
 		expect(dialog()).toBeNull();
 	});
 });

@@ -1,5 +1,5 @@
 import { cn } from "@securefabric/ui/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@securefabric/ui/primitives/skeleton";
 import type { SheetField } from "../types";
 
 interface SheetDetailsContentSkeletonProps<TData, TMeta> {

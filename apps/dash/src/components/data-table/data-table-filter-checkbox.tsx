@@ -1,17 +1,17 @@
 "use client";
 
 import { cn } from "@securefabric/ui/lib/utils";
-import { Search } from "lucide-react";
-import { useState } from "react";
-import { useDataTable } from "@/components/data-table/data-table-provider";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@securefabric/ui/primitives/checkbox";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
-} from "@/components/ui/input-group";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@securefabric/ui/primitives/input-group";
+import { Label } from "@securefabric/ui/primitives/label";
+import { Skeleton } from "@securefabric/ui/primitives/skeleton";
+import { Search } from "lucide-react";
+import { useState } from "react";
+import { useDataTable } from "@/components/data-table/data-table-provider";
 import { boxRadiusClassName, boxSurfaceClassName } from "@/lib/style";
 import { formatCompactNumber } from "@/lib/table/format";
 import type { DataTableCheckboxFilterField } from "./types";
@@ -64,9 +64,15 @@ export function DataTableFilterCheckbox<TData>({
 		);
 	}
 
+	// Facets come from the rows, so an empty table has nothing to offer. Say so
+	// rather than leave an open section with a blank gap under it.
+	if (!options?.length) {
+		return <p className="text-muted-foreground px-2 pb-1 text-sm">None yet</p>;
+	}
+
 	return (
 		<div className="grid gap-2">
-			{options && options.length > 4 ? (
+			{options.length > 4 ? (
 				<InputGroup className="h-9 shadow-none">
 					<InputGroupAddon>
 						<Search className="mt-0.5 h-4 w-4" />
@@ -78,10 +84,14 @@ export function DataTableFilterCheckbox<TData>({
 					/>
 				</InputGroup>
 			) : null}
-			{/* FIXME: due to the added max-h and overflow-y-auto, the hover state and border is laying on top of the scroll bar */}
+			{/*
+        No max-height of its own: the filter panel already scrolls, and a box
+        that scrolls inside a list that scrolls is a second scrollbar for
+        nothing. The search box above narrows long lists instead.
+      */}
 			<div
 				className={cn(
-					"max-h-[200px] overflow-y-auto border empty:border-none",
+					"overflow-hidden border empty:border-none",
 					boxSurfaceClassName
 				)}
 			>
@@ -120,7 +130,11 @@ export function DataTableFilterCheckbox<TData>({
 									) : (
 										<span className="truncate font-normal">{option.label}</span>
 									)}
-									<span className="ml-auto flex items-center justify-center font-mono text-xs">
+									{/*
+                    The count and "Only" share one slot: hover or focus the row
+                    and the count gives way, so the two never overlap.
+                  */}
+									<span className="ml-auto flex items-center justify-center font-mono text-xs group-focus-within:hidden group-hover:hidden">
 										{isLoading ? (
 											<Skeleton className="h-4 w-4" />
 										) : facetedValue?.has(option.value) ? (
@@ -128,15 +142,16 @@ export function DataTableFilterCheckbox<TData>({
 										) : null}
 									</span>
 									<button
+										aria-label={`Only ${option.label}`}
 										className={cn(
-											"text-muted-foreground hover:text-foreground absolute inset-y-0 right-0 hidden font-normal backdrop-blur-xs group-hover:block",
-											"focus-visible:border-ring focus-visible:ring-ring/50 transition-all outline-none focus-visible:ring-[3px]",
+											"text-muted-foreground hover:text-foreground ml-auto hidden px-1 text-xs font-normal group-focus-within:block group-hover:block",
+											"focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
 											boxRadiusClassName
 										)}
 										onClick={() => column?.setFilterValue([option.value])}
 										type="button"
 									>
-										<span className="px-2">only</span>
+										Only
 									</button>
 								</Label>
 							</div>

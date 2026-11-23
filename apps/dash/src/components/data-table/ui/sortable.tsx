@@ -32,10 +32,10 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Slot, type SlotProps } from "@radix-ui/react-slot";
+import { Button } from "@securefabric/ui/components/button";
 import { cn } from "@securefabric/ui/lib/utils";
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { Button } from "@/components/ui/button";
 import { composeRefs } from "@/lib/compose-refs";
 
 const orientationConfig = {

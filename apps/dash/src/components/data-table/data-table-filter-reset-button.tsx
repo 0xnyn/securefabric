@@ -1,8 +1,8 @@
 "use client";
 
+import { Button } from "@securefabric/ui/components/button";
 import { X } from "lucide-react";
 import { useDataTable } from "@/components/data-table/data-table-provider";
-import { Button } from "@/components/ui/button";
 import type { DataTableFilterField } from "./types";
 
 export function DataTableFilterResetButton<TData>({

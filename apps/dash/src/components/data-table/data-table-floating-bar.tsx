@@ -1,17 +1,17 @@
 "use client";
 
+import { Button } from "@securefabric/ui/components/button";
 import { cn } from "@securefabric/ui/lib/utils";
-import type { Row, RowData, Table as TTable } from "@tanstack/react-table";
-import { X } from "lucide-react";
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Kbd } from "@/components/ui/kbd";
+import { Kbd } from "@securefabric/ui/primitives/kbd";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@securefabric/ui/primitives/tooltip";
+import type { Row, RowData, Table as TTable } from "@tanstack/react-table";
+import { X } from "lucide-react";
+import * as React from "react";
 import { useHotKey } from "@/hooks/use-hot-key";
 import { boxRadiusClassName } from "@/lib/style";
 import type { DataTableFeatures } from "@/lib/table/features";

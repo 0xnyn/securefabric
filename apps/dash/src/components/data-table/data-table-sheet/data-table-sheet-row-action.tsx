@@ -1,4 +1,12 @@
 import { cn } from "@securefabric/ui/lib/utils";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@securefabric/ui/primitives/dropdown-menu";
 import type { RowData, Table } from "@tanstack/react-table";
 import { endOfDay, endOfHour, startOfDay, startOfHour } from "date-fns";
 import {
@@ -11,14 +19,6 @@ import {
 	Equal,
 	Search,
 } from "lucide-react";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { boxRadiusClassName } from "@/lib/style";
 import type { DataTableFeatures } from "@/lib/table/features";

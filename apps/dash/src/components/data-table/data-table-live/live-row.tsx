@@ -1,12 +1,12 @@
 import { cn } from "@securefabric/ui/lib/utils";
 import * as React from "react";
-import { TableCell, TableRow } from "@/components/custom/table";
 import { DataTableCellLevelIndicator as DataTableColumnLevelIndicator } from "@/components/data-table/data-table-cell";
 import { useDataTable } from "@/components/data-table/data-table-provider";
+import { TableCell, TableRow } from "@/components/data-table/ui/table";
 import { getLiveRowLayout } from "./live-row-layout";
 
 interface LiveRowProps {
-	/** Rendered in the label cell. Defaults to "Live Mode". */
+	/** Rendered in the label cell. Defaults to "Live mode". */
 	children?: React.ReactNode;
 	className?: string;
 	/** Rendered in the indicator cell. Defaults to the "info" level indicator. */
@@ -47,7 +47,7 @@ type LiveRowCell = {
 export function LiveRow({
 	indicatorColumnId = "level",
 	indicator = <DataTableColumnLevelIndicator value="info" />,
-	children = "Live Mode",
+	children = "Live mode",
 	className,
 }: LiveRowProps) {
 	const { table } = useDataTable();

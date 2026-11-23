@@ -14,7 +14,7 @@
   "aliases": {
     "components": "@/components",
     "utils": "@securefabric/ui/lib/utils",
-    "ui": "@/components/ui",
+    "ui": "@securefabric/ui/primitives",
     "lib": "@/lib",
     "hooks": "@/hooks"
   },

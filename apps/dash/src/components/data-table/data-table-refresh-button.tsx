@@ -1,8 +1,8 @@
 "use client";
 
+import { Button } from "@securefabric/ui/components/button";
 import { LoaderCircle, RefreshCcw } from "lucide-react";
 import { useDataTable } from "@/components/data-table/data-table-provider";
-import { Button } from "@/components/ui/button";
 
 /**
  * A toolbar action that re-reads the table from the top. Pair it with

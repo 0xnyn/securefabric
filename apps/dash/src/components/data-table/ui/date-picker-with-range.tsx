@@ -1,21 +1,16 @@
 "use client";
 
+import { Button } from "@securefabric/ui/components/button";
 import { cn } from "@securefabric/ui/lib/utils";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
-import * as React from "react";
-import type { DateRange } from "react-day-picker";
-import type { DatePreset } from "@/components/data-table/types";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
-import { Kbd } from "@/components/ui/kbd";
-import { Label } from "@/components/ui/label";
+import { Calendar } from "@securefabric/ui/primitives/calendar";
+import { Input } from "@securefabric/ui/primitives/input";
+import { Kbd } from "@securefabric/ui/primitives/kbd";
+import { Label } from "@securefabric/ui/primitives/label";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@securefabric/ui/primitives/popover";
 import {
 	Select,
 	SelectContent,
@@ -23,8 +18,13 @@ import {
 	SelectItem,
 	SelectLabel,
 	SelectTrigger,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+} from "@securefabric/ui/primitives/select";
+import { Separator } from "@securefabric/ui/primitives/separator";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import * as React from "react";
+import type { DateRange } from "react-day-picker";
+import type { DatePreset } from "@/components/data-table/types";
 import { useDebounce } from "@/hooks/use-debounce";
 import { presets as defaultPresets } from "@/lib/date-preset";
 
@@ -84,7 +84,7 @@ export function DatePickerWithRange({
 							format(date.from, "LLL dd, y")
 						)
 					) : (
-						<span>Pick a date</span>
+						<span>Any time</span>
 					)}
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-auto p-0">
@@ -134,7 +134,7 @@ function DatePresets({
 }) {
 	return (
 		<div className="flex flex-col gap-2 p-3">
-			<p className="text-muted-foreground mx-3 text-xs uppercase">Date Range</p>
+			<p className="text-muted-foreground mx-3 text-xs uppercase">Date range</p>
 			<div className="grid gap-1">
 				{presets.map(({ label, shortcut, from, to }) => {
 					const isActive = selected?.from === from && selected?.to === to;
@@ -200,11 +200,11 @@ function DatePresetsSelect({
           looking the same on both libraries. */}
 			<SelectTrigger className={cn(!value && "text-muted-foreground")}>
 				{presets.find((preset) => preset.shortcut === value)?.label ??
-					"Date Presets"}
+					"Pick a range"}
 			</SelectTrigger>
 			<SelectContent>
 				<SelectGroup>
-					<SelectLabel>Date Presets</SelectLabel>
+					<SelectLabel>Presets</SelectLabel>
 					{presets.map(({ label, shortcut }) => (
 						<SelectItem
 							className="flex items-center justify-between [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:justify-between"
@@ -253,7 +253,7 @@ function CustomDateRange({
 
 	return (
 		<div className="flex flex-col gap-2 p-3">
-			<p className="text-muted-foreground text-xs uppercase">Custom Range</p>
+			<p className="text-muted-foreground text-xs uppercase">Custom range</p>
 			<div className="grid gap-2 sm:grid-cols-2">
 				<div className="grid w-full gap-1.5">
 					<Label htmlFor="from">Start</Label>

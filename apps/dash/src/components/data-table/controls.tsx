@@ -17,7 +17,10 @@ export function ControlsProvider({ children }: { children: React.ReactNode }) {
 			<div
 				// REMINDER: access the data-expanded state with tailwind via `group-data-[expanded=true]/controls:block`
 				// In tailwindcss v4, we could even use `group-data-expanded/controls:block`
-				className="group/controls"
+				// h-full: the table under it sizes itself with h-full, and one
+				// unsized wrapper here lets the filter list push the page into a
+				// second scrollbar.
+				className="group/controls h-full"
 				data-expanded={open}
 			>
 				{children}

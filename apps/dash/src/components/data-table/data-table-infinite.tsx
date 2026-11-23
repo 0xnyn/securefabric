@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@securefabric/ui/components/button";
 import { cn } from "@securefabric/ui/lib/utils";
 import type {
 	FetchNextPageOptions,
@@ -17,16 +18,8 @@ import type {
 	Table as TTable,
 } from "@tanstack/react-table";
 import { flexRender, Subscribe, useTable } from "@tanstack/react-table";
-import { LoaderCircle } from "lucide-react";
+import { Inbox, LoaderCircle, SearchX } from "lucide-react";
 import * as React from "react";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/custom/table";
 import { useControls } from "@/components/data-table/controls";
 import { DataTableFilterControls } from "@/components/data-table/data-table-filter-controls";
 import { DataTableFilterRail } from "@/components/data-table/data-table-filter-rail";
@@ -34,7 +27,14 @@ import { DataTableProvider } from "@/components/data-table/data-table-provider";
 import { DataTableResetButton } from "@/components/data-table/data-table-reset-button";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar"; // TODO: check where to put this
 import type { DataTableFilterField } from "@/components/data-table/types";
-import { Button } from "@/components/ui/button";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/data-table/ui/table";
 import { useHotKey } from "@/hooks/use-hot-key";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import {
@@ -71,6 +71,12 @@ export interface DataTableInfiniteProps<TData extends RowData> {
 	defaultColumnSorting?: SortingState;
 	defaultColumnVisibility?: ColumnVisibilityState;
 	defaultRowSelection?: RowSelectionState;
+	/**
+	 * What to say when there are no rows and no filters are set: the first
+	 * visit, before anything has happened. With filters set the table says
+	 * nothing matches and offers to clear them.
+	 */
+	emptyState?: { title: string; description: React.ReactNode };
 	fetchNextPage: (
 		options?: FetchNextPageOptions | undefined
 	) => Promise<unknown>;
@@ -151,6 +157,7 @@ export function DataTableInfinite<TData extends RowData>({
 	sheetSlot,
 	toolbarActions,
 	chartSlot,
+	emptyState,
 	footerSlot,
 	floatingBarSlot,
 	className,
@@ -178,19 +185,6 @@ export function DataTableInfinite<TData extends RowData>({
 		[columns]
 	);
 
-	const onScroll = React.useCallback(
-		(e: React.UIEvent<HTMLElement>) => {
-			const onPageBottom =
-				Math.ceil(e.currentTarget.scrollTop + e.currentTarget.clientHeight) >=
-				e.currentTarget.scrollHeight;
-
-			if (onPageBottom && !isFetching && totalRowsFetched < (filterRows ?? 0)) {
-				fetchNextPage();
-			}
-		},
-		[fetchNextPage, isFetching, filterRows, totalRowsFetched]
-	);
-
 	// See `canLoadMore` — `hasNextPage` stays true past the final row because the
 	// API only signals the end with an empty page.
 	const hasMoreToLoad = canLoadMore({
@@ -198,6 +192,21 @@ export function DataTableInfinite<TData extends RowData>({
 		hasNextPage,
 		totalRowsFetched,
 	});
+
+	// Load the next page a little before the bottom, so scrolling doesn't stall
+	// on a spinner. Without a server count (`filterRows`), `hasNextPage` decides.
+	const onScroll = React.useCallback(
+		(e: React.UIEvent<HTMLElement>) => {
+			const nearBottom =
+				e.currentTarget.scrollTop + e.currentTarget.clientHeight >=
+				e.currentTarget.scrollHeight - 320;
+
+			if (nearBottom && !isFetching && hasMoreToLoad) {
+				fetchNextPage();
+			}
+		},
+		[fetchNextPage, isFetching, hasMoreToLoad]
+	);
 
 	/**
 	 * BREAKING (v9): the options object has to be memoized by the caller.
@@ -307,6 +316,8 @@ export function DataTableInfinite<TData extends RowData>({
 
 	const { setFilters } = useFilterActions();
 
+	const isEmpty = !isLoading && table.getRowModel().rows.length === 0;
+
 	/**
 	 * REMINDER: the detail row id is deliberately *not* read here.
 	 * Subscribing to it at this level re-rendered the entire table on every
@@ -376,7 +387,7 @@ export function DataTableInfinite<TData extends RowData>({
 						</div>
 					</div>
 					{/* REMINDER: no top padding - it would offset the first filter row */}
-					<div className="min-h-0 flex-1 px-2 pb-2 sm:overflow-y-scroll">
+					<div className="no-scrollbar min-h-0 flex-1 px-2 pb-2 sm:overflow-y-auto">
 						<DataTableFilterControls />
 					</div>
 					{footerSlot ? (
@@ -415,11 +426,19 @@ export function DataTableInfinite<TData extends RowData>({
 						{chartSlot}
 					</div>
 					{/* `min-h-0` lets the flex item shrink so the table container scrolls instead of the page. */}
-					<div className="z-0 min-h-0 flex-1">
+					<div className="z-0 flex min-h-0 flex-1 flex-col">
 						<Table
 							// REMINDER: https://stackoverflow.com/questions/50361698/border-style-do-not-work-with-sticky-position-element
 							className="border-separate border-spacing-0"
-							containerClassName="max-h-full"
+							// Empty, there is nothing to scroll to: the headers clip at the
+							// edge instead of growing a scrollbar under an empty table.
+							containerClassName={cn(
+								// Thin and invisible at rest; the bars appear while the pointer
+								// is over the table or it has focus, so a still page draws none.
+								"max-h-full [scrollbar-color:transparent_transparent] [scrollbar-width:thin]",
+								"focus-within:[scrollbar-color:var(--border)_transparent] hover:[scrollbar-color:var(--border)_transparent]",
+								isEmpty && "shrink-0 overflow-hidden"
+							)}
 							onScroll={onScroll}
 							ref={tableRef}
 						>
@@ -499,46 +518,58 @@ export function DataTableInfinite<TData extends RowData>({
 								) : (
 									<React.Fragment>
 										{renderLiveRow?.()}
-										<TableRow>
-											<TableCell
-												className="h-24 text-center"
-												colSpan={columns.length}
-											>
-												No results.
-											</TableCell>
-										</TableRow>
+										{isLoading ? (
+											<LoadingRows columns={columns.length} />
+										) : null}
 									</React.Fragment>
 								)}
-								<TableRow className="hover:bg-transparent data-[state=selected]:bg-transparent">
-									<TableCell className="text-center" colSpan={columns.length}>
-										{hasMoreToLoad || isFetching || isLoading ? (
-											<Button
-												disabled={isFetching || isLoading}
-												onClick={() => fetchNextPage()}
-												variant="outline"
-											>
-												{isFetching ? (
-													<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-												) : null}
-												Load More
-											</Button>
-										) : (
-											<p className="text-muted-foreground text-sm">
-												No more data to load (
-												<span className="font-mono font-medium">
-													{formatCompactNumber(filterRows ?? 0)}
-												</span>{" "}
-												of{" "}
-												<span className="font-mono font-medium">
-													{formatCompactNumber(totalRows ?? 0)}
-												</span>{" "}
-												rows)
-											</p>
-										)}
-									</TableCell>
-								</TableRow>
+								{table.getRowModel().rows.length === 0 &&
+								!(hasMoreToLoad || isFetching || isLoading) ? null : (
+									<TableRow className="hover:bg-transparent data-[state=selected]:bg-transparent">
+										<TableCell className="text-center" colSpan={columns.length}>
+											{hasMoreToLoad || isFetching || isLoading ? (
+												<Button
+													disabled={isFetching || isLoading}
+													onClick={() => fetchNextPage()}
+													variant="outline"
+												>
+													{isFetching ? (
+														<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+													) : null}
+													Load more
+												</Button>
+											) : (
+												<p className="text-muted-foreground text-sm">
+													That's everything
+													{filterRows === undefined ? (
+														"."
+													) : (
+														<>
+															:{" "}
+															<span className="font-mono font-medium">
+																{formatCompactNumber(filterRows)}
+															</span>{" "}
+															{filterRows === 1 ? "row" : "rows"}.
+														</>
+													)}
+												</p>
+											)}
+										</TableCell>
+									</TableRow>
+								)}
 							</TableBody>
 						</Table>
+						{/*
+              Outside the table, so it centres in the space you can see rather
+              than across every column, and never scrolls sideways.
+            */}
+						{isEmpty ? (
+							<TableEmpty
+								empty={emptyState}
+								filtered={table.state.columnFilters.length > 0}
+								onClear={() => table.resetColumnFilters()}
+							/>
+						) : null}
 					</div>
 				</div>
 			</div>
@@ -731,3 +762,59 @@ const MemoizedRow = React.memo(
 		// Changes when live mode is toggled — see the prop's own reminder.
 		prev.getRowClassName === next.getRowClassName
 ) as typeof Row;
+
+/** Placeholder rows while the first page loads, so the table holds its shape. */
+function LoadingRows({ columns }: { columns: number }) {
+	return (
+		<>
+			{["a", "b", "c", "d", "e", "f"].map((id) => (
+				<TableRow className="hover:bg-transparent" key={id}>
+					<TableCell colSpan={columns}>
+						<div className="bg-muted h-4 w-full animate-pulse rounded" />
+					</TableCell>
+				</TableRow>
+			))}
+		</>
+	);
+}
+
+/**
+ * No rows. Centred in the space the table would fill, so the page doesn't
+ * collapse to a header and one line of text.
+ */
+function TableEmpty({
+	filtered,
+	onClear,
+	empty,
+}: {
+	filtered: boolean;
+	onClear: () => void;
+	empty?: { title: string; description: React.ReactNode };
+}) {
+	const title = filtered
+		? "Nothing matches these filters"
+		: (empty?.title ?? "Nothing here yet");
+	const description = filtered
+		? "Try a wider time range or fewer filters."
+		: (empty?.description ?? "Rows appear here as they're recorded.");
+	return (
+		<div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 overflow-y-auto px-6 py-12 text-center">
+			<div className="border-border bg-background text-muted-foreground flex size-10 items-center justify-center rounded-full border">
+				{filtered ? (
+					<SearchX className="size-4" />
+				) : (
+					<Inbox className="size-4" />
+				)}
+			</div>
+			<div className="grid gap-1">
+				<p className="text-foreground text-sm font-medium">{title}</p>
+				<p className="text-muted-foreground max-w-sm text-sm">{description}</p>
+			</div>
+			{filtered ? (
+				<Button onClick={onClear} size="sm">
+					Clear filters
+				</Button>
+			) : null}
+		</div>
+	);
+}

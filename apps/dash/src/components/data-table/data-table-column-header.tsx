@@ -1,8 +1,8 @@
+import { Button } from "@securefabric/ui/components/button";
 import { cn } from "@securefabric/ui/lib/utils";
 import type { Column, RowData } from "@tanstack/react-table";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type React from "react";
-import { Button } from "@/components/ui/button";
 import type { DataTableFeatures } from "@/lib/table/features";
 
 interface DataTableColumnHeaderProps<TData extends RowData, TValue>

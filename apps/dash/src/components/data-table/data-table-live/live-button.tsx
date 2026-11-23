@@ -1,11 +1,11 @@
 "use client";
 
+import { Button } from "@securefabric/ui/components/button";
 import { cn } from "@securefabric/ui/lib/utils";
 import type { FetchPreviousPageOptions } from "@tanstack/react-query";
 import { CirclePause, CirclePlay } from "lucide-react";
 import * as React from "react";
 import { useDataTable } from "@/components/data-table/data-table-provider";
-import { Button } from "@/components/ui/button";
 import { useHotKey } from "@/hooks/use-hot-key";
 import { useFilterActions } from "@/lib/store/hooks/useFilterActions";
 import { useFilterState } from "@/lib/store/hooks/useFilterState";

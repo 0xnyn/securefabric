@@ -1,14 +1,14 @@
 "use client";
 
-import type { ColumnDef, RowData } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@securefabric/ui/components/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@securefabric/ui/primitives/dropdown-menu";
+import type { ColumnDef, RowData } from "@tanstack/react-table";
+import { MoreHorizontal } from "lucide-react";
 import type { DataTableFeatures } from "@/lib/table/features";
 import { useDataTableActions } from "./provider";
 import { rowScopedActions } from "./utils";

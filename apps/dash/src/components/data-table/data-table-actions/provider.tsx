@@ -184,7 +184,7 @@ export function DataTableActionsProvider<TData>({
 				submittedFromDialog.current = null;
 				setConfirming(null);
 			}
-			toast.error(`${action.label} failed: ${error.message}`);
+			toast.error(`${action.label} failed`, { description: error.message });
 		},
 		onSuccess: (response, { action, request, meta }) => {
 			if (request.scope === "filter") {

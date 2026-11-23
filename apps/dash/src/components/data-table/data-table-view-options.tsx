@@ -1,15 +1,7 @@
 "use client";
 
+import { Button } from "@securefabric/ui/components/button";
 import { cn } from "@securefabric/ui/lib/utils";
-import { Check, GripVertical, Settings2 } from "lucide-react";
-import { useMemo, useState } from "react";
-import {
-	Sortable,
-	SortableDragHandle,
-	SortableItem,
-} from "@/components/custom/sortable";
-import { useDataTable } from "@/components/data-table/data-table-provider";
-import { Button } from "@/components/ui/button";
 import {
 	Command,
 	CommandEmpty,
@@ -17,12 +9,20 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from "@/components/ui/command";
+} from "@securefabric/ui/primitives/command";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@securefabric/ui/primitives/popover";
+import { Check, GripVertical, Settings2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useDataTable } from "@/components/data-table/data-table-provider";
+import {
+	Sortable,
+	SortableDragHandle,
+	SortableItem,
+} from "@/components/data-table/ui/sortable";
 import { boxRadiusClassName } from "@/lib/style";
 
 export function DataTableViewOptions() {
@@ -61,11 +61,11 @@ export function DataTableViewOptions() {
 				<Command>
 					<CommandInput
 						onValueChange={setSearch}
-						placeholder="Search options..."
+						placeholder="Find a column…"
 						value={search}
 					/>
 					<CommandList>
-						<CommandEmpty>No option found.</CommandEmpty>
+						<CommandEmpty>No columns found.</CommandEmpty>
 						<CommandGroup>
 							<Sortable
 								onDragCancel={() => setDrag(false)}
