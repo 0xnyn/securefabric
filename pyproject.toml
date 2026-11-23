@@ -1,0 +1,150 @@
+[project]
+name = "securefabric"
+version = "0.1.0"
+description = "SecureFabric monorepo (uv workspace root)"
+readme = "README.md"
+requires-python = ">=3.13"
+# Depending on every member means a plain `uv sync` installs the whole monorepo
+# (editable) into one shared .venv for local dev, tests and type-checking.
+dependencies = [
+    "securefabric-api",
+    "securefabric-core",
+    "securefabric-db",
+    "securefabric-domain",
+    "securefabric-tasks",
+    "securefabric-worker",
+]
+
+# The root is a virtual workspace: it is never built or installed itself.
+[tool.uv]
+package = false
+
+# Listed explicitly: apps/ and packages/ also hold the TypeScript members of the
+# pnpm/Turborepo workspace (apps/dash, packages/{client,config,tokens,ui}).
+[tool.uv.workspace]
+members = [
+    "apps/api",
+    "apps/worker",
+    "packages/core",
+    "packages/db",
+    "packages/domain",
+    "packages/tasks",
+]
+
+[tool.uv.sources]
+securefabric-api = { workspace = true }
+securefabric-core = { workspace = true }
+securefabric-db = { workspace = true }
+securefabric-domain = { workspace = true }
+securefabric-tasks = { workspace = true }
+securefabric-worker = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.16.2",
+    "mypy>=2.4.1",
+    "pre-commit>=4.7.0",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.6",
+    "watchfiles>=1.3.0",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["apps/*/src", "packages/*/src", "apps/*/tests", "packages/*/tests"]
+extend-exclude = ["**/node_modules", "**/.next", "**/.turbo"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",  # pycodestyle
+    "F",       # pyflakes
+    "I",       # isort
+    "B",       # bugbear
+    "UP",      # pyupgrade
+    "N",       # pep8-naming
+    "S",       # bandit
+    "C4",      # comprehensions
+    "SIM",     # simplify
+    "RUF",     # ruff-specific
+    "ASYNC",   # async pitfalls
+    "FAST",    # FastAPI-specific
+    "PT",      # pytest style
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "securefabric_api",
+    "securefabric_core",
+    "securefabric_db",
+    "securefabric_domain",
+    "securefabric_tasks",
+    "securefabric_worker",
+]
+
+# ---------------------------------------------------------------------------
+# Mypy
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = [
+    "apps/api/src",
+    "apps/worker/src",
+    "packages/core/src",
+    "packages/db/src",
+    "packages/domain/src",
+    "packages/tasks/src",
+]
+explicit_package_bases = true
+warn_unreachable = true
+exclude = ["node_modules/", "\\.next/", "\\.turbo/"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+# ---------------------------------------------------------------------------
+# Pytest / coverage
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --strict-config --import-mode=importlib"
+testpaths = [
+    "apps/api",
+    "apps/worker",
+    "packages/core",
+    "packages/db",
+    "packages/domain",
+    "packages/tasks",
+]
+norecursedirs = ["node_modules", ".next", ".turbo", ".venv"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "integration: needs a live Postgres with the Absurd schema (DATABASE_URL); run via `make test-integration`",
+]
+
+[tool.coverage.run]
+branch = true
+source = [
+    "securefabric_api",
+    "securefabric_core",
+    "securefabric_db",
+    "securefabric_domain",
+    "securefabric_tasks",
+    "securefabric_worker",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]

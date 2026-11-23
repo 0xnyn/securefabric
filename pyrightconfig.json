@@ -1,0 +1,14 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.13",
+  "extraPaths": [
+    "apps/api/src",
+    "apps/worker/src",
+    "packages/core/src",
+    "packages/db/src",
+    "packages/domain/src",
+    "packages/tasks/src"
+  ],
+  "exclude": ["**/__pycache__", ".venv", "**/node_modules"]
+}
