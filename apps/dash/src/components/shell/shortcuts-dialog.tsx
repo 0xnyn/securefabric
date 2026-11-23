@@ -1,13 +1,13 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@/components/ui/dialog";
+} from "@securefabric/ui/primitives/dialog";
+import { usePathname } from "next/navigation";
 import { sectionOf } from "@/lib/nav";
 import { SHORTCUT_GROUPS } from "@/lib/shortcuts";
 import { useCommandStore } from "./command-store";

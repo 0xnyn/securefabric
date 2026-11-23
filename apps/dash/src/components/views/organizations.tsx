@@ -1,43 +1,96 @@
 "use client";
 
 import { unwrap } from "@securefabric/client";
+import { Button } from "@securefabric/ui/components/button";
+import { Card } from "@securefabric/ui/components/card";
+import { Dialog, DialogContent } from "@securefabric/ui/components/dialog";
+import { Field, Input } from "@securefabric/ui/components/form";
+import { Table, Td, Th, Tr } from "@securefabric/ui/components/table";
+import { num } from "@securefabric/ui/lib/format";
+import { EntityAvatar } from "@securefabric/ui/patterns/avatar";
+import { PageBody, PageHeader } from "@securefabric/ui/patterns/page";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { PageBody, PageHeader } from "@/components/common";
-import {
-	errorText,
-	Pager,
-	QueryState,
-	useCursorStack,
-	When,
-} from "@/components/kit";
-import { useEnv, useHref } from "@/components/shell/env-context";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/overlay";
-import {
-	Card,
-	Field,
-	Input,
-	Table,
-	Td,
-	Th,
-	Tr,
-} from "@/components/ui/primitives";
+import { Gated } from "@/components/domain/access";
+import { Pager, useCursorStack } from "@/components/domain/pager";
+import { errorText, QueryState } from "@/components/domain/query-state";
+import { When } from "@/components/domain/when";
+import { useAccess, useEnv, useHref } from "@/components/shell/env-context";
 import { useDebounce } from "@/hooks/use-debounce";
 import { AddConnectionDialog } from "./add-connection";
 import { ConnectionsTable } from "./connections";
 
+/**
+ * A page-header button (default size, so it lines up with its neighbours)
+ * that asks before doing something it can't undo. kit's ConfirmButton only
+ * comes in table-row sizes.
+ */
+export function HeaderConfirmButton({
+	title,
+	description,
+	confirmLabel,
+	onConfirm,
+	disabled,
+	children,
+}: {
+	title: string;
+	description: React.ReactNode;
+	confirmLabel: string;
+	onConfirm: () => void;
+	disabled?: boolean;
+	children: React.ReactNode;
+}) {
+	const [open, setOpen] = useState(false);
+	return (
+		<>
+			<Button
+				disabled={disabled}
+				onClick={() => setOpen(true)}
+				variant="outline"
+			>
+				{children}
+			</Button>
+			<Dialog onOpenChange={setOpen} open={open}>
+				<DialogContent
+					description={description}
+					footer={
+						<>
+							<Button onClick={() => setOpen(false)}>Cancel</Button>
+							<Button
+								onClick={() => {
+									setOpen(false);
+									onConfirm();
+								}}
+								variant="destructive"
+							>
+								{confirmLabel}
+							</Button>
+						</>
+					}
+					title={title}
+				>
+					{null}
+				</DialogContent>
+			</Dialog>
+		</>
+	);
+}
+
 export function OrganizationsView() {
 	const { client, env } = useEnv();
+	const access = useAccess();
 	const href = useHref();
 	const params = useSearchParams();
 	const [search, setSearch] = useState("");
 	const q = useDebounce(search, 250);
 	const pages = useCursorStack();
-	const [open, setOpen] = useState(params.get("new") === "1");
+	const [open, setOpen] = useState(
+		params.get("new") === "1" && access.can("provisioning:write")
+	);
 	const orgs = useQuery({
 		queryFn: () =>
 			unwrap(
@@ -49,41 +102,74 @@ export function OrganizationsView() {
 			),
 		queryKey: ["organizations", env.id, q, pages.cursor],
 	});
+	const addButton = (
+		<Gated requires={{ scope: "provisioning:write" }}>
+			<Button onClick={() => setOpen(true)} variant="primary">
+				<PlusIcon /> Add organization
+			</Button>
+		</Gated>
+	);
 	return (
 		<>
 			<PageHeader
 				actions={
 					<>
 						<Input
+							aria-label="Search organizations"
 							className="w-56"
 							onChange={(e) => {
 								pages.reset();
 								setSearch(e.target.value);
 							}}
-							placeholder="Search name or identifier"
+							placeholder="Search organizations"
+							type="search"
 							value={search}
 						/>
-						<Button onClick={() => setOpen(true)} variant="primary">
-							Add organization
-						</Button>
+						{addButton}
 					</>
 				}
-				description="Your customers. Each owns its connections; data reads can be scoped to one with X-ORGANIZATION-ID."
+				description="Your customers, each with its own connections and synced data."
 				title="Organizations"
 			/>
 			<PageBody>
 				<QueryState
-					empty={{
-						action: (
-							<Button onClick={() => setOpen(true)} size="sm" variant="primary">
-								Add organization
-							</Button>
-						),
-						description:
-							"Create one per customer, keyed by your own identifier.",
-						title: q ? "No matches" : "No organizations yet",
-						when: (orgs.data?.items.length ?? 0) === 0,
-					}}
+					empty={
+						q
+							? {
+									action: (
+										<Button
+											onClick={() => {
+												pages.reset();
+												setSearch("");
+											}}
+											size="sm"
+											variant="outline"
+										>
+											Clear search
+										</Button>
+									),
+									description: `No name or identifier matches “${q}”.`,
+									title: "No matching organizations",
+									when: (orgs.data?.items.length ?? 0) === 0,
+								}
+							: {
+									action: (
+										<Gated requires={{ scope: "provisioning:write" }}>
+											<Button
+												onClick={() => setOpen(true)}
+												size="sm"
+												variant="primary"
+											>
+												<PlusIcon /> Add organization
+											</Button>
+										</Gated>
+									),
+									description:
+										"Add one for each customer, then connect their vendor accounts.",
+									title: "No organizations yet",
+									when: (orgs.data?.items.length ?? 0) === 0,
+								}
+					}
 					query={orgs}
 				>
 					<Card>
@@ -92,7 +178,7 @@ export function OrganizationsView() {
 								<Tr>
 									<Th>Name</Th>
 									<Th>Identifier</Th>
-									<Th>Connections</Th>
+									<Th className="text-right">Connections</Th>
 									<Th>Created</Th>
 								</Tr>
 							</thead>
@@ -101,14 +187,17 @@ export function OrganizationsView() {
 									<Tr className="hover:bg-muted/40" key={o.id}>
 										<Td>
 											<Link
-												className="font-medium hover:underline"
+												className="inline-flex items-center gap-3 font-medium hover:underline"
 												href={href(`/organizations/${o.id}`)}
 											>
+												<EntityAvatar name={o.name} size={24} />
 												{o.name}
 											</Link>
 										</Td>
 										<Td className="font-mono text-xs">{o.identifier}</Td>
-										<Td>{o.connection_count}</Td>
+										<Td className="text-right tabular-nums">
+											{num(o.connection_count)}
+										</Td>
 										<Td>
 											<When value={o.created_at} />
 										</Td>
@@ -148,10 +237,11 @@ function CreateOrganizationDialog({
 		mutationFn: () =>
 			unwrap(client.POST("/v1/organizations", { body: { identifier, name } })),
 		onError: (e) =>
-			toast.error("Couldn't create the organization", {
+			toast.error("Couldn't add the organization", {
 				description: errorText(e),
 			}),
 		onSuccess: async (o) => {
+			toast.success("Organization added");
 			await queryClient.invalidateQueries({
 				queryKey: ["organizations", env.id],
 			});
@@ -162,14 +252,20 @@ function CreateOrganizationDialog({
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent
+				description="Add one organization for each of your customers."
 				footer={
-					<Button
-						disabled={!(name && identifier) || create.isPending}
-						onClick={() => create.mutate()}
-						variant="primary"
-					>
-						Create
-					</Button>
+					<>
+						<Button onClick={() => onOpenChange(false)}>Cancel</Button>
+						<Gated requires={{ scope: "provisioning:write" }}>
+							<Button
+								disabled={!(name && identifier) || create.isPending}
+								onClick={() => create.mutate()}
+								variant="primary"
+							>
+								{create.isPending ? "Adding…" : "Add organization"}
+							</Button>
+						</Gated>
+					</>
 				}
 				title="Add organization"
 			>
@@ -178,11 +274,12 @@ function CreateOrganizationDialog({
 						<Input
 							id="org-name"
 							onChange={(e) => setName(e.target.value)}
+							placeholder="Acme Corp"
 							value={name}
 						/>
 					</Field>
 					<Field
-						help="Your own id for this customer, unique in the environment"
+						help="Your own ID for this customer. It must be unique in this environment."
 						htmlFor="org-ident"
 						label="Identifier"
 					>
@@ -190,6 +287,7 @@ function CreateOrganizationDialog({
 							className="font-mono"
 							id="org-ident"
 							onChange={(e) => setIdentifier(e.target.value)}
+							placeholder="acme-corp"
 							value={identifier}
 						/>
 					</Field>
@@ -203,6 +301,7 @@ export function OrganizationView({ id }: { id: string }) {
 	const { client, env } = useEnv();
 	const href = useHref();
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const [add, setAdd] = useState(false);
 	const org = useQuery({
 		queryFn: () =>
@@ -221,8 +320,16 @@ export function OrganizationView({ id }: { id: string }) {
 				})
 			),
 		onError: (e) =>
-			toast.error("Couldn't delete", { description: errorText(e) }),
-		onSuccess: () => router.push(href("/organizations")),
+			toast.error("Couldn't delete the organization", {
+				description: errorText(e),
+			}),
+		onSuccess: async () => {
+			toast.success("Organization deleted");
+			await queryClient.invalidateQueries({
+				queryKey: ["organizations", env.id],
+			});
+			router.push(href("/organizations"));
+		},
 	});
 	return (
 		<QueryState query={org}>
@@ -235,14 +342,24 @@ export function OrganizationView({ id }: { id: string }) {
 									render={<Link href={href(`/findings?org=${id}`)} />}
 									variant="outline"
 								>
-									Findings
+									View findings
 								</Button>
-								<Button onClick={() => remove.mutate()} variant="outline">
-									Delete
-								</Button>
-								<Button onClick={() => setAdd(true)} variant="primary">
-									Add connection
-								</Button>
+								<Gated requires={{ scope: "provisioning:write" }}>
+									<HeaderConfirmButton
+										confirmLabel="Delete organization"
+										description="Delete its connections first. You can't undo this."
+										disabled={remove.isPending}
+										onConfirm={() => remove.mutate()}
+										title={`Delete “${org.data.name}”?`}
+									>
+										{remove.isPending ? "Deleting…" : "Delete organization"}
+									</HeaderConfirmButton>
+								</Gated>
+								<Gated requires={{ scope: "provisioning:write" }}>
+									<Button onClick={() => setAdd(true)} variant="primary">
+										<PlusIcon /> Add connection
+									</Button>
+								</Gated>
 							</>
 						}
 						description={
@@ -250,10 +367,15 @@ export function OrganizationView({ id }: { id: string }) {
 								{org.data.identifier} · {org.data.id}
 							</span>
 						}
-						title={org.data.name}
+						title={
+							<span className="flex items-center gap-3">
+								<EntityAvatar name={org.data.name} size={32} />
+								{org.data.name}
+							</span>
+						}
 					/>
 					<PageBody>
-						<ConnectionsTable organizationId={id} />
+						<ConnectionsTable onAdd={() => setAdd(true)} organizationId={id} />
 					</PageBody>
 					<AddConnectionDialog
 						onOpenChange={setAdd}

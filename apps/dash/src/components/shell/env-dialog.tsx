@@ -1,14 +1,15 @@
 "use client";
 
 import { unwrap } from "@securefabric/client";
+import { Button } from "@securefabric/ui/components/button";
+import { Dialog, DialogContent } from "@securefabric/ui/components/dialog";
+import { Field, Input } from "@securefabric/ui/components/form";
+import { Switch } from "@securefabric/ui/components/switch";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { errorText } from "@/components/kit";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, Switch } from "@/components/ui/overlay";
-import { Field, Input } from "@/components/ui/primitives";
+import { errorText } from "@/components/domain/query-state";
 import { api } from "@/lib/api";
 
 const SLUG = /[^a-z0-9]+/gu;
@@ -55,17 +56,14 @@ export function CreateEnvironmentDialog({
 		onSuccess: async (env) => {
 			await queryClient.invalidateQueries({ queryKey: ["environments"] });
 			onOpenChange(false);
-			toast.success(`Environment "${env.name}" created`, {
-				description:
-					"It has its own keys, vault key, integrations, connections and logs.",
-			});
+			toast.success(`Environment "${env.name}" created`);
 			router.push(`/${env.slug}`);
 		},
 	});
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent
-				description="Environments isolate keys, data, webhooks and the vault key. Use one per stage of your pipeline."
+				description="Each environment has its own API keys, data and webhooks. Use one per stage, like staging and production."
 				footer={
 					<>
 						<Button onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -75,7 +73,7 @@ export function CreateEnvironmentDialog({
 							type="submit"
 							variant="primary"
 						>
-							Create environment
+							{create.isPending ? "Creating…" : "Create environment"}
 						</Button>
 					</>
 				}
@@ -104,7 +102,7 @@ export function CreateEnvironmentDialog({
 						/>
 					</Field>
 					<Field
-						help="Used in URLs and the X-Environment-Id header."
+						help="Lowercase letters, numbers and dashes. Used in dashboard URLs."
 						htmlFor="env-slug"
 						label="Slug"
 					>
@@ -122,7 +120,7 @@ export function CreateEnvironmentDialog({
 						<div className="grid gap-0.5">
 							<span className="text-sm font-medium">Production</span>
 							<span className="text-muted-foreground text-xs">
-								API keys are issued as sfk_live_….
+								Its API keys start with sfk_live_ instead of sfk_test_.
 							</span>
 						</div>
 						<Switch

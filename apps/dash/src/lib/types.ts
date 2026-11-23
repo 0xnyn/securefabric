@@ -1,5 +1,5 @@
 import type { operations, schemas } from "@securefabric/client";
-import type { Tone } from "@/components/ui/primitives";
+import type { Tone } from "@securefabric/ui/components/badge";
 
 /*
  * The domain the dash renders. Every shape is the API's, from the OpenAPI
@@ -155,12 +155,6 @@ export const GRANT_TONES: Record<string, Tone> = {
 	UNAUTHORIZED: "error",
 	UNKNOWN: "warn",
 	UNSUPPORTED: "neutral",
-};
-
-/** Logos shipped in public/integrations, keyed by connector id. */
-export const CONNECTOR_LOGOS: Record<string, string> = {
-	GITHUB: "/integrations/github.svg",
-	SANDBOX: "/icon.svg",
 };
 
 export const FINDING_STATE_TONES: Record<string, Tone> = {

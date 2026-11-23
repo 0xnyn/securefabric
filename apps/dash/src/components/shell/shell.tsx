@@ -1,11 +1,8 @@
 "use client";
 
 import { ClientResponseError, unwrap } from "@securefabric/client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
-import { Fragment, useMemo, useState } from "react";
-import { errorText } from "@/components/kit";
+import { Button } from "@securefabric/ui/components/button";
+import { Field, Input } from "@securefabric/ui/components/form";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -13,20 +10,25 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 	BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/primitives";
-import { Separator } from "@/components/ui/separator";
+} from "@securefabric/ui/primitives/breadcrumb";
+import { Separator } from "@securefabric/ui/primitives/separator";
 import {
 	SidebarInset,
 	SidebarProvider,
 	SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@securefabric/ui/primitives/sidebar";
+import { Skeleton } from "@securefabric/ui/primitives/skeleton";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
+import { useParams, usePathname } from "next/navigation";
+import { Fragment, useMemo, useState } from "react";
+import { Guard } from "@/components/domain/access";
+import { errorText } from "@/components/domain/query-state";
 import { API_URL, api, envClient } from "@/lib/api";
 import { needsSignIn, retryUnlessAuth } from "@/lib/auth";
-import { NAV_ITEMS, OPERATOR_ITEM, SETTINGS_ITEM } from "@/lib/nav";
-import type { Environment } from "@/lib/types";
+import { PLANNED } from "@/lib/connector-catalog";
+import { NAV_ITEMS, OPERATOR_ITEM, SETTINGS_ITEM, sectionOf } from "@/lib/nav";
+import type { Connector, Environment } from "@/lib/types";
 import { AppSidebar } from "./app-sidebar";
 import { CommandPalette } from "./command-palette";
 import { useCommandStore } from "./command-store";
@@ -41,9 +43,26 @@ interface Crumb {
 	label: string;
 }
 
+/** A readable name for an id in the URL, when the page has one to offer. */
+function useCrumbName(
+	section: string,
+	id: string | undefined
+): string | undefined {
+	const queryClient = useQueryClient();
+	if (!id || section !== "catalog") {
+		return;
+	}
+	const live = queryClient.getQueryData<Connector[]>(["connectors"]);
+	return (
+		live?.find((c) => c.id === id)?.name ??
+		PLANNED.find((p) => p.id === id)?.name
+	);
+}
+
 function useCrumbs(env: Environment): Crumb[] {
 	const pathname = usePathname();
 	const [, , section = "", id] = pathname.split("/");
+	const name = useCrumbName(section, id);
 	const base = `/${env.slug}`;
 	const item = [...NAV_ITEMS, SETTINGS_ITEM, OPERATOR_ITEM].find(
 		(n) => n.href === (section ? `/${section}` : "")
@@ -62,7 +81,7 @@ function useCrumbs(env: Environment): Crumb[] {
 	}
 	return [
 		{ href: `${base}${item.href}`, label: item.label },
-		{ label: decodeURIComponent(id).slice(0, 36) },
+		{ label: name ?? decodeURIComponent(id).slice(0, 36) },
 	];
 }
 
@@ -185,16 +204,14 @@ function AccountError({ error, retry }: { error: unknown; retry: () => void }) {
 	) {
 		return (
 			<Centered>
-				<h1 className="text-xl font-semibold">The API rejected the request</h1>
+				<h1 className="text-xl font-semibold">Couldn't load your account</h1>
 				<p className="text-muted-foreground max-w-md text-sm">
-					{error.status === 401 || error.status === 403
-						? "You are signed in, but the API does not accept this session. Check that WORKOS_CLIENT_ID and WORKOS_API_KEY are the same in the root .env (API) and apps/dash/.env.local (dashboard), then restart make dev."
-						: "The API answered with an error. Its log has the details for the request id below."}
+					{rejectedText(error.status)}
 				</p>
 				{detail}
 				<div className="flex gap-2">
 					<Button onClick={retry} variant="outline">
-						Retry now
+						Try again
 					</Button>
 					<Button render={<a href="/logout" />} variant="outline">
 						Sign out
@@ -205,21 +222,41 @@ function AccountError({ error, retry }: { error: unknown; retry: () => void }) {
 	}
 	return (
 		<Centered>
-			<h1 className="text-xl font-semibold">
-				Can't reach the SecureFabric API
-			</h1>
-			<p className="text-muted-foreground max-w-md text-sm">
-				The dashboard reads everything from{" "}
-				<span className="text-foreground font-mono">{API_URL}</span>. Start it
-				with <span className="text-foreground font-mono">make dev</span>, then
-				check <span className="text-foreground font-mono">make status</span>.
-			</p>
+			<h1 className="text-xl font-semibold">Can't reach SecureFabric</h1>
+			{LOCAL_DEV ? (
+				<p className="text-muted-foreground max-w-md text-sm">
+					The dashboard reads everything from{" "}
+					<span className="text-foreground font-mono">{API_URL}</span>. Start it
+					with <span className="text-foreground font-mono">make dev</span>, then
+					check <span className="text-foreground font-mono">make status</span>.
+				</p>
+			) : (
+				<p className="text-muted-foreground max-w-md text-sm">
+					Check your internet connection and try again. If it keeps happening,
+					share the details below with us.
+				</p>
+			)}
 			{detail}
 			<Button onClick={retry} variant="outline">
-				Retry now
+				Try again
 			</Button>
 		</Centered>
 	);
+}
+
+/**
+ * Setup hints (env vars, make targets) help whoever runs the stack locally
+ * and mean nothing to a customer, so production gets plain words instead.
+ */
+const LOCAL_DEV = process.env.NODE_ENV === "development";
+
+function rejectedText(status: number): string {
+	if (status !== 401 && status !== 403) {
+		return "Our server hit an error. Try again, or share the request ID below with us.";
+	}
+	return LOCAL_DEV
+		? "You're signed in, but the API doesn't accept this session. Make sure WORKOS_CLIENT_ID and WORKOS_API_KEY match in the root .env (API) and apps/dash/.env.local (dashboard), then restart make dev."
+		: "Your session wasn't accepted. Sign out, then sign in again.";
 }
 
 /** First sign-in with no account: name it; dev and prod are created for you. */
@@ -237,8 +274,8 @@ function Onboarding() {
 		<Centered>
 			<h1 className="text-xl font-semibold">Welcome to SecureFabric</h1>
 			<p className="text-muted-foreground max-w-sm text-sm">
-				Name your account. We create a Development and a Production environment,
-				each with its own keys and vault.
+				Name your account. We'll create Development and Production environments,
+				each with its own API keys.
 			</p>
 			<form
 				className="grid w-full max-w-sm gap-3 text-left"
@@ -313,6 +350,22 @@ export function useAccount() {
 	return { environments, me };
 }
 
+/** A page whose nav item needs a role or scope this person lacks says so
+ * instead of rendering (the sidebar already hides its link). */
+function RouteGuard({ children }: { children: React.ReactNode }) {
+	const pathname = usePathname();
+	const section = sectionOf(pathname);
+	const item = NAV_ITEMS.find((n) => n.href === (section ? `/${section}` : ""));
+	if (!item?.requires) {
+		return <>{children}</>;
+	}
+	return (
+		<Guard requires={item.requires} title={item.label}>
+			{children}
+		</Guard>
+	);
+}
+
 /**
  * The app frame: an inset sidebar and a content panel. The frame never
  * scrolls; the panel's `main` does.
@@ -357,7 +410,9 @@ export function EnvShell({ children }: { children: React.ReactNode }) {
 				<AppSidebar />
 				<SidebarInset className="min-h-0 overflow-hidden">
 					<Header env={env} />
-					<div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+					<div className="min-h-0 flex-1 overflow-y-auto">
+						<RouteGuard>{children}</RouteGuard>
+					</div>
 				</SidebarInset>
 				<GlobalOverlays />
 			</SidebarProvider>

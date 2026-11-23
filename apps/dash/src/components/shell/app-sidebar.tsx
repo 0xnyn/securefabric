@@ -1,7 +1,35 @@
 "use client";
 
+import { Button } from "@securefabric/ui/components/button";
+import { Dialog, DialogContent } from "@securefabric/ui/components/dialog";
+import { Textarea } from "@securefabric/ui/components/form";
 import { cn } from "@securefabric/ui/lib/utils";
+import { EntityAvatar, PersonAvatar } from "@securefabric/ui/patterns/avatar";
 import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@securefabric/ui/primitives/dropdown-menu";
+import {
+	Sidebar,
+	SidebarContent,
+	SidebarFooter,
+	SidebarGroup,
+	SidebarGroupContent,
+	SidebarGroupLabel,
+	SidebarHeader,
+	SidebarMenu,
+	SidebarMenuButton,
+	SidebarMenuItem,
+	SidebarRail,
+	useSidebar,
+} from "@securefabric/ui/primitives/sidebar";
+import {
+	ArrowUpRightIcon,
 	BookOpenIcon,
 	CheckIcon,
 	ChevronsUpDownIcon,
@@ -21,40 +49,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { PersonAvatar } from "@/components/common";
-import { useEnv, useHref } from "@/components/shell/env-context";
-import { Button } from "@/components/ui/button";
+import { useAccess, useEnv, useHref } from "@/components/shell/env-context";
+import { roleInfo } from "@/lib/access";
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent } from "@/components/ui/overlay";
-import { Textarea } from "@/components/ui/primitives";
-import {
-	Sidebar,
-	SidebarContent,
-	SidebarFooter,
-	SidebarGroup,
-	SidebarGroupContent,
-	SidebarGroupLabel,
-	SidebarHeader,
-	SidebarMenu,
-	SidebarMenuButton,
-	SidebarMenuItem,
-	SidebarRail,
-	useSidebar,
-} from "@/components/ui/sidebar";
-import {
+	DOCS_URL,
 	focusOf,
 	isActive,
-	NAV_GROUPS,
 	OPERATOR_ITEM,
 	SETTINGS_ITEM,
+	visibleNavGroups,
 } from "@/lib/nav";
 import type { Environment } from "@/lib/types";
 import { useCommandStore } from "./command-store";
@@ -87,6 +90,9 @@ function WorkspaceSwitcher() {
 	const router = useRouter();
 	const pathname = usePathname();
 	const accountName = me.account?.name ?? "SecureFabric";
+	const plan = me.account?.plan ?? "free";
+	const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
+	const access = useAccess();
 	const setCreateEnvOpen = useCommandStore((s) => s.setCreateEnvOpen);
 	const rest = pathname.split("/").slice(2).join("/");
 	return (
@@ -110,7 +116,7 @@ function WorkspaceSwitcher() {
 								<EnvDot env={env} />
 							</span>
 							<span className="text-muted-foreground truncate text-xs">
-								{accountName} · {me.account?.plan ?? "free"}
+								{accountName} · {planLabel}
 							</span>
 						</span>
 						<ChevronsUpDownIcon className="text-muted-foreground ml-auto size-4" />
@@ -138,34 +144,36 @@ function WorkspaceSwitcher() {
 								</DropdownMenuItem>
 							))}
 						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem onClick={() => setCreateEnvOpen(true)}>
-							<CurrentMark on={false} />
-							<PlusIcon />
-							Create environment
-						</DropdownMenuItem>
+						{access.isAdmin ? (
+							<>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem onClick={() => setCreateEnvOpen(true)}>
+									<CurrentMark on={false} />
+									<PlusIcon />
+									Create environment
+								</DropdownMenuItem>
+							</>
+						) : null}
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
-							<DropdownMenuLabel>Team</DropdownMenuLabel>
+							<DropdownMenuLabel>Account</DropdownMenuLabel>
 							<DropdownMenuItem>
-								<span className="bg-primary text-2xs text-primary-foreground flex size-4 items-center justify-center rounded-full font-semibold">
-									{accountName[0]}
-								</span>
+								<EntityAvatar name={accountName} size={16} />
 								<span className="flex-1">{accountName}</span>
 								<span className="text-muted-foreground text-xs">
-									{me.account?.plan ?? "free"}
+									{planLabel}
 								</span>
 							</DropdownMenuItem>
 							<DropdownMenuItem
 								onClick={() =>
-									toast.info("Contact sales to add another team", {
+									toast.info("Contact sales to add another account", {
 										description:
-											"Each team gets its own environments and billing.",
+											"Each account gets its own environments and billing.",
 									})
 								}
 							>
 								<PlusIcon />
-								Create team
+								Add account
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 					</DropdownMenuContent>
@@ -204,9 +212,10 @@ function PrimaryNav() {
 	const pathname = usePathname();
 	const href = useHref();
 	const { me } = useEnv();
+	const access = useAccess();
 	return (
 		<>
-			{NAV_GROUPS.map((group) => (
+			{visibleNavGroups(access).map((group) => (
 				<SidebarGroup key={group.label ?? "home"}>
 					{group.label ? (
 						<SidebarGroupLabel>{group.label}</SidebarGroupLabel>
@@ -274,6 +283,17 @@ function HelpNav() {
 		<SidebarMenu>
 			<SidebarMenuItem>
 				<SidebarMenuButton
+					render={<a href={DOCS_URL} rel="noopener" target="_blank" />}
+					size="sm"
+					tooltip="Docs and API reference"
+				>
+					<BookOpenIcon />
+					<span className="flex-1">Docs and API reference</span>
+					<ArrowUpRightIcon className="text-muted-foreground group-data-[collapsible=icon]:hidden" />
+				</SidebarMenuButton>
+			</SidebarMenuItem>
+			<SidebarMenuItem>
+				<SidebarMenuButton
 					onClick={() => setHelpOpen(true)}
 					size="sm"
 					tooltip="Keyboard shortcuts  ?"
@@ -329,6 +349,13 @@ const FEEDBACK_KINDS = [
 
 type FeedbackKind = (typeof FEEDBACK_KINDS)[number]["value"];
 
+/**
+ * Where feedback goes. There is no feedback endpoint, so the dialog drafts an
+ * email in the person's own mail app; without an address the menu item is
+ * hidden rather than pretending to send.
+ */
+const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "";
+
 function FeedbackDialog({
 	open,
 	onOpenChange,
@@ -336,7 +363,6 @@ function FeedbackDialog({
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }) {
-	const { me } = useEnv();
 	const [kind, setKind] = useState<FeedbackKind>("idea");
 	const [message, setMessage] = useState("");
 	const close = (): void => {
@@ -345,12 +371,11 @@ function FeedbackDialog({
 		setKind("idea");
 	};
 	const send = (): void => {
+		const label = FEEDBACK_KINDS.find((k) => k.value === kind)?.label;
+		const subject = encodeURIComponent(`SecureFabric feedback: ${label}`);
+		const body = encodeURIComponent(message.trim());
+		window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
 		close();
-		toast.success("Feedback sent", {
-			description: me.email
-				? `Thanks. We reply to ${me.email} within a working day.`
-				: "Thanks. We read every message.",
-		});
 	};
 	return (
 		<Dialog
@@ -358,12 +383,12 @@ function FeedbackDialog({
 			open={open}
 		>
 			<DialogContent
-				description="It goes straight to the people building SecureFabric."
+				description="Opens an email to the SecureFabric team in your mail app."
 				footer={
 					<>
 						<Button onClick={close}>Cancel</Button>
 						<Button disabled={!message.trim()} onClick={send} variant="primary">
-							Send feedback
+							Write email
 						</Button>
 					</>
 				}
@@ -420,6 +445,7 @@ function UserMenu() {
 	const { me, devMode } = useEnv();
 	const email = me.email ?? (devMode ? "development API key" : "");
 	const name = me.name ?? (devMode ? "Developer mode" : email);
+	const roleLabel = roleInfo(me.role)?.label;
 	const href = useHref();
 	const router = useRouter();
 	const { theme, setTheme } = useTheme();
@@ -440,7 +466,7 @@ function UserMenu() {
 						<span className="grid min-w-0 flex-1 text-left leading-tight">
 							<span className="truncate font-medium">{name}</span>
 							<span className="text-muted-foreground truncate text-xs">
-								{email}
+								{roleLabel === undefined ? email : `${roleLabel} · ${email}`}
 							</span>
 						</span>
 						<ChevronsUpDownIcon className="text-muted-foreground ml-auto size-4" />
@@ -461,13 +487,7 @@ function UserMenu() {
 						{/* Help lives here rather than as footer rows, which would push the
 						    contextual sections below the fold on a laptop screen. */}
 						<DropdownMenuItem
-							render={
-								<a
-									href="https://securefabric.dev"
-									rel="noopener"
-									target="_blank"
-								/>
-							}
+							render={<a href={DOCS_URL} rel="noopener" target="_blank" />}
 						>
 							<BookOpenIcon />
 							Docs
@@ -475,7 +495,7 @@ function UserMenu() {
 						<DropdownMenuItem
 							render={
 								<a
-									href="https://securefabric.dev/changelog"
+									href={`${DOCS_URL}/changelog`}
 									rel="noopener"
 									target="_blank"
 								/>
@@ -484,10 +504,12 @@ function UserMenu() {
 							<NewspaperIcon />
 							Changelog
 						</DropdownMenuItem>
-						<DropdownMenuItem onClick={() => setFeedbackOpen(true)}>
-							<MessageSquareIcon />
-							Send feedback
-						</DropdownMenuItem>
+						{SUPPORT_EMAIL ? (
+							<DropdownMenuItem onClick={() => setFeedbackOpen(true)}>
+								<MessageSquareIcon />
+								Send feedback
+							</DropdownMenuItem>
+						) : null}
 						<DropdownMenuSeparator />
 						<div className="flex items-center justify-between gap-3 px-2 py-1.5">
 							<span className="text-sm">Theme</span>

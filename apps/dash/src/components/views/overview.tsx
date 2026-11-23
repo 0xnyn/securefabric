@@ -1,22 +1,28 @@
 "use client";
 
 import { unwrap } from "@securefabric/client";
+import { Badge } from "@securefabric/ui/components/badge";
+import { Button } from "@securefabric/ui/components/button";
+import { Card } from "@securefabric/ui/components/card";
+import { EmptyState } from "@securefabric/ui/components/empty-state";
+import { Table, Td, Th, Tr } from "@securefabric/ui/components/table";
+import { compact, num } from "@securefabric/ui/lib/format";
+import {
+	BarList,
+	DonutChart,
+	StackedBarChart,
+} from "@securefabric/ui/patterns/charts";
+import { PageBody, PageHeader } from "@securefabric/ui/patterns/page";
+import { Section } from "@securefabric/ui/patterns/section";
+import { Stat } from "@securefabric/ui/patterns/stat";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { BarList, DonutChart, StackedBarChart } from "@/components/charts";
-import { PageBody, PageHeader } from "@/components/common";
-import {
-	HealthBadge,
-	QueryState,
-	Section,
-	SeverityLabel,
-	StatusBadge,
-	When,
-} from "@/components/kit";
+import { Gated } from "@/components/domain/access";
+import { HealthBadge, SeverityLabel } from "@/components/domain/badges";
+import { QueryState } from "@/components/domain/query-state";
+import { When } from "@/components/domain/when";
 import { useEnv, useHref } from "@/components/shell/env-context";
-import { Button } from "@/components/ui/button";
-import { Card, Table, Td, Th, Tr } from "@/components/ui/primitives";
-import { compact, num } from "@/lib/format";
+import { humanize, syncActionLabel } from "@/lib/labels";
 import { HEALTH, OP_TONES, SEVERITIES } from "@/lib/types";
 
 const TONE_COLOR: Record<string, string> = {
@@ -35,26 +41,6 @@ export function useUsage(days = 30) {
 		queryKey: ["usage", env.id, days],
 		refetchInterval: 30_000,
 	});
-}
-
-export function Stat({
-	label,
-	value,
-	hint,
-}: {
-	label: string;
-	value: React.ReactNode;
-	hint?: React.ReactNode;
-}) {
-	return (
-		<Card className="grid gap-1 p-4">
-			<span className="text-muted-foreground text-xs">{label}</span>
-			<span className="text-2xl font-semibold tabular-nums">{value}</span>
-			{hint ? (
-				<span className="text-muted-foreground text-xs">{hint}</span>
-			) : null}
-		</Card>
-	);
 }
 
 export function OverviewView() {
@@ -124,50 +110,62 @@ export function OverviewView() {
 		hour: string;
 		api_calls: number;
 	}[];
+	const noConnections =
+		connections.isSuccess && connections.data.items.length === 0;
+	const openFindings = Object.values(summary.data?.open ?? {}).reduce(
+		(a, b) => a + b,
+		0
+	);
+	const addConnection = (size?: "sm") => (
+		<Gated requires={{ scope: "provisioning:write" }}>
+			<Button
+				render={<Link href={href("/connections?new=1")} />}
+				size={size}
+				variant="primary"
+			>
+				Add connection
+			</Button>
+		</Gated>
+	);
 	return (
 		<>
 			<PageHeader
-				actions={
-					<Button
-						render={<Link href={href("/connections?new=1")} />}
-						variant="primary"
-					>
-						Add connection
-					</Button>
-				}
-				description="Connection health, data freshness, findings and recent syncs in this environment."
+				actions={addConnection()}
+				description="How your connections, findings and syncs are doing in this environment."
 				title={env.name}
 			/>
 			<PageBody className="grid gap-8">
-				<div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-					<Stat
-						hint={`${num(live.unhealthy_connections ?? 0)} unhealthy`}
-						label="Active connections"
-						value={num(live.active_connections ?? 0)}
+				{noConnections ? (
+					<EmptyState
+						action={
+							<div className="flex flex-wrap justify-center gap-2">
+								{addConnection("sm")}
+								<Button
+									render={<Link href={href("/catalog")} />}
+									size="sm"
+									variant="outline"
+								>
+									Browse the catalog
+								</Button>
+							</div>
+						}
+						description="Connect a customer's security tool to start syncing their findings and resources."
+						title="No connections yet"
 					/>
-					<Stat
-						label="Records stored"
-						value={compact(live.records_stored ?? 0)}
-					/>
-					<Stat
-						hint={`${num(live.failed_jobs_24h ?? 0)} failed`}
-						label="Jobs (24h)"
-						value={num(live.jobs_24h ?? 0)}
-					/>
-					<Stat
-						label="API calls (24h)"
-						value={compact(live.api_calls_24h ?? 0)}
-					/>
-					<Stat
-						hint="across organizations"
-						label="Findings"
-						value={summary.data ? compact(summary.data.total) : "—"}
-					/>
-				</div>
+				) : null}
+				<StatTiles findings={summary.data?.total} live={live} />
 				<div className="grid gap-6 lg:grid-cols-2">
 					<Section title="Connections by health">
 						<Card className="p-5">
-							<QueryState query={connections} rows={2}>
+							<QueryState
+								empty={{
+									description: "Health shows here once you add a connection.",
+									title: "No connections yet",
+									when: (connections.data?.items.length ?? 0) === 0,
+								}}
+								query={connections}
+								rows={2}
+							>
 								<DonutChart
 									ariaLabel="Connections by health"
 									slices={[...byHealth.entries()].map(([k, v]) => ({
@@ -186,7 +184,17 @@ export function OverviewView() {
 					</Section>
 					<Section title="Open findings by severity">
 						<Card className="p-5">
-							<QueryState query={summary} rows={2}>
+							<QueryState
+								empty={{
+									description: noConnections
+										? "Findings show here once a connection finishes its first sync."
+										: "Nothing open right now. New findings show here after each sync.",
+									title: "No open findings",
+									when: openFindings === 0,
+								}}
+								query={summary}
+								rows={2}
+							>
 								<BarList
 									items={SEVERITIES.map((s) => ({
 										key: s,
@@ -200,7 +208,7 @@ export function OverviewView() {
 				</div>
 				{unhealthy.length ? (
 					<Section
-						description="Connections that need someone to act"
+						description="Connections that aren't healthy, and why."
 						title="Needs attention"
 					>
 						<Card>
@@ -260,17 +268,27 @@ export function OverviewView() {
 								size="sm"
 								variant="ghost"
 							>
-								All logs
+								View all logs
 							</Button>
 						}
 						title="Recent syncs"
 					>
 						<Card>
-							<QueryState query={ops} rows={3}>
+							<QueryState
+								empty={{
+									description: noConnections
+										? "Syncs show here once you add a connection."
+										: "Syncs show here as soon as one starts.",
+									title: "No syncs yet",
+									when: (ops.data?.items.length ?? 0) === 0,
+								}}
+								query={ops}
+								rows={3}
+							>
 								<Table>
 									<thead>
 										<Tr>
-											<Th>Action</Th>
+											<Th>Sync</Th>
 											<Th>Status</Th>
 											<Th>Started</Th>
 										</Tr>
@@ -278,20 +296,22 @@ export function OverviewView() {
 									<tbody>
 										{ops.data?.items.map((o) => (
 											<Tr key={o.id}>
-												<Td className="text-xs">
+												<Td>
 													{o.job_id ? (
 														<Link
 															className="hover:underline"
 															href={href(`/jobs/${o.job_id}`)}
 														>
-															{o.action}
+															{syncActionLabel(o.action)}
 														</Link>
 													) : (
-														o.action
+														syncActionLabel(o.action)
 													)}
 												</Td>
 												<Td>
-													<StatusBadge tones={OP_TONES} value={o.status} />
+													<Badge tone={OP_TONES[o.status] ?? "neutral"}>
+														{humanize(o.status)}
+													</Badge>
 												</Td>
 												<Td>
 													<When value={o.started_at} />
@@ -306,5 +326,40 @@ export function OverviewView() {
 				</div>
 			</PageBody>
 		</>
+	);
+}
+
+function StatTiles({
+	live,
+	findings,
+}: {
+	live: Partial<Record<string, number>>;
+	findings: number | undefined;
+}) {
+	const unhealthy = live.unhealthy_connections ?? 0;
+	const failed = live.failed_jobs_24h ?? 0;
+	return (
+		<div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+			<Stat
+				hint={unhealthy ? `${num(unhealthy)} need attention` : "All healthy"}
+				label="Active connections"
+				value={num(live.active_connections ?? 0)}
+			/>
+			<Stat label="Records stored" value={compact(live.records_stored ?? 0)} />
+			<Stat
+				hint={failed ? `${num(failed)} failed` : "None failed"}
+				label="Jobs, last 24 hours"
+				value={num(live.jobs_24h ?? 0)}
+			/>
+			<Stat
+				label="API calls, last 24 hours"
+				value={compact(live.api_calls_24h ?? 0)}
+			/>
+			<Stat
+				hint="Across your organizations"
+				label="Findings"
+				value={findings === undefined ? "—" : compact(findings)}
+			/>
+		</div>
 	);
 }

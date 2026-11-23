@@ -1,55 +1,54 @@
 "use client";
 
 import { unwrap } from "@securefabric/client";
+import { Badge } from "@securefabric/ui/components/badge";
+import { Button } from "@securefabric/ui/components/button";
+import { Card } from "@securefabric/ui/components/card";
+import { EmptyState } from "@securefabric/ui/components/empty-state";
+import { Field } from "@securefabric/ui/components/form";
+import { Table, Td, Th, Tr } from "@securefabric/ui/components/table";
+import { num } from "@securefabric/ui/lib/format";
 import { cn } from "@securefabric/ui/lib/utils";
+import { EntityAvatar } from "@securefabric/ui/patterns/avatar";
+import { CopyField } from "@securefabric/ui/patterns/copy";
+import { KeyValue } from "@securefabric/ui/patterns/key-value";
+import { PageBody, PageHeader } from "@securefabric/ui/patterns/page";
+import { Section } from "@securefabric/ui/patterns/section";
+import { Tabs } from "@securefabric/ui/patterns/tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCwIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-	CopyField,
-	KeyValue,
-	PageBody,
-	PageHeader,
-	Tabs,
-} from "@/components/common";
-import {
-	ConfirmButton,
-	ConnectorLogo,
-	errorText,
-	HealthBadge,
-	QueryState,
-	Section,
-	StatusBadge,
-	When,
-} from "@/components/kit";
+import { Gated } from "@/components/domain/access";
+import { HealthBadge } from "@/components/domain/badges";
+import { ConfirmButton } from "@/components/domain/confirm-button";
+import { ConnectorLogo } from "@/components/domain/connector-logo";
+import { errorText, QueryState } from "@/components/domain/query-state";
 import {
 	compactValues,
 	type JsonSchema,
 	SchemaForm,
-} from "@/components/schema-form";
+} from "@/components/domain/schema-form";
+import { When } from "@/components/domain/when";
 import { useEnv, useHref } from "@/components/shell/env-context";
-import { Button } from "@/components/ui/button";
-import {
-	Badge,
-	Card,
-	Field,
-	Table,
-	Td,
-	Th,
-	Tr,
-} from "@/components/ui/primitives";
 import { api } from "@/lib/api";
-import { num } from "@/lib/format";
+import { authLabel, everySeconds } from "@/lib/connector-catalog";
 import {
 	type Connection,
 	GRANT_TONES,
 	healthInfo,
 	JOB_TONES,
+	RUN_TONES,
 	STATE_TONES,
 } from "@/lib/types";
+import {
+	EnumBadge,
+	STATE_LABELS,
+	sentence,
+	useConnectorInfo,
+} from "./connections";
 import { FindingsExplorer, ResourcesExplorer } from "./explorers";
 
 type Tab =
@@ -61,6 +60,106 @@ type Tab =
 	| "settings";
 
 const idem = () => ({ "Idempotency-Key": crypto.randomUUID() });
+
+function labelOf(labels: Record<string, string>, value: string): string {
+	return labels[value] ?? sentence(value);
+}
+
+/** Why a sync job ran (schema JobType). */
+const JOB_TYPE_LABELS: Record<string, string> = {
+	INITIAL: "Initial sync",
+	ON_DEMAND: "Manual sync",
+	RETRY: "Retry",
+	SCHEDULED: "Scheduled sync",
+	WEBHOOK: "Webhook sync",
+};
+
+/** Job outcomes (schema JobStatus) where the enum isn't the word. */
+const JOB_STATUS_LABELS: Record<string, string> = {
+	PARTIAL: "Partly succeeded",
+	SUCCESS: "Succeeded",
+};
+
+/** Stream run states (schema RunState) where the enum isn't the word. */
+const RUN_STATE_LABELS: Record<string, string> = {
+	ADMITTED: "Starting",
+	PARKED: "Waiting",
+	RETRY_WAIT: "Waiting to retry",
+};
+
+/** How a stream run reads the vendor (schema Mode). */
+const RUN_MODE_LABELS: Record<string, string> = {
+	backfill: "Backfill",
+	full: "Full read",
+	incremental: "Changes only",
+	targeted: "Targeted",
+};
+
+/** What a stream produces (schema ObjectType). */
+const OBJECT_LABELS: Record<string, string> = {
+	resource: "Resources",
+	vulnerability_finding: "Findings",
+};
+
+/** A stream's schedule (sync.schedule state). */
+const SCHEDULE_LABELS: Record<string, string> = {
+	PAUSED: "Paused",
+	STARTED: "Scheduled",
+};
+
+/** Whether a stream may read what it needs (schema GrantStatus). */
+const GRANT_LABELS: Record<string, string> = {
+	GRANTED: "Granted",
+	NOT_ENABLED: "Not enabled",
+	UNAUTHORIZED: "No access",
+	UNKNOWN: "Unknown",
+	UNSUPPORTED: "Unsupported",
+};
+
+/** Who has to act on a health problem (schema ResolutionOwner). */
+const OWNER_LABELS: Record<string, string> = {
+	CUSTOMER: "Waiting on your customer",
+	Customer: "Waiting on your customer",
+	PLATFORM: "Waiting on SecureFabric",
+	SecureFabric: "Waiting on SecureFabric",
+	VENDOR: "Waiting on the vendor",
+	Vendor: "Waiting on the vendor",
+};
+
+/** Overall health (schema HealthStatus). */
+const HEALTH_STATUS_LABELS: Record<string, string> = {
+	HEALTHY: "Healthy",
+	INITIALIZING: "Initializing",
+	UNHEALTHY: "Unhealthy",
+};
+
+/** Who started a job, from `requested_by` ("schedule", "api_key:…", "verify:create"). */
+function requester(value: string | null): string {
+	if (!value) {
+		return "Schedule";
+	}
+	const [kind] = value.split(":");
+	switch (kind) {
+		case "api_key":
+			return "API key";
+		case "user":
+			return "Team member";
+		case "support":
+			return "SecureFabric support";
+		case "verify":
+			return "Connection check";
+		case "schedule":
+			return "Schedule";
+		case "webhook":
+			return "Vendor webhook";
+		case "resume":
+			return "Resumed connection";
+		case "system":
+			return "SecureFabric";
+		default:
+			return value;
+	}
+}
 
 export function useConnection(id: string) {
 	const { client, env } = useEnv();
@@ -80,12 +179,54 @@ export function useConnection(id: string) {
 	});
 }
 
+/** Starts an on-demand sync (POST /jobs needs jobs:execute). */
+function SyncNowButton({
+	connectionId,
+	active,
+}: {
+	connectionId: string;
+	active: boolean;
+}) {
+	const { client, env } = useEnv();
+	const queryClient = useQueryClient();
+	const sync = useMutation({
+		mutationFn: () =>
+			unwrap(
+				client.POST("/v1/connections/{connection_id}/jobs", {
+					body: {},
+					headers: idem(),
+					params: { path: { connection_id: connectionId } },
+				})
+			),
+		onError: (e) =>
+			toast.error("Couldn't start the sync", { description: errorText(e) }),
+		onSuccess: async () => {
+			toast.success("Sync queued", {
+				description: "It starts in a moment. Follow it on the Jobs tab.",
+			});
+			await queryClient.invalidateQueries({
+				queryKey: ["jobs", env.id, connectionId],
+			});
+		},
+	});
+	return (
+		<Gated requires={{ scope: "jobs:execute" }}>
+			<Button
+				disabled={sync.isPending || !active}
+				onClick={() => sync.mutate()}
+				variant="primary"
+			>
+				<RefreshCwIcon /> {sync.isPending ? "Starting…" : "Sync now"}
+			</Button>
+		</Gated>
+	);
+}
+
 export function ConnectionView({ id }: { id: string }) {
 	const connection = useConnection(id);
 	const [tab, setTab] = useState<Tab>("overview");
 	const { client, env } = useEnv();
 	const href = useHref();
-	const queryClient = useQueryClient();
 	const org = useQuery({
 		enabled: Boolean(connection.data),
 		queryFn: () =>
@@ -98,57 +239,50 @@ export function ConnectionView({ id }: { id: string }) {
 			),
 		queryKey: ["organizations", env.id, connection.data?.organization_id],
 	});
-	const sync = useMutation({
-		mutationFn: () =>
-			unwrap(
-				client.POST("/v1/connections/{connection_id}/jobs", {
-					body: {},
-					headers: idem(),
-					params: { path: { connection_id: id } },
-				})
-			),
-		onError: (e) =>
-			toast.error("Couldn't start a sync", { description: errorText(e) }),
-		onSuccess: async (job) => {
-			toast.success("Sync queued", {
-				description: `Job ${job.id.slice(0, 8)}`,
-			});
-			await queryClient.invalidateQueries({ queryKey: ["jobs", env.id, id] });
-		},
-	});
+	const connector = useConnectorInfo();
 	const c = connection.data;
+	const info = connector(c?.vendor ?? "");
 	return (
 		<QueryState query={connection}>
 			{c ? (
 				<>
 					<PageHeader
 						actions={
-							<Button
-								disabled={sync.isPending || c.state !== "ACTIVE"}
-								onClick={() => sync.mutate()}
-								variant="primary"
-							>
-								<RefreshCwIcon /> Sync now
-							</Button>
+							<SyncNowButton active={c.state === "ACTIVE"} connectionId={id} />
 						}
 						description={
 							<span className="flex flex-wrap items-center gap-2">
 								<Link
-									className="hover:underline"
+									className="text-foreground inline-flex items-center gap-1.5 hover:underline"
 									href={href(`/organizations/${c.organization_id}`)}
 								>
+									<EntityAvatar
+										name={org.data?.name ?? "Organization"}
+										size={16}
+									/>
 									{org.data?.name ?? "Organization"}
 								</Link>
 								<span>·</span>
+								<span>{info.name}</span>
+								<span>·</span>
 								<span className="font-mono text-xs">{c.id}</span>
-								{c.is_sandbox ? <Badge>sandbox</Badge> : null}
+								{c.is_sandbox ? <Badge>Sandbox</Badge> : null}
 							</span>
 						}
 						title={
 							<span className="flex items-center gap-3">
-								<ConnectorLogo id={c.vendor} size={32} />
-								{c.identifier ?? c.vendor}
-								<StatusBadge tones={STATE_TONES} value={c.state} />
+								<ConnectorLogo
+									id={c.vendor}
+									logo={info.logo}
+									name={info.name}
+									size={32}
+								/>
+								{c.identifier ?? info.name}
+								<EnumBadge
+									labels={STATE_LABELS}
+									tones={STATE_TONES}
+									value={c.state}
+								/>
 								<HealthBadge health={c.health} />
 							</span>
 						}
@@ -187,7 +321,8 @@ export function ConnectionView({ id }: { id: string }) {
 
 function Overview({ connection: c }: { connection: Connection }) {
 	const { client, env } = useEnv();
-	const info = healthInfo(c.health.name);
+	const owner = c.health.resolution_owner ?? healthInfo(c.health.name).owner;
+	const streams = c.streams ?? [];
 	const history = useQuery({
 		queryFn: () =>
 			unwrap(
@@ -204,10 +339,8 @@ function Overview({ connection: c }: { connection: Connection }) {
 					<div className="flex flex-wrap items-center gap-3">
 						<HealthBadge health={c.health} />
 						<span className="text-muted-foreground text-sm">
-							{c.health.status}
-							{(c.health.resolution_owner ?? info.owner)
-								? ` · ${c.health.resolution_owner ?? info.owner} to resolve`
-								: ""}
+							{labelOf(HEALTH_STATUS_LABELS, c.health.status)}
+							{owner ? ` · ${labelOf(OWNER_LABELS, owner)}` : ""}
 							{" · since "}
 							<When value={c.health_changed_at} />
 						</span>
@@ -231,74 +364,85 @@ function Overview({ connection: c }: { connection: Connection }) {
 				</Card>
 			</Section>
 			<Section
-				description="What each stream can read, how often it runs, and how fresh its data is"
+				description="What each stream can read, how often it runs and how fresh its data is."
 				title="Streams"
 			>
-				<Card>
-					<Table>
-						<thead>
-							<Tr>
-								<Th>Stream</Th>
-								<Th>Grant</Th>
-								<Th>Schedule</Th>
-								<Th>Last success</Th>
-								<Th>Next run</Th>
-								<Th className="text-right">Records</Th>
-							</Tr>
-						</thead>
-						<tbody>
-							{(c.streams ?? []).map((s) => (
-								<Tr key={s.name}>
-									<Td>
-										<div className="font-medium">{s.name}</div>
-										<div className="text-muted-foreground text-xs">
-											{s.object.replaceAll("_", " ")}
-											{s.enabled ? "" : " · disabled"}
-										</div>
-									</Td>
-									<Td>
-										<StatusBadge tones={GRANT_TONES} value={s.grant} />
-										{s.grant_detail ? (
-											<div className="text-muted-foreground mt-1 max-w-xs text-xs">
-												{s.grant_detail}
-											</div>
-										) : null}
-									</Td>
-									<Td className="text-xs">
-										{s.interval_s
-											? `every ${Math.round(s.interval_s / 60)} min`
-											: "—"}
-										{s.schedule_state ? (
-											<div className="text-muted-foreground">
-												{s.schedule_state.toLowerCase()}
-											</div>
-										) : null}
-									</Td>
-									<Td>
-										<When value={s.last_success_at} />
-									</Td>
-									<Td>
-										<When value={s.next_run_at} />
-									</Td>
-									<Td className="text-right tabular-nums">
-										{num(s.record_count)}
-										{s.deleted_count ? (
-											<div className="text-muted-foreground text-xs">
-												{num(s.deleted_count)} deleted
-											</div>
-										) : null}
-									</Td>
+				{streams.length === 0 ? (
+					<EmptyState
+						description="Streams appear once the connection is verified."
+						title="No streams yet"
+					/>
+				) : (
+					<Card>
+						<Table>
+							<thead>
+								<Tr>
+									<Th>Stream</Th>
+									<Th>Access</Th>
+									<Th>Schedule</Th>
+									<Th>Last success</Th>
+									<Th>Next run</Th>
+									<Th className="text-right">Records</Th>
 								</Tr>
-							))}
-						</tbody>
-					</Table>
-				</Card>
+							</thead>
+							<tbody>
+								{streams.map((s) => (
+									<Tr key={s.name}>
+										<Td>
+											<div className="font-mono text-sm">{s.name}</div>
+											<div className="text-muted-foreground text-xs">
+												{labelOf(OBJECT_LABELS, s.object)}
+												{s.enabled ? "" : " · Off"}
+											</div>
+										</Td>
+										<Td>
+											<EnumBadge
+												labels={GRANT_LABELS}
+												tones={GRANT_TONES}
+												value={s.grant}
+											/>
+											{s.grant_detail ? (
+												<div className="text-muted-foreground mt-1 max-w-xs text-xs">
+													{s.grant_detail}
+												</div>
+											) : null}
+										</Td>
+										<Td>
+											{s.interval_s
+												? sentence(everySeconds(s.interval_s))
+												: "—"}
+											{s.schedule_state ? (
+												<div className="text-muted-foreground text-xs">
+													{labelOf(SCHEDULE_LABELS, s.schedule_state)}
+												</div>
+											) : null}
+										</Td>
+										<Td>
+											<When value={s.last_success_at} />
+										</Td>
+										<Td>
+											<When value={s.next_run_at} />
+										</Td>
+										<Td className="text-right tabular-nums">
+											{num(s.record_count)}
+											{s.deleted_count ? (
+												<div className="text-muted-foreground text-xs">
+													{num(s.deleted_count)} deleted
+												</div>
+											) : null}
+										</Td>
+									</Tr>
+								))}
+							</tbody>
+						</Table>
+					</Card>
+				)}
 			</Section>
 			<Section title="Health history">
 				<QueryState
 					empty={{
-						description: "No transitions yet.",
-						title: "No history",
+						description: "Changes to this connection's health appear here.",
+						title: "No health changes yet",
 						when: (history.data ?? []).length === 0,
 					}}
 					query={history}
@@ -316,7 +460,7 @@ function Overview({ connection: c }: { connection: Connection }) {
 											{h.from_code ? (
 												<HealthBadge health={h.from_code} />
 											) : (
-												<span className="text-muted-foreground">new</span>
+												<span className="text-muted-foreground">Created</span>
 											)}
 											{" → "}
 											<HealthBadge health={h.to_code} />
@@ -354,7 +498,8 @@ function Jobs({ connectionId }: { connectionId: string }) {
 	return (
 		<QueryState
 			empty={{
-				description: "Jobs appear when a sync runs.",
+				description:
+					"Scheduled and manual syncs of this connection appear here.",
 				title: "No jobs yet",
 				when: (jobs.data ?? []).length === 0,
 			}}
@@ -383,16 +528,24 @@ function Jobs({ connectionId }: { connectionId: string }) {
 										{j.id.slice(0, 8)}
 									</Link>
 								</Td>
-								<Td className="text-xs">{j.type.toLowerCase()}</Td>
+								<Td>{labelOf(JOB_TYPE_LABELS, j.type)}</Td>
 								<Td>
-									<StatusBadge tones={JOB_TONES} value={j.status} />
+									<EnumBadge
+										labels={JOB_STATUS_LABELS}
+										tones={JOB_TONES}
+										value={j.status}
+									/>
 									{j.failure_reason ? (
 										<div className="text-muted-foreground mt-1 max-w-xs truncate text-xs">
 											{j.failure_reason}
 										</div>
 									) : null}
 								</Td>
-								<Td className="text-xs">{j.requested_by ?? "schedule"}</Td>
+								<Td>
+									<span title={j.requested_by ?? undefined}>
+										{requester(j.requested_by)}
+									</span>
+								</Td>
 								<Td>
 									<When value={j.started_at} />
 								</Td>
@@ -420,7 +573,9 @@ function Authorization({ connection: c }: { connection: Connection }) {
 				})
 			),
 		onError: (e) =>
-			toast.error("Couldn't create a link", { description: errorText(e) }),
+			toast.error("Couldn't create the re-authorization link", {
+				description: errorText(e),
+			}),
 		onSuccess: (s) => setLink(s.url),
 	});
 	const a = c.authorization;
@@ -430,53 +585,60 @@ function Authorization({ connection: c }: { connection: Connection }) {
 				{a ? (
 					<KeyValue
 						items={[
-							{ label: "Auth mode", value: a.auth_mode },
+							{ label: "Sign-in method", value: authLabel(a.auth_mode) },
 							{
-								label: "Fields set",
+								label: "Saved credentials",
 								value: a.fields_set.length
 									? a.fields_set.map((f) => (
-											<Badge className="mr-1" key={f}>
+											<Badge className="mr-1 font-mono" key={f}>
 												{f}
 											</Badge>
 										))
 									: "—",
 							},
-							{ label: "Rotated", value: <When value={a.rotated_at} /> },
+							{ label: "Last rotated", value: <When value={a.rotated_at} /> },
 							{
 								label: "Last token refresh",
 								value: <When value={a.last_refresh_at} />,
 							},
 							{
-								label: "Refresh exhausted",
-								value: a.refresh_exhausted ? "yes" : "no",
+								label: "Token refresh",
+								value: a.refresh_exhausted
+									? "Failing. Re-authorize to fix it."
+									: "Working",
 							},
 						]}
 					/>
 				) : (
 					<p className="text-muted-foreground text-sm">
-						No credentials recorded yet.
+						No credentials saved yet.
 					</p>
 				)}
 				<p className="text-muted-foreground mt-4 text-xs">
-					Credential values are write-only and never returned.
+					Credential values are never shown after they're saved.
 				</p>
 			</Card>
 			<Section
 				action={
-					<Button
-						disabled={reauth.isPending}
-						onClick={() => reauth.mutate()}
-						size="sm"
-						variant="outline"
-					>
-						Create re-authorization link
-					</Button>
+					<Gated requires={{ scope: "provisioning:write" }}>
+						<Button
+							disabled={reauth.isPending}
+							onClick={() => reauth.mutate()}
+							size="sm"
+							variant="outline"
+						>
+							{reauth.isPending ? "Creating…" : "Create re-authorization link"}
+						</Button>
+					</Gated>
 				}
-				description="Send the customer a hosted link to replace credentials or re-install the app. The connection keeps its id and data."
+				description="Send your customer a link to replace credentials or reinstall the app. The connection keeps its data."
 				title="Re-authorize"
 			>
 				{link ? (
-					<Field help="Valid for 30 minutes, single use" label="Link">
+					<Field
+						help="Send this to your customer. It works once, for 30 minutes."
+						label="Re-authorization link"
+					>
 						<CopyField label="Re-authorization link" value={link} />
 					</Field>
 				) : null}
@@ -484,6 +646,28 @@ function Authorization({ connection: c }: { connection: Connection }) {
 		</div>
 	);
 }
+
+/** Toast and button copy for each kind of connection update. */
+const PATCH_COPY = {
+	ACTIVE: {
+		action: "Resume syncing",
+		done: "Connection resumed",
+		failed: "Couldn't resume the connection",
+		pending: "Resuming…",
+	},
+	options: {
+		action: "Save options",
+		done: "Options saved",
+		failed: "Couldn't save the options",
+		pending: "Saving…",
+	},
+	PAUSED: {
+		action: "Pause syncing",
+		done: "Connection paused",
+		failed: "Couldn't pause the connection",
+		pending: "Pausing…",
+	},
+} as const;
 
 function Settings({ connection: c }: { connection: Connection }) {
 	const { client, env } = useEnv();
@@ -513,9 +697,12 @@ function Settings({ connection: c }: { connection: Connection }) {
 					params: { path: { connection_id: c.id } },
 				})
 			),
-		onError: (e) => toast.error("Couldn't save", { description: errorText(e) }),
-		onSuccess: async () => {
-			toast.success("Saved");
+		onError: (e, body) =>
+			toast.error(PATCH_COPY[body.state ?? "options"].failed, {
+				description: errorText(e),
+			}),
+		onSuccess: async (_, body) => {
+			toast.success(PATCH_COPY[body.state ?? "options"].done);
 			await refresh();
 		},
 	});
@@ -526,15 +713,18 @@ function Settings({ connection: c }: { connection: Connection }) {
 					params: { path: { connection_id: c.id }, query: { wait: 15 } },
 				})
 			),
-		onError: (e) => toast.error("Test failed", { description: errorText(e) }),
+		onError: (e) =>
+			toast.error("Couldn't test the credentials", {
+				description: errorText(e),
+			}),
 		onSuccess: (r) =>
 			r.is_valid
 				? toast.success("Credentials work", {
 						description: Object.entries(r.grants)
-							.map(([k, v]) => `${k}: ${v}`)
+							.map(([k, v]) => `${k}: ${labelOf(GRANT_LABELS, String(v))}`)
 							.join(" · "),
 					})
-				: toast.error("Credentials rejected", {
+				: toast.error("The vendor rejected the credentials", {
 						description: r.message ?? undefined,
 					}),
 	});
@@ -548,10 +738,13 @@ function Settings({ connection: c }: { connection: Connection }) {
 				})
 			),
 		onError: (e) =>
-			toast.error("Couldn't reset", { description: errorText(e) }),
+			toast.error("Couldn't start the full resync", {
+				description: errorText(e),
+			}),
 		onSuccess: () =>
 			toast.success("Full resync queued", {
-				description: "Cursors cleared; data is kept and reconciled.",
+				description:
+					"Your data stays in place while it runs. Records the vendor no longer returns are removed at the end.",
 			}),
 	});
 	const remove = useMutation({
@@ -562,13 +755,18 @@ function Settings({ connection: c }: { connection: Connection }) {
 				})
 			),
 		onError: (e) =>
-			toast.error("Couldn't delete", { description: errorText(e) }),
+			toast.error("Couldn't delete the connection", {
+				description: errorText(e),
+			}),
 		onSuccess: async () => {
+			toast.success("Connection deleted");
 			await refresh();
 			router.push(href("/connections"));
 		},
 	});
 	const schema = connector.data?.options_schema as JsonSchema | undefined;
+	const paused = c.state === "PAUSED";
+	const name = c.identifier ?? connector.data?.name ?? c.vendor;
 	return (
 		<div className="grid max-w-2xl gap-8">
 			{schema?.properties && Object.keys(schema.properties).length ? (
@@ -581,14 +779,18 @@ function Settings({ connection: c }: { connection: Connection }) {
 							values={opts}
 						/>
 						<div>
-							<Button
-								disabled={patch.isPending}
-								onClick={() => patch.mutate({ options: compactValues(opts) })}
-								size="sm"
-								variant="primary"
-							>
-								Save options
-							</Button>
+							<Gated requires={{ scope: "provisioning:write" }}>
+								<Button
+									disabled={patch.isPending}
+									onClick={() => patch.mutate({ options: compactValues(opts) })}
+									size="sm"
+									variant="primary"
+								>
+									{patch.isPending && !patch.variables?.state
+										? "Saving…"
+										: "Save options"}
+								</Button>
+							</Gated>
 						</div>
 					</Card>
 				</Section>
@@ -596,7 +798,7 @@ function Settings({ connection: c }: { connection: Connection }) {
 			<Section title="Operations">
 				<Card className="divide-border grid divide-y">
 					<Row
-						description="Calls the vendor with the stored credentials and reports per-stream access."
+						description="Checks the saved credentials and what each stream can read."
 						title="Test credentials"
 					>
 						<Button
@@ -605,59 +807,65 @@ function Settings({ connection: c }: { connection: Connection }) {
 							size="sm"
 							variant="outline"
 						>
-							Test
+							{test.isPending ? "Testing…" : "Run test"}
 						</Button>
 					</Row>
 					<Row
 						description={
-							c.state === "PAUSED"
-								? "Scheduled syncs are stopped."
-								: "Stops scheduled syncs; data stays readable."
+							paused
+								? "Scheduled syncs are stopped. Resume to start them again."
+								: "Stops scheduled syncs. Synced data stays readable."
 						}
-						title={c.state === "PAUSED" ? "Resume" : "Pause"}
+						title={paused ? "Resume syncing" : "Pause syncing"}
 					>
-						<Button
-							disabled={
-								patch.isPending ||
-								!(c.state === "ACTIVE" || c.state === "PAUSED")
-							}
-							onClick={() =>
-								patch.mutate({
-									state: c.state === "PAUSED" ? "ACTIVE" : "PAUSED",
-								})
-							}
-							size="sm"
-							variant="outline"
-						>
-							{c.state === "PAUSED" ? "Resume" : "Pause"}
-						</Button>
+						<Gated requires={{ scope: "provisioning:write" }}>
+							<Button
+								disabled={
+									patch.isPending ||
+									!(c.state === "ACTIVE" || c.state === "PAUSED")
+								}
+								onClick={() =>
+									patch.mutate({ state: paused ? "ACTIVE" : "PAUSED" })
+								}
+								size="sm"
+								variant="outline"
+							>
+								{patch.isPending && patch.variables?.state
+									? PATCH_COPY[paused ? "ACTIVE" : "PAUSED"].pending
+									: PATCH_COPY[paused ? "ACTIVE" : "PAUSED"].action}
+							</Button>
+						</Gated>
 					</Row>
 					<Row
-						description="Clears every stream's cursor and runs a full sync; records missing afterwards are deleted."
-						title="Reset"
+						description="Reads everything from the vendor again. Records it no longer returns are deleted."
+						title="Full resync"
 					>
-						<Button
-							disabled={reset.isPending}
-							onClick={() => reset.mutate()}
-							size="sm"
-							variant="outline"
-						>
-							Reset
-						</Button>
+						<Gated requires={{ scope: "jobs:execute" }}>
+							<Button
+								disabled={reset.isPending}
+								onClick={() => reset.mutate()}
+								size="sm"
+								variant="outline"
+							>
+								{reset.isPending ? "Starting…" : "Start full resync"}
+							</Button>
+						</Gated>
 					</Row>
 					<Row
-						description="Soft-deletes the connection and its data, and uninstalls where the vendor allows."
-						title="Delete"
+						description="Deletes the connection and its data, and uninstalls the vendor app where possible."
+						title="Delete connection"
 					>
-						<ConfirmButton
-							confirmLabel="Delete connection"
-							description="Its data is soft-deleted and the vendor app is uninstalled where possible. This can't be undone from the dashboard."
-							disabled={remove.isPending}
-							onConfirm={() => remove.mutate()}
-							title="Delete this connection?"
-						>
-							Delete
-						</ConfirmButton>
+						<Gated requires={{ scope: "provisioning:write" }}>
+							<ConfirmButton
+								confirmLabel="Delete connection"
+								description="Its synced data is deleted and the vendor app is uninstalled where possible. You can't undo this from the dashboard."
+								disabled={remove.isPending}
+								onConfirm={() => remove.mutate()}
+								title={`Delete “${name}”?`}
+							>
+								{remove.isPending ? "Deleting…" : "Delete connection"}
+							</ConfirmButton>
+						</Gated>
 					</Row>
 				</Card>
 			</Section>
@@ -721,9 +929,11 @@ export function JobView({ id }: { id: string }) {
 				})
 			),
 		onError: (e) =>
-			toast.error("Couldn't cancel", { description: errorText(e) }),
-		onSuccess: () =>
-			queryClient.invalidateQueries({ queryKey: ["job", env.id, id] }),
+			toast.error("Couldn't cancel the job", { description: errorText(e) }),
+		onSuccess: async () => {
+			toast.success("Cancellation requested");
+			await queryClient.invalidateQueries({ queryKey: ["job", env.id, id] });
+		},
 	});
 	const j = job.data;
 	return (
@@ -733,13 +943,15 @@ export function JobView({ id }: { id: string }) {
 					<PageHeader
 						actions={
 							j.status === "QUEUED" || j.status === "RUNNING" ? (
-								<Button
-									disabled={cancel.isPending}
-									onClick={() => cancel.mutate()}
-									variant="outline"
-								>
-									Cancel job
-								</Button>
+								<Gated requires={{ scope: "jobs:execute" }}>
+									<Button
+										disabled={cancel.isPending}
+										onClick={() => cancel.mutate()}
+										variant="outline"
+									>
+										{cancel.isPending ? "Cancelling…" : "Cancel job"}
+									</Button>
+								</Gated>
 							) : null
 						}
 						description={
@@ -747,14 +959,19 @@ export function JobView({ id }: { id: string }) {
 								className="hover:underline"
 								href={href(`/connections/${j.connection_id}`)}
 							>
-								Connection {j.connection_id.slice(0, 8)}
+								Connection{" "}
+								<span className="font-mono">{j.connection_id.slice(0, 8)}</span>
 							</Link>
 						}
 						title={
 							<span className="flex items-center gap-3">
-								{j.type.toLowerCase()} job{" "}
+								{labelOf(JOB_TYPE_LABELS, j.type)}{" "}
 								<span className="font-mono text-base">{j.id.slice(0, 8)}</span>
-								<StatusBadge tones={JOB_TONES} value={j.status} />
+								<EnumBadge
+									labels={JOB_STATUS_LABELS}
+									tones={JOB_TONES}
+									value={j.status}
+								/>
 							</span>
 						}
 					/>
@@ -764,7 +981,11 @@ export function JobView({ id }: { id: string }) {
 								items={[
 									{
 										label: "Requested by",
-										value: j.requested_by ?? "schedule",
+										value: (
+											<span title={j.requested_by ?? undefined}>
+												{requester(j.requested_by)}
+											</span>
+										),
 									},
 									{ label: "Created", value: <When value={j.created_at} /> },
 									{ label: "Started", value: <When value={j.started_at} /> },
@@ -777,7 +998,7 @@ export function JobView({ id }: { id: string }) {
 											"—"
 										),
 									},
-									{ label: "Failure", value: j.failure_reason ?? "—" },
+									{ label: "Failure reason", value: j.failure_reason ?? "—" },
 								]}
 							/>
 						</Card>
@@ -800,7 +1021,7 @@ export function JobView({ id }: { id: string }) {
 										{(j.streams ?? []).map((s) => (
 											<Tr key={s.id}>
 												<Td>
-													<div className="font-medium">{s.stream}</div>
+													<div className="font-mono text-sm">{s.stream}</div>
 													{s.error ? (
 														<div className="text-destructive max-w-xs text-xs">
 															{String(
@@ -816,9 +1037,13 @@ export function JobView({ id }: { id: string }) {
 														</div>
 													) : null}
 												</Td>
-												<Td className="text-xs">{s.mode.toLowerCase()}</Td>
+												<Td>{labelOf(RUN_MODE_LABELS, s.mode)}</Td>
 												<Td>
-													<Badge>{s.state.toLowerCase()}</Badge>
+													<EnumBadge
+														labels={RUN_STATE_LABELS}
+														tones={RUN_TONES}
+														value={s.state}
+													/>
 												</Td>
 												<Td className="text-right tabular-nums">
 													{num(s.added)}
@@ -844,8 +1069,8 @@ export function JobView({ id }: { id: string }) {
 						<Section title="Logs">
 							<QueryState
 								empty={{
-									description: "No log lines yet.",
-									title: "Empty",
+									description: "Log lines appear here while the job runs.",
+									title: "No logs yet",
 									when: (logs.data ?? []).length === 0,
 								}}
 								query={logs}

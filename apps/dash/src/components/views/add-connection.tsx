@@ -1,23 +1,27 @@
 "use client";
 
 import { unwrap } from "@securefabric/client";
+import { Button } from "@securefabric/ui/components/button";
+import { Dialog, DialogContent } from "@securefabric/ui/components/dialog";
+import { Field, Input } from "@securefabric/ui/components/form";
+import { Select } from "@securefabric/ui/components/select";
+import { EntityAvatar } from "@securefabric/ui/patterns/avatar";
+import { CopyField } from "@securefabric/ui/patterns/copy";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { CopyField } from "@/components/common";
-import { errorText } from "@/components/kit";
+import { Gated } from "@/components/domain/access";
+import { ConnectorLogo } from "@/components/domain/connector-logo";
+import { errorText } from "@/components/domain/query-state";
 import {
 	compactValues,
 	defaultsFor,
 	type JsonSchema,
 	SchemaForm,
 	validate,
-} from "@/components/schema-form";
+} from "@/components/domain/schema-form";
 import { useEnv, useHref } from "@/components/shell/env-context";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, Select } from "@/components/ui/overlay";
-import { Field, Input } from "@/components/ui/primitives";
 import { api } from "@/lib/api";
 
 /**
@@ -87,11 +91,11 @@ export function AddConnectionDialog({
 				window.open(c.authorize_url, "_blank", "noopener");
 				toast.info(`Finish in ${connector?.name ?? vendor}`, {
 					description:
-						"Install the app in the new tab. The connection activates when the vendor sends you back.",
+						"Install the app in the new tab. The connection activates when you come back.",
 				});
 			} else {
-				toast.success("Connection created", {
-					description: "Verifying the credentials now.",
+				toast.success("Connection added", {
+					description: "We're checking the credentials now.",
 				});
 			}
 			await done(c.id);
@@ -105,9 +109,17 @@ export function AddConnectionDialog({
 				})
 			),
 		onError: (e) =>
-			toast.error("Couldn't create a link", { description: errorText(e) }),
+			toast.error("Couldn't create the connect link", {
+				description: errorText(e),
+			}),
 		onSuccess: (s) => setLink(s.url),
 	});
+	let submitLabel = "Add connection";
+	if (create.isPending) {
+		submitLabel = "Adding…";
+	} else if (redirect) {
+		submitLabel = `Continue to ${connector?.name ?? vendor}`;
+	}
 	const submit = () => {
 		const errs = redirect
 			? {}
@@ -126,25 +138,27 @@ export function AddConnectionDialog({
 			open={open}
 		>
 			<DialogContent
-				description="Connect a customer's vendor tenant. Credentials are sealed before the request returns."
+				description="Connect a customer's vendor account, or create a link so they can. Credentials are encrypted on save."
 				footer={
 					<>
-						<Button
-							disabled={!orgId || session.isPending}
-							onClick={() => session.mutate()}
-							variant="outline"
-						>
-							Create connect link
-						</Button>
-						<Button
-							disabled={!orgId || create.isPending}
-							onClick={submit}
-							variant="primary"
-						>
-							{redirect
-								? `Continue to ${connector?.name ?? vendor}`
-								: "Create connection"}
-						</Button>
+						<Gated requires={{ scope: "provisioning:write" }}>
+							<Button
+								disabled={!orgId || session.isPending}
+								onClick={() => session.mutate()}
+								variant="outline"
+							>
+								{session.isPending ? "Creating…" : "Create connect link"}
+							</Button>
+						</Gated>
+						<Gated requires={{ scope: "provisioning:write" }}>
+							<Button
+								disabled={!orgId || create.isPending}
+								onClick={submit}
+								variant="primary"
+							>
+								{submitLabel}
+							</Button>
+						</Gated>
 					</>
 				}
 				title="Add connection"
@@ -152,14 +166,20 @@ export function AddConnectionDialog({
 				<div className="grid gap-4">
 					{organizationId ? null : (
 						<Field
-							help="The customer this connection belongs to"
+							help="The customer this connection belongs to."
 							label="Organization"
 						>
 							<Select
+								ariaLabel="Organization"
 								onChange={setOrg}
 								options={(orgs.data?.items ?? []).map((o) => ({
 									description: o.identifier,
-									label: o.name,
+									label: (
+										<span className="inline-flex items-center gap-2">
+											<EntityAvatar name={o.name} size={16} />
+											{o.name}
+										</span>
+									),
 									value: o.id,
 								}))}
 								placeholder="Choose an organization"
@@ -169,6 +189,7 @@ export function AddConnectionDialog({
 					)}
 					<Field label="Connector">
 						<Select
+							ariaLabel="Connector"
 							onChange={(v) => {
 								setVendor(v);
 								const c = connectors.data?.find((x) => x.id === v);
@@ -177,28 +198,39 @@ export function AddConnectionDialog({
 								setErrors({});
 							}}
 							options={(connectors.data ?? []).map((c) => ({
-								label: c.name,
+								label: (
+									<span className="inline-flex items-center gap-2">
+										<ConnectorLogo
+											id={c.id}
+											logo={c.logo_url}
+											name={c.name}
+											size={16}
+										/>
+										{c.name}
+									</span>
+								),
 								value: c.id,
 							}))}
 							value={vendor}
 						/>
 					</Field>
 					<Field
-						help="Your own key for this connection (optional)"
+						help="Optional. Your own ID for this connection, shown in place of the vendor name."
 						htmlFor="conn-ident"
 						label="Identifier"
 					>
 						<Input
 							id="conn-ident"
 							onChange={(e) => setIdentifier(e.target.value)}
+							placeholder="acme-github"
 							value={identifier}
 						/>
 					</Field>
 					{redirect ? (
 						<p className="text-muted-foreground text-sm">
-							{connector?.name} connects by installing an app: you'll be sent to
-							the vendor, and the connection activates once the vendor confirms
-							access. There is nothing to paste.
+							{connector?.name} connects through an app install. Approve access
+							in {connector?.name}, and the connection activates when you come
+							back.
 						</p>
 					) : (
 						<SchemaForm
@@ -211,7 +243,7 @@ export function AddConnectionDialog({
 					)}
 					{link ? (
 						<Field
-							help="Valid for 30 minutes, single use. Send it to the customer."
+							help="Send this to your customer. It works once, for 30 minutes."
 							label="Connect link"
 						>
 							<CopyField label="Connect link" value={link} />

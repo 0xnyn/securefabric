@@ -1,34 +1,30 @@
 "use client";
 
 import { unwrap } from "@securefabric/client";
+import { Badge } from "@securefabric/ui/components/badge";
+import { Button } from "@securefabric/ui/components/button";
+import { Card } from "@securefabric/ui/components/card";
+import { Dialog, DialogContent } from "@securefabric/ui/components/dialog";
+import { Field, Input, Textarea } from "@securefabric/ui/components/form";
+import { Select } from "@securefabric/ui/components/select";
+import { Switch } from "@securefabric/ui/components/switch";
+import { Table, Td, Th, Tr } from "@securefabric/ui/components/table";
+import { PageBody, PageHeader } from "@securefabric/ui/patterns/page";
+import { Section } from "@securefabric/ui/patterns/section";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { PageBody, PageHeader } from "@/components/common";
-import {
-	ConnectorLogo,
-	errorText,
-	QueryState,
-	Section,
-	When,
-} from "@/components/kit";
-import { useEnv, useHref } from "@/components/shell/env-context";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, Select, Switch } from "@/components/ui/overlay";
-import {
-	Badge,
-	Card,
-	Field,
-	Input,
-	Table,
-	Td,
-	Textarea,
-	Th,
-	Tr,
-} from "@/components/ui/primitives";
+import { Gated } from "@/components/domain/access";
+import { ConnectorLogo } from "@/components/domain/connector-logo";
+import { errorText, QueryState } from "@/components/domain/query-state";
+import { When } from "@/components/domain/when";
+import { useAccess, useEnv, useHref } from "@/components/shell/env-context";
 import type { Integration } from "@/lib/types";
+import { useConnectorInfo } from "./connections";
+import { HeaderConfirmButton } from "./organizations";
 
 export function useIntegrations() {
 	const { client, env } = useEnv();
@@ -41,22 +37,35 @@ export function useIntegrations() {
 export function IntegrationsView() {
 	const integrations = useIntegrations();
 	const href = useHref();
+	// Enabling happens on the catalog page; without provisioning:write it's
+	// still worth browsing, so the link stays and only its wording changes.
+	const canEnable = useAccess().can("provisioning:write");
+	const catalogLabel = canEnable ? "Enable a connector" : "Browse catalog";
 	return (
 		<>
 			<PageHeader
 				actions={
 					<Button render={<Link href={href("/catalog")} />} variant="primary">
-						Enable a connector
+						{catalogLabel}
 					</Button>
 				}
-				description="Connectors enabled in this environment: which streams run, how often, and which vendor app they use."
+				description="Choose which streams run for each connector, and how often."
 				title="Integrations"
 			/>
 			<PageBody className="grid gap-8">
 				<QueryState
 					empty={{
+						action: (
+							<Button
+								render={<Link href={href("/catalog")} />}
+								size="sm"
+								variant="primary"
+							>
+								{catalogLabel}
+							</Button>
+						),
 						description:
-							"Enable one from the catalog. Creating a connection with only a vendor name also enables it.",
+							"Enable a connector from the catalog. Adding a connection also enables its connector.",
 						title: "No integrations yet",
 						when: (integrations.data ?? []).length === 0,
 					}}
@@ -89,18 +98,16 @@ export function IntegrationsView() {
 													</span>
 												</span>
 												{i.deprecated ? (
-													<Badge tone="warn">deprecated</Badge>
+													<Badge tone="warn">Deprecated</Badge>
 												) : null}
 											</Link>
 										</Td>
-										<Td>{i.enabled_streams.length}</Td>
+										<Td className="tabular-nums">{i.enabled_streams.length}</Td>
 										<Td className="text-muted-foreground">
-											{i.vendor_app_id ? "Customer-owned" : "Platform default"}
+											{i.vendor_app_id ? "Your own app" : "Platform default"}
 										</Td>
-										<Td>
-											<Badge tone={i.write_back_enabled ? "accent" : "neutral"}>
-												{i.write_back_enabled ? "on" : "off"}
-											</Badge>
+										<Td className="text-muted-foreground">
+											{i.write_back_enabled ? "On" : "Off"}
 										</Td>
 										<Td>
 											<When value={i.created_at} />
@@ -124,6 +131,7 @@ function VendorApps() {
 		queryFn: () => unwrap(client.GET("/v1/vendor_apps")),
 		queryKey: ["vendor_apps", env.id],
 	});
+	const connector = useConnectorInfo();
 	const [open, setOpen] = useState(false);
 	const [form, setForm] = useState({
 		api_base_url: "",
@@ -166,8 +174,8 @@ function VendorApps() {
 				queryKey: ["vendor_apps", env.id],
 			});
 			setOpen(false);
-			toast.success("Vendor app registered", {
-				description: "Secrets were sealed to this environment's key.",
+			toast.success("GitHub App registered", {
+				description: "Its secrets are encrypted with this environment's key.",
 			});
 		},
 	});
@@ -178,14 +186,31 @@ function VendorApps() {
 	return (
 		<Section
 			action={
-				<Button onClick={() => setOpen(true)} size="sm" variant="outline">
-					Register a GitHub App
-				</Button>
+				<Gated requires={{ scope: "provisioning:write" }}>
+					<Button onClick={() => setOpen(true)} size="sm" variant="outline">
+						<PlusIcon /> Register GitHub App
+					</Button>
+				</Gated>
 			}
-			description="App registrations connections authenticate through. Platform apps are shared; register your own for GitHub Enterprise Server or GHE.com."
+			description="The apps connections sign in through. Register your own for GitHub Enterprise Server or GHE.com."
 			title="Vendor apps"
 		>
-			<QueryState query={apps}>
+			<QueryState
+				empty={{
+					action: (
+						<Gated requires={{ scope: "provisioning:write" }}>
+							<Button onClick={() => setOpen(true)} size="sm" variant="primary">
+								<PlusIcon /> Register GitHub App
+							</Button>
+						</Gated>
+					),
+					description:
+						"Connections use the shared default apps. Register your own to connect GitHub Enterprise Server or GHE.com.",
+					title: "No vendor apps yet",
+					when: (apps.data ?? []).length === 0,
+				}}
+				query={apps}
+			>
 				<Card>
 					<Table>
 						<thead>
@@ -201,16 +226,29 @@ function VendorApps() {
 							{apps.data?.map((a) => (
 								<Tr key={a.id}>
 									<Td className="font-medium">{a.name}</Td>
-									<Td>{a.connector_id}</Td>
-									<Td className="font-mono text-xs">{a.base_url}</Td>
 									<Td>
-										<Badge tone={a.owner === "platform" ? "neutral" : "accent"}>
-											{a.owner}
-										</Badge>
+										<span className="inline-flex items-center gap-2">
+											<ConnectorLogo
+												id={a.connector_id}
+												logo={connector(a.connector_id).logo}
+												name={connector(a.connector_id).name}
+												size={20}
+											/>
+											{connector(a.connector_id).name}
+										</span>
 									</Td>
-									<Td className="text-muted-foreground text-xs">
-										{a.secrets_set ? "set" : "missing"} · webhook{" "}
-										{a.webhook_secret_set ? "set" : "missing"}
+									<Td className="font-mono text-xs">{a.base_url}</Td>
+									<Td className="text-muted-foreground">
+										{a.owner === "platform" ? "Platform" : "Yours"}
+									</Td>
+									<Td className="text-muted-foreground text-sm">
+										{a.secrets_set
+											? "App secrets saved"
+											: "App secrets missing"}
+										{" · "}
+										{a.webhook_secret_set
+											? "webhook secret saved"
+											: "no webhook secret"}
 									</Td>
 								</Tr>
 							))}
@@ -220,44 +258,53 @@ function VendorApps() {
 			</QueryState>
 			<Dialog onOpenChange={setOpen} open={open}>
 				<DialogContent
-					description="Secrets are write-only: sealed before the request returns and never shown again."
+					description="For GitHub Enterprise Server or GHE.com. Secrets are encrypted when you save and never shown again."
 					footer={
 						<>
 							<Button onClick={() => setOpen(false)}>Cancel</Button>
-							<Button
-								disabled={create.isPending}
-								onClick={() => create.mutate()}
-								variant="primary"
-							>
-								Register
-							</Button>
+							<Gated requires={{ scope: "provisioning:write" }}>
+								<Button
+									disabled={create.isPending}
+									onClick={() => create.mutate()}
+									variant="primary"
+								>
+									{create.isPending ? "Registering…" : "Register app"}
+								</Button>
+							</Gated>
 						</>
 					}
-					title="Register a GitHub App"
+					title="Register GitHub App"
 				>
 					<div className="grid gap-3">
 						<Field htmlFor="va-name" label="Name">
-							<Input id="va-name" onChange={set("name")} value={form.name} />
+							<Input
+								id="va-name"
+								onChange={set("name")}
+								placeholder="Acme GitHub Enterprise"
+								value={form.name}
+							/>
 						</Field>
 						<Field
-							help="https://github.example.com (GHES) or https://acme.ghe.com"
+							help="Your GitHub Enterprise Server or GHE.com address."
 							htmlFor="va-base"
 							label="Base URL"
 						>
 							<Input
 								id="va-base"
 								onChange={set("base_url")}
+								placeholder="https://github.example.com"
 								value={form.base_url}
 							/>
 						</Field>
 						<Field
-							help="GHES: https://host/api/v3 · GHE.com: https://api.acme.ghe.com"
+							help="For GHE.com, use https://api.<name>.ghe.com."
 							htmlFor="va-api"
 							label="API base URL"
 						>
 							<Input
 								id="va-api"
 								onChange={set("api_base_url")}
+								placeholder="https://github.example.com/api/v3"
 								value={form.api_base_url}
 							/>
 						</Field>
@@ -266,17 +313,24 @@ function VendorApps() {
 								<Input
 									id="va-appid"
 									onChange={set("app_id")}
+									placeholder="123456"
 									value={form.app_id}
 								/>
 							</Field>
 							<Field htmlFor="va-slug" label="Slug">
-								<Input id="va-slug" onChange={set("slug")} value={form.slug} />
+								<Input
+									id="va-slug"
+									onChange={set("slug")}
+									placeholder="acme-security"
+									value={form.slug}
+								/>
 							</Field>
 						</div>
 						<Field htmlFor="va-client" label="Client ID">
 							<Input
 								id="va-client"
 								onChange={set("client_id")}
+								placeholder="Iv23liExample"
 								value={form.client_id}
 							/>
 						</Field>
@@ -290,9 +344,10 @@ function VendorApps() {
 						</Field>
 						<Field htmlFor="va-pk" label="Private key (PEM)">
 							<Textarea
-								className="font-mono text-xs"
+								className="font-mono"
 								id="va-pk"
 								onChange={set("private_key")}
+								placeholder="Paste the whole .pem file, including the BEGIN and END lines"
 								rows={4}
 								value={form.private_key}
 							/>
@@ -310,6 +365,25 @@ function VendorApps() {
 			</Dialog>
 		</Section>
 	);
+}
+
+/** The success toast for an integration update, named for what changed. */
+function updatedMessage(body: Partial<Integration>): string {
+	if (body.write_back_enabled !== undefined) {
+		return body.write_back_enabled
+			? "Write-back turned on"
+			: "Write-back turned off";
+	}
+	if (body.enabled_streams) {
+		return "Streams updated";
+	}
+	if (body.stream_intervals) {
+		return "Interval updated";
+	}
+	if (body.vendor_app_id !== undefined) {
+		return "Vendor app changed";
+	}
+	return "Integration updated";
 }
 
 export function IntegrationView({ id }: { id: string }) {
@@ -350,12 +424,15 @@ export function IntegrationView({ id }: { id: string }) {
 					params: { path: { integration_id: id } },
 				})
 			),
-		onError: (e) => toast.error("Couldn't save", { description: errorText(e) }),
-		onSuccess: async () => {
+		onError: (e) =>
+			toast.error("Couldn't update the integration", {
+				description: errorText(e),
+			}),
+		onSuccess: async (_, body) => {
 			await queryClient.invalidateQueries({
 				queryKey: ["integrations", env.id],
 			});
-			toast.success("Saved");
+			toast.success(updatedMessage(body));
 		},
 	});
 	const remove = useMutation({
@@ -366,8 +443,13 @@ export function IntegrationView({ id }: { id: string }) {
 				})
 			),
 		onError: (e) =>
-			toast.error("Couldn't delete", { description: errorText(e) }),
-		onSuccess: () => router.push(href("/integrations")),
+			toast.error("Couldn't delete the integration", {
+				description: errorText(e),
+			}),
+		onSuccess: () => {
+			toast.success("Integration deleted");
+			router.push(href("/integrations"));
+		},
 	});
 	const i = integration.data;
 	const streams = (connector.data?.streams ?? []) as {
@@ -381,21 +463,40 @@ export function IntegrationView({ id }: { id: string }) {
 				<>
 					<PageHeader
 						actions={
-							<Button onClick={() => remove.mutate()} variant="outline">
-								Delete integration
-							</Button>
+							<Gated requires={{ scope: "provisioning:write" }}>
+								<HeaderConfirmButton
+									confirmLabel="Delete integration"
+									description="Delete its connections first. You can't undo this."
+									disabled={remove.isPending}
+									onConfirm={() => remove.mutate()}
+									title={`Delete “${i.display_name}”?`}
+								>
+									{remove.isPending ? "Deleting…" : "Delete integration"}
+								</HeaderConfirmButton>
+							</Gated>
 						}
-						description={`${i.connector_id} ${i.connector_version} · key ${i.key}`}
+						description={
+							<span>
+								{connector.data?.name ?? i.connector_id} {i.connector_version}
+								{" · Key "}
+								<span className="font-mono">{i.key}</span>
+							</span>
+						}
 						title={
 							<span className="flex items-center gap-3">
-								<ConnectorLogo id={i.connector_id} size={32} />
+								<ConnectorLogo
+									id={i.connector_id}
+									logo={connector.data?.logo_url}
+									name={connector.data?.name ?? i.display_name}
+									size={32}
+								/>
 								{i.display_name}
 							</span>
 						}
 					/>
 					<PageBody className="grid gap-8">
 						<Section
-							description="Streams that run for every connection of this integration, and their default interval"
+							description="Which streams run for this integration's connections, and how often."
 							title="Streams"
 						>
 							<Card>
@@ -403,8 +504,8 @@ export function IntegrationView({ id }: { id: string }) {
 									<thead>
 										<Tr>
 											<Th>Stream</Th>
-											<Th>Enabled</Th>
-											<Th>Interval (minutes)</Th>
+											<Th>On</Th>
+											<Th>Runs every (minutes)</Th>
 										</Tr>
 									</thead>
 									<tbody>
@@ -421,41 +522,46 @@ export function IntegrationView({ id }: { id: string }) {
 														</div>
 													</Td>
 													<Td>
-														<Switch
-															ariaLabel={`Enable ${s.name}`}
-															checked={on}
-															onChange={(v) =>
-																update.mutate({
-																	enabled_streams: v
-																		? [...i.enabled_streams, s.name]
-																		: i.enabled_streams.filter(
-																				(x) => x !== s.name
-																			),
-																})
-															}
-														/>
+														<Gated requires={{ scope: "provisioning:write" }}>
+															<Switch
+																ariaLabel={`Run ${s.title}`}
+																checked={on}
+																onChange={(v) =>
+																	update.mutate({
+																		enabled_streams: v
+																			? [...i.enabled_streams, s.name]
+																			: i.enabled_streams.filter(
+																					(x) => x !== s.name
+																				),
+																	})
+																}
+															/>
+														</Gated>
 													</Td>
 													<Td>
-														<Input
-															className="w-28"
-															defaultValue={current / 60}
-															max={s.interval.max / 60}
-															min={s.interval.min / 60}
-															onBlur={(e) => {
-																const v = Math.round(
-																	Number(e.target.value) * 60
-																);
-																if (v && v !== current) {
-																	update.mutate({
-																		stream_intervals: {
-																			...i.stream_intervals,
-																			[s.name]: v,
-																		},
-																	});
-																}
-															}}
-															type="number"
-														/>
+														<Gated requires={{ scope: "provisioning:write" }}>
+															<Input
+																aria-label={`How often ${s.title} runs, in minutes`}
+																className="w-28"
+																defaultValue={current / 60}
+																max={s.interval.max / 60}
+																min={s.interval.min / 60}
+																onBlur={(e) => {
+																	const v = Math.round(
+																		Number(e.target.value) * 60
+																	);
+																	if (v && v !== current) {
+																		update.mutate({
+																			stream_intervals: {
+																				...i.stream_intervals,
+																				[s.name]: v,
+																			},
+																		});
+																	}
+																}}
+																type="number"
+															/>
+														</Gated>
 													</Td>
 												</Tr>
 											);
@@ -467,42 +573,50 @@ export function IntegrationView({ id }: { id: string }) {
 						<Section title="Vendor app and write-back">
 							<Card className="grid gap-4 p-5">
 								<Field
-									help="Which app registration connections authenticate through"
+									help="The app this integration's connections sign in through."
 									label="Vendor app"
 								>
-									<Select
-										onChange={(v) =>
-											update.mutate({
-												vendor_app_id: v === "default" ? null : v,
-											})
-										}
-										options={[
-											{ label: "Platform default", value: "default" },
-											...(apps.data ?? [])
-												.filter(
-													(a) =>
-														a.owner !== "platform" &&
-														a.connector_id === i.connector_id
-												)
-												.map((a) => ({ label: a.name, value: a.id })),
-										]}
-										value={i.vendor_app_id ?? "default"}
-									/>
+									<Gated requires={{ scope: "provisioning:write" }}>
+										<Select
+											ariaLabel="Vendor app"
+											onChange={(v) =>
+												update.mutate({
+													vendor_app_id: v === "default" ? null : v,
+												})
+											}
+											options={[
+												{ label: "Platform default", value: "default" },
+												...(apps.data ?? [])
+													.filter(
+														(a) =>
+															a.owner !== "platform" &&
+															a.connector_id === i.connector_id
+													)
+													.map((a) => ({ label: a.name, value: a.id })),
+											]}
+											value={i.vendor_app_id ?? "default"}
+										/>
+									</Gated>
 								</Field>
 								<div className="flex items-center justify-between gap-4">
 									<div className="grid gap-0.5">
 										<span className="text-sm font-medium">Write-back</span>
 										<span className="text-muted-foreground text-xs">
-											Lets POST
-											/v1/vulnerability_findings/&#123;id&#125;/actions change
-											state at the vendor. GitHub uses the read-and-write app.
+											Lets write-back actions change a finding's state at the
+											vendor, via{" "}
+											<code className="font-mono">
+												POST /v1/vulnerability_findings/&#123;id&#125;/actions
+											</code>
+											. GitHub uses the read-and-write app.
 										</span>
 									</div>
-									<Switch
-										ariaLabel="Write-back"
-										checked={i.write_back_enabled}
-										onChange={(v) => update.mutate({ write_back_enabled: v })}
-									/>
+									<Gated requires={{ scope: "provisioning:write" }}>
+										<Switch
+											ariaLabel="Write-back"
+											checked={i.write_back_enabled}
+											onChange={(v) => update.mutate({ write_back_enabled: v })}
+										/>
+									</Gated>
 								</div>
 							</Card>
 						</Section>

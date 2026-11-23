@@ -1,8 +1,8 @@
 "use client";
 
 import { cn } from "@securefabric/ui/lib/utils";
+import { Kbd, KbdGroup } from "@securefabric/ui/primitives/kbd";
 import { useSyncExternalStore } from "react";
-import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { type Shortcut, shortcutById } from "@/lib/shortcuts";
 
 const APPLE_PLATFORM = /Mac|iPhone|iPad/u;
@@ -54,10 +54,17 @@ export function ShortcutKeys({
 	if (list.length === 0) {
 		return null;
 	}
+	// A sequence can repeat a key ("G then G"), so a step's position is part of
+	// its identity.
+	const steps = list.map((key, index) => ({
+		id: `${index}:${key}`,
+		index,
+		key,
+	}));
 	return (
 		<KbdGroup className={cn("shrink-0", className)}>
-			{list.map((key, index) => (
-				<span className="inline-flex items-center gap-1" key={key}>
+			{steps.map(({ id: stepId, key, index }) => (
+				<span className="inline-flex items-center gap-1" key={stepId}>
 					{isSequence && index > 0 ? (
 						<span className="text-2xs text-muted-foreground">then</span>
 					) : null}

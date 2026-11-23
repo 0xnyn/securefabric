@@ -26,6 +26,14 @@ const nextConfig: NextConfig = {
 			],
 			source: "/connect",
 		},
+		{
+			// The branding preview is framed by Settings only. Listed last so it
+			// wins over the /connect/:path* rule above.
+			headers: [
+				{ key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+			],
+			source: "/connect/preview",
+		},
 	],
 	reactCompiler: true,
 };

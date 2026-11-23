@@ -2,7 +2,21 @@
 
 import { isApiError, unwrap } from "@securefabric/client";
 import { pathsV1AdminEnvironmentsEnvironment_idConnectionsConnection_idActionPostParametersPathActionValues as REPAIR_ACTIONS } from "@securefabric/client/v1";
+import { Badge, type Tone } from "@securefabric/ui/components/badge";
+import { Button } from "@securefabric/ui/components/button";
+import { Card } from "@securefabric/ui/components/card";
+import { Dialog, DialogContent } from "@securefabric/ui/components/dialog";
+import { EmptyState } from "@securefabric/ui/components/empty-state";
+import { Field, Input, Textarea } from "@securefabric/ui/components/form";
+import { Mono } from "@securefabric/ui/components/mono";
+import { Switch } from "@securefabric/ui/components/switch";
+import { Table, Td, Th, Tr } from "@securefabric/ui/components/table";
+import { num } from "@securefabric/ui/lib/format";
 import { cn } from "@securefabric/ui/lib/utils";
+import { CopyButton } from "@securefabric/ui/patterns/copy";
+import { PageBody, PageHeader } from "@securefabric/ui/patterns/page";
+import { Section } from "@securefabric/ui/patterns/section";
+import { Tabs } from "@securefabric/ui/patterns/tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	CheckIcon,
@@ -16,35 +30,16 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createContext, useContext, useId, useState } from "react";
 import { toast } from "sonner";
-import { CopyButton, PageBody, PageHeader, Tabs } from "@/components/common";
 import {
-	ConfirmButton,
-	errorText,
+	enumLabel,
 	HealthBadge,
-	JsonBlock,
-	QueryState,
-	Section,
 	StatusBadge,
-	When,
-} from "@/components/kit";
+} from "@/components/domain/badges";
+import { ConfirmButton } from "@/components/domain/confirm-button";
+import { JsonBlock } from "@/components/domain/json-block";
+import { errorText, QueryState } from "@/components/domain/query-state";
+import { When } from "@/components/domain/when";
 import { useEnv, useHref } from "@/components/shell/env-context";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, Switch } from "@/components/ui/overlay";
-import {
-	Badge,
-	Card,
-	EmptyState,
-	Field,
-	Input,
-	Mono,
-	Table,
-	Td,
-	Textarea,
-	Th,
-	type Tone,
-	Tr,
-} from "@/components/ui/primitives";
-import { num } from "@/lib/format";
 import {
 	type Alert,
 	type RepairAction,
@@ -142,8 +137,8 @@ export function OperatorRequired({ devMode }: { devMode: boolean }) {
 		<EmptyState
 			description={
 				devMode
-					? "The dashboard is signed in with a development API key, and an API key is never an operator. Sign in with an operator account to use this console."
-					: "This console is for SecureFabric operators. Ask an operator to grant your account access, or sign in with an operator account."
+					? "You're using a development API key, and API keys can't be operators. Sign in with an operator account."
+					: "Only SecureFabric operators can use this console. Ask an operator for access."
 			}
 			icon={<ShieldEllipsisIcon className="size-4" />}
 			title="Operator access required"
@@ -188,7 +183,7 @@ export function AdminView() {
 	return (
 		<>
 			<PageHeader
-				description="Alerts, cross-account search, the scheduler and connection repairs. Customer access is read-only, needs a reason and is audited."
+				description="Support tools for SecureFabric operators. Every customer access needs a reason and is audited."
 				title="Operator console"
 			>
 				{allowed ? (
@@ -288,14 +283,14 @@ export function AlertsTab() {
 					</Button>
 				</div>
 			}
-			description="Raised by the maintenance evaluator. Follow the runbook, then resolve with a note."
+			description="Follow each alert's runbook, then resolve it with a note."
 			title={includeResolved ? "All alerts" : "Open alerts"}
 		>
 			<AdminQueryState
 				empty={{
 					description: includeResolved
-						? "No alerts have been raised."
-						: "Nothing needs attention right now.",
+						? "No alerts have been raised yet."
+						: "New alerts show up here.",
 					title: includeResolved ? "No alerts" : "No open alerts",
 					when: rows.length === 0,
 				}}
@@ -350,7 +345,7 @@ function AlertRow({
 		<Tr data-alert-id={alert.id}>
 			<Td>
 				<Badge tone={SEVERITY_TONES[alert.severity] ?? "neutral"}>
-					{alert.severity}
+					{enumLabel(alert.severity)}
 				</Badge>
 			</Td>
 			<Td>
@@ -380,7 +375,7 @@ function AlertRow({
 				{alert.resolved_at ? (
 					<div className="grid justify-items-end gap-0.5 text-xs">
 						<span className="inline-flex items-center gap-1">
-							<Badge tone="ok">resolved</Badge>
+							<Badge tone="ok">Resolved</Badge>
 							<When value={alert.resolved_at} />
 						</span>
 						{resolution.note ? (
@@ -466,7 +461,7 @@ function ResolveDialog({
 				title="Resolve alert"
 			>
 				<Field
-					help={`What was done. Shown in the alert's history (${note.length}/${NOTE_MAX}).`}
+					help={`What you did. Saved with the alert (${note.length}/${NOTE_MAX}).`}
 					htmlFor={noteId}
 					label="Note"
 				>
@@ -475,7 +470,7 @@ function ResolveDialog({
 						id={noteId}
 						maxLength={NOTE_MAX}
 						onChange={(e) => setNote(e.target.value)}
-						placeholder="Followed the runbook: re-probed the connection, credentials were rotated by the customer."
+						placeholder="Re-probed after the customer rotated credentials."
 						value={note}
 					/>
 				</Field>
@@ -503,8 +498,8 @@ function SearchTab() {
 	const rows = results.data ?? [];
 	return (
 		<Section
-			description="Matches a connection, organization or account id, a vendor tenant, an identifier, or part of an organization or account name. Up to 200 results."
-			title="Find connections across accounts"
+			description="Search by name, ID or vendor tenant. Shows up to 200 matches."
+			title="Find a connection"
 		>
 			<form
 				className="flex max-w-xl gap-2"
@@ -526,8 +521,8 @@ function SearchTab() {
 			{q ? (
 				<AdminQueryState
 					empty={{
-						description: `Nothing matches “${q}”.`,
-						title: "No connections",
+						description: `No connections match “${q}”.`,
+						title: "No matches",
 						when: rows.length === 0,
 					}}
 					query={results}
@@ -639,12 +634,12 @@ function SchedulerTab() {
 					<RefreshCwIcon />
 				</Button>
 			}
-			description="Stream runs that are queued, admitted, running, parked or retrying, by priority then age (up to 1,000). Refreshes every 10 seconds."
+			description="Active stream runs, by priority then age (up to 1,000). Refreshes every 10 seconds."
 			title="Scheduler"
 		>
 			<AdminQueryState
 				empty={{
-					description: "No stream runs are waiting or running.",
+					description: "Queued and running stream runs show up here.",
 					title: "Scheduler is idle",
 					when: rows.length === 0,
 				}}
@@ -654,7 +649,7 @@ function SchedulerTab() {
 					{SCHEDULER_STATES.map((s) => (
 						<Card className="grid gap-1 p-4" key={s}>
 							<span className="text-muted-foreground text-xs">
-								{s.toLowerCase().replaceAll("_", " ")}
+								{enumLabel(s)}
 							</span>
 							<span className="text-2xl font-semibold tabular-nums">
 								{num(counts.get(s) ?? 0)}
@@ -820,8 +815,8 @@ export function RepairsTab({
 	const conn = connectionId.trim();
 	const why = reason.trim();
 	const problems = [
-		UUID.test(env) ? null : "an environment id",
-		UUID.test(conn) ? null : "a connection id",
+		UUID.test(env) ? null : "an environment ID",
+		UUID.test(conn) ? null : "a connection ID",
 		why.length >= REASON_MIN
 			? null
 			: `a support reason (at least ${REASON_MIN} characters)`,
@@ -889,12 +884,12 @@ export function RepairsTab({
 	return (
 		<div className="grid gap-8">
 			<Section
-				description="Runs as support with write access in the customer's environment. The reason is recorded in their audit log."
+				description="Runs with write access in the customer's environment. Your reason goes in their audit log."
 				title="Repair a connection"
 			>
 				<Card className="grid gap-5 p-5">
 					<div className="grid gap-4 sm:grid-cols-2">
-						<Field htmlFor={ids.environment} label="Environment id">
+						<Field htmlFor={ids.environment} label="Environment ID">
 							<Input
 								className="font-mono"
 								id={ids.environment}
@@ -903,7 +898,7 @@ export function RepairsTab({
 								value={environmentId}
 							/>
 						</Field>
-						<Field htmlFor={ids.connection} label="Connection id">
+						<Field htmlFor={ids.connection} label="Connection ID">
 							<Input
 								className="font-mono"
 								id={ids.connection}
@@ -964,7 +959,7 @@ export function RepairsTab({
 						</Field>
 					) : null}
 					<Field
-						help={`Required, ${REASON_MIN}–${REASON_MAX} characters. Sent as X-Support-Reason and audited.`}
+						help={`${REASON_MIN}–${REASON_MAX} characters. Recorded in the customer's audit log.`}
 						htmlFor={ids.reason}
 						label="Support reason"
 					>
@@ -1046,7 +1041,7 @@ function ActionPicker({
 							<span className="flex items-center gap-1.5 font-mono text-xs font-medium">
 								{value}
 								{info.destructive ? (
-									<Badge tone="error">destructive</Badge>
+									<Badge tone="error">Destructive</Badge>
 								) : null}
 							</span>
 							<span className="text-muted-foreground text-xs">
@@ -1112,7 +1107,7 @@ function RepairTaskStatus({ taskId }: { taskId: string }) {
 				<Mono className="text-muted-foreground text-xs">{taskId}</Mono>
 				{task.data ? (
 					<Badge tone={TASK_TONES[task.data.state] ?? "neutral"}>
-						{task.data.state}
+						{enumLabel(task.data.state)}
 					</Badge>
 				) : null}
 			</div>
@@ -1226,14 +1221,13 @@ function RawPages({
 					<FileSearchIcon /> List raw pages
 				</Button>
 			}
-			description="The vendor's responses as stored before normalization, redacted. Uses the environment, connection and support reason above; every list and page view is audited."
+			description="Redacted vendor responses, as stored before normalization. Uses the details above; every view is audited."
 			title="Raw pages"
 		>
 			{target ? (
 				<AdminQueryState
 					empty={{
-						description:
-							"No stored raw pages for this connection (they expire).",
+						description: "This connection has none stored. Raw pages expire.",
 						title: "No raw pages",
 						when: rows.length === 0,
 					}}

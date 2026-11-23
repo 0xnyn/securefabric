@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useMemo } from "react";
+import { type Access, accessFor } from "@/lib/access";
 import type { ApiClient } from "@/lib/api";
 import type { Environment, Me } from "@/lib/types";
 
@@ -32,4 +33,10 @@ export function useEnv(): EnvContextValue {
 export function useHref(): (path?: string) => string {
 	const { env } = useEnv();
 	return (path = "") => `/${env.slug}${path}`;
+}
+
+/** What the signed-in person (or the dev API key) may see and do. */
+export function useAccess(): Access {
+	const { me } = useEnv();
+	return useMemo(() => accessFor(me), [me]);
 }

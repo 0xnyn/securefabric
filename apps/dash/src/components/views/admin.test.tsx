@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 
 import { createClient } from "@securefabric/client";
+import { TooltipProvider } from "@securefabric/ui/components/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EnvContext } from "@/components/shell/env-context";
-import { TooltipProvider } from "@/components/ui/overlay";
 import type { Environment, Me } from "@/lib/types";
 import { AdminView, type Alert } from "./admin";
 
@@ -259,11 +259,11 @@ describe("<AdminView>", () => {
 			expect(list?.url.pathname).toBe("/api/sf/v1/admin/alerts");
 			expect(list?.url.searchParams.get("include_resolved")).toBe("false");
 			expect(rows()).toHaveLength(2);
-			expect(rows()[0]?.textContent).toContain("page");
+			expect(rows()[0]?.textContent).toContain("Page");
 			expect(rows()[0]?.textContent).toContain("stuck_runs");
 			expect(rows()[0]?.textContent).toContain("environment dev");
 			expect(rows()[0]?.textContent).toContain("docs/runbooks/stuck-runs.md");
-			expect(rows()[1]?.textContent).toContain("ticket");
+			expect(rows()[1]?.textContent).toContain("Ticket");
 			expect(button(rows()[0] as HTMLElement, "Resolve")).toBeTruthy();
 		});
 
@@ -280,7 +280,7 @@ describe("<AdminView>", () => {
 					.some((r) => r.url.searchParams.get("include_resolved") === "true")
 			).toBe(true);
 			expect(rows()).toHaveLength(3);
-			expect(rows()[2]?.textContent).toContain("resolved");
+			expect(rows()[2]?.textContent).toContain("Resolved");
 			expect(rows()[2]?.textContent).toContain("fixed");
 		});
 
@@ -541,12 +541,12 @@ describe("<AdminView>", () => {
 				await settle();
 				const task = () =>
 					container.querySelector<HTMLElement>(`[data-repair-task='${TASK}']`);
-				expect(task()?.textContent).toContain("pending");
+				expect(task()?.textContent).toContain("Pending");
 				expect(api.polls()).toBe(1);
 				await tick(2000);
-				expect(task()?.textContent).toContain("running");
+				expect(task()?.textContent).toContain("Running");
 				await tick(2000);
-				expect(task()?.textContent).toContain("completed");
+				expect(task()?.textContent).toContain("Completed");
 				expect(task()?.textContent).toContain('"purged": 3');
 				await tick(6000);
 				expect(api.polls()).toBe(3);
@@ -574,7 +574,7 @@ describe("<AdminView>", () => {
 				const task = container.querySelector<HTMLElement>(
 					`[data-repair-task='${TASK}']`
 				);
-				expect(task?.textContent).toContain("failed");
+				expect(task?.textContent).toContain("Failed");
 				const failure = task?.querySelector<HTMLElement>("[role='alert']");
 				expect(failure?.textContent).toContain("VendorAuthError");
 				expect(failure?.textContent).toContain("vendor answered 401");

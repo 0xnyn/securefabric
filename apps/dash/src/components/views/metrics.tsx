@@ -1,13 +1,17 @@
 "use client";
 
+import { Card } from "@securefabric/ui/components/card";
+import { EmptyState } from "@securefabric/ui/components/empty-state";
+import { Select } from "@securefabric/ui/components/select";
+import { Table, Td, Th, Tr } from "@securefabric/ui/components/table";
+import { compact, dateShort, num } from "@securefabric/ui/lib/format";
+import { StackedBarChart } from "@securefabric/ui/patterns/charts";
+import { PageBody, PageHeader } from "@securefabric/ui/patterns/page";
+import { Section } from "@securefabric/ui/patterns/section";
+import { Stat } from "@securefabric/ui/patterns/stat";
 import { useState } from "react";
-import { StackedBarChart } from "@/components/charts";
-import { PageBody, PageHeader } from "@/components/common";
-import { QueryState, Section } from "@/components/kit";
-import { Select } from "@/components/ui/overlay";
-import { Card, Table, Td, Th, Tr } from "@/components/ui/primitives";
-import { compact, dateShort, num } from "@/lib/format";
-import { Stat, useUsage } from "./overview";
+import { QueryState } from "@/components/domain/query-state";
+import { useUsage } from "./overview";
 
 interface Day {
 	active_connections?: number;
@@ -47,7 +51,7 @@ export function MetricsView() {
 			<PageHeader
 				actions={
 					<Select
-						ariaLabel="Range"
+						ariaLabel="Time range"
 						className="w-36"
 						onChange={setDays}
 						options={[
@@ -58,7 +62,7 @@ export function MetricsView() {
 						value={days}
 					/>
 				}
-				description="Read-only usage counters from GET /v1/usage. Daily figures come from the nightly rollup."
+				description="API calls, records and jobs in this environment over time."
 				title="Metrics"
 			/>
 			<PageBody className="grid gap-8">
@@ -73,20 +77,24 @@ export function MetricsView() {
 							value={compact(live.records_stored ?? 0)}
 						/>
 						<Stat
-							hint={`${num(live.failed_jobs_24h ?? 0)} failed`}
-							label="Jobs (24h)"
+							hint={
+								live.failed_jobs_24h
+									? `${num(live.failed_jobs_24h)} failed`
+									: "None failed"
+							}
+							label="Jobs, last 24 hours"
 							value={num(live.jobs_24h ?? 0)}
 						/>
 						<Stat
-							label="API calls (24h)"
+							label="API calls, last 24 hours"
 							value={compact(live.api_calls_24h ?? 0)}
 						/>
 					</div>
 					{daily.length === 0 ? (
-						<p className="text-muted-foreground text-sm">
-							No daily rollups yet; they're written once a day by the
-							maintenance worker.
-						</p>
+						<EmptyState
+							description="Figures update once a day, so the first ones appear tomorrow."
+							title="No daily figures yet"
+						/>
 					) : (
 						<>
 							<div className="grid gap-6 lg:grid-cols-2">
@@ -95,13 +103,13 @@ export function MetricsView() {
 								{series("jobs", "Jobs per day")}
 								{series("active_connections", "Billable connections")}
 							</div>
-							<Section title="Daily rollup">
+							<Section title="Daily figures">
 								<Card>
 									<Table>
 										<thead>
 											<Tr>
 												<Th>Day</Th>
-												<Th className="text-right">Connections</Th>
+												<Th className="text-right">Billable connections</Th>
 												<Th className="text-right">Records stored</Th>
 												<Th className="text-right">Records written</Th>
 												<Th className="text-right">Jobs</Th>

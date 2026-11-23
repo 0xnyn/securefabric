@@ -1,37 +1,33 @@
 "use client";
 
 import { unwrap } from "@securefabric/client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useState } from "react";
-import { toast } from "sonner";
-import { CopyField, PageBody, PageHeader } from "@/components/common";
-import {
-	ConfirmButton,
-	errorText,
-	JsonBlock,
-	QueryState,
-	Section,
-	StatusBadge,
-	When,
-} from "@/components/kit";
-import { useEnv } from "@/components/shell/env-context";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@securefabric/ui/components/badge";
+import { Button } from "@securefabric/ui/components/button";
+import { Card } from "@securefabric/ui/components/card";
 import {
 	Dialog,
 	DialogContent,
 	SheetContent,
-	Switch,
-} from "@/components/ui/overlay";
-import {
-	Badge,
-	Card,
-	Field,
-	Input,
-	Table,
-	Td,
-	Th,
-	Tr,
-} from "@/components/ui/primitives";
+} from "@securefabric/ui/components/dialog";
+import { Field, Input } from "@securefabric/ui/components/form";
+import { Switch } from "@securefabric/ui/components/switch";
+import { Table, Td, Th, Tr } from "@securefabric/ui/components/table";
+import { Tooltip } from "@securefabric/ui/components/tooltip";
+import { dateTime, plural } from "@securefabric/ui/lib/format";
+import { CopyField } from "@securefabric/ui/patterns/copy";
+import { PageBody, PageHeader } from "@securefabric/ui/patterns/page";
+import { Section } from "@securefabric/ui/patterns/section";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { TriangleAlertIcon } from "lucide-react";
+import { Fragment, useState } from "react";
+import { toast } from "sonner";
+import { Gated } from "@/components/domain/access";
+import { ConfirmButton } from "@/components/domain/confirm-button";
+import { JsonBlock } from "@/components/domain/json-block";
+import { errorText, QueryState } from "@/components/domain/query-state";
+import { When } from "@/components/domain/when";
+import { useAccess, useEnv } from "@/components/shell/env-context";
+import type { Requirement } from "@/lib/access";
 import { DELIVERY_TONES, type WebhookEndpoint } from "@/lib/types";
 
 export const EVENT_TYPES = [
@@ -49,7 +45,46 @@ export const EVENT_TYPES = [
 	"sync.completed",
 ] as const;
 
+/** Each event type in words. The raw name stays beside it in mono. */
+export const EVENT_LABELS: Record<string, string> = {
+	"action.completed": "Write-back action completed",
+	"action.failed": "Write-back action failed",
+	"connection.create.failed": "Connection setup failed",
+	"connection.create.succeeded": "Connection created",
+	"connection.deleted": "Connection deleted",
+	"connection.health.changed": "Connection health changed",
+	"connection.paused": "Connection paused",
+	"connection.resumed": "Connection resumed",
+	"connection.sync.failed": "Sync failed",
+	"connection.sync.succeeded": "Sync succeeded",
+	"connection.sync.unauthorized": "Sync lost access",
+	"sync.completed": "Sync completed",
+	"webhook.ping": "Test ping",
+};
+
+export function eventLabel(type: string): string {
+	return EVENT_LABELS[type] ?? type;
+}
+
+/** Delivery statuses in words (events/delivery.py). */
+const DELIVERY_LABELS: Record<string, string> = {
+	DEAD: "Gave up after retries",
+	DELIVERED: "Delivered",
+	FAILED: "Failed",
+	PENDING: "Pending",
+};
+
+const MANAGE: Requirement = { scope: "webhooks:manage" };
+
 const idem = () => ({ "Idempotency-Key": crypto.randomUUID() });
+
+function hostOf(url: string): string {
+	try {
+		return new URL(url).host;
+	} catch {
+		return url;
+	}
+}
 
 export function WebhooksView() {
 	const { client, env } = useEnv();
@@ -63,32 +98,27 @@ export function WebhooksView() {
 	const [secret, setSecret] = useState<string | null>(null);
 	const refresh = () =>
 		queryClient.invalidateQueries({ queryKey: ["webhooks", env.id] });
+	const addButton = (size?: "sm") => (
+		<Gated requires={MANAGE}>
+			<Button onClick={() => setCreating(true)} size={size} variant="primary">
+				Add endpoint
+			</Button>
+		</Gated>
+	);
 	return (
 		<>
 			<PageHeader
-				actions={
-					<Button onClick={() => setCreating(true)} variant="primary">
-						Add endpoint
-					</Button>
-				}
-				description="Signed event deliveries (Standard Webhooks) with retries, replay and secret rotation."
+				actions={addButton()}
+				description="Send signed events to your backend when connections, syncs and write-back actions change."
 				title="Webhooks"
 			/>
 			<PageBody>
 				<QueryState
 					empty={{
-						action: (
-							<Button
-								onClick={() => setCreating(true)}
-								size="sm"
-								variant="primary"
-							>
-								Add endpoint
-							</Button>
-						),
+						action: addButton("sm"),
 						description:
-							"Receive connection and sync events at an HTTPS URL you control.",
-						title: "No endpoints",
+							"Add an HTTPS endpoint to get events when connections and syncs change.",
+						title: "No endpoints yet",
 						when: (endpoints.data ?? []).length === 0,
 					}}
 					query={endpoints}
@@ -97,7 +127,7 @@ export function WebhooksView() {
 						<Table>
 							<thead>
 								<Tr>
-									<Th>URL</Th>
+									<Th>Endpoint URL</Th>
 									<Th>Events</Th>
 									<Th>Status</Th>
 									<Th>Secret</Th>
@@ -114,8 +144,8 @@ export function WebhooksView() {
 										<Td className="max-w-sm truncate font-mono text-xs">
 											{e.url}
 										</Td>
-										<Td className="text-xs">
-											{e.event_types.length ? e.event_types.length : "all"}
+										<Td>
+											<EventCount types={e.event_types} />
 										</Td>
 										<Td>
 											<EndpointStatus endpoint={e} />
@@ -144,15 +174,29 @@ export function WebhooksView() {
 				open={secret !== null}
 			>
 				<DialogContent
-					description="Shown once. Verify deliveries with it (webhook-signature header)."
+					description="Use it to verify the SecureFabric-Signature header on each delivery."
 					footer={
 						<Button onClick={() => setSecret(null)} variant="primary">
-							I've saved it
+							I've saved the secret
 						</Button>
 					}
-					title="Signing secret"
+					title="Copy your signing secret"
 				>
-					{secret ? <CopyField label="Signing secret" value={secret} /> : null}
+					<div className="grid gap-4">
+						<div
+							className="border-ds-severity-high/40 bg-ds-severity-high/10 flex items-start gap-2 rounded-md border px-3 py-2 text-sm"
+							role="alert"
+						>
+							<TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
+							<span>
+								<strong className="font-medium">Shown once.</strong> You can't
+								see this secret again after you close this window.
+							</span>
+						</div>
+						{secret ? (
+							<CopyField label="Signing secret" value={secret} />
+						) : null}
+					</div>
 				</DialogContent>
 			</Dialog>
 			<Dialog
@@ -175,34 +219,63 @@ export function WebhooksView() {
 	);
 }
 
+/** "All events", or how many, with their names on hover. */
+function EventCount({ types }: { types: string[] }) {
+	if (types.length === 0) {
+		return <span className="text-sm">All events</span>;
+	}
+	return (
+		<Tooltip
+			content={
+				<ul className="grid gap-0.5">
+					{types.map((t) => (
+						<li key={t}>{eventLabel(t)}</li>
+					))}
+				</ul>
+			}
+		>
+			<span className="text-sm">{plural(types.length, "event")}</span>
+		</Tooltip>
+	);
+}
+
 function EndpointStatus({ endpoint: e }: { endpoint: WebhookEndpoint }) {
 	if (!e.enabled) {
-		return (
-			<Badge>
-				disabled{e.disabled_reason ? ` · ${e.disabled_reason}` : ""}
-			</Badge>
+		const badge = <Badge>Disabled</Badge>;
+		return e.disabled_reason ? (
+			<Tooltip content={`Disabled: ${e.disabled_reason}`}>{badge}</Tooltip>
+		) : (
+			badge
 		);
 	}
 	return e.failing_since ? (
-		<Badge tone="warn">failing</Badge>
+		<Tooltip
+			content={`Failing since ${dateTime(new Date(e.failing_since).getTime())}`}
+		>
+			<Badge tone="warn">Failing</Badge>
+		</Tooltip>
 	) : (
-		<Badge tone="ok">enabled</Badge>
+		<span className="text-muted-foreground text-sm">Enabled</span>
 	);
 }
 
 function EventPicker({
 	value,
 	onChange,
+	disabled,
 }: {
 	value: string[];
 	onChange: (v: string[]) => void;
+	disabled?: boolean;
 }) {
 	return (
 		<div className="grid gap-1.5 sm:grid-cols-2">
 			{EVENT_TYPES.map((t) => (
-				<label className="flex items-center gap-2 text-xs" key={t}>
+				<label className="flex items-start gap-2 text-sm" key={t}>
 					<input
 						checked={value.includes(t)}
+						className="mt-1"
+						disabled={disabled}
 						onChange={(e) =>
 							onChange(
 								e.target.checked ? [...value, t] : value.filter((x) => x !== t)
@@ -210,7 +283,10 @@ function EventPicker({
 						}
 						type="checkbox"
 					/>
-					<span className="font-mono">{t}</span>
+					<span className="grid">
+						<span>{eventLabel(t)}</span>
+						<span className="text-muted-foreground font-mono text-xs">{t}</span>
+					</span>
 				</label>
 			))}
 		</div>
@@ -254,21 +330,24 @@ function EndpointDialog({
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent
 				footer={
-					<Button
-						disabled={!url || create.isPending}
-						onClick={() => create.mutate()}
-						variant="primary"
-					>
-						Add endpoint
-					</Button>
+					<>
+						<Button onClick={() => onOpenChange(false)}>Cancel</Button>
+						<Button
+							disabled={!url || create.isPending}
+							onClick={() => create.mutate()}
+							variant="primary"
+						>
+							{create.isPending ? "Adding…" : "Add endpoint"}
+						</Button>
+					</>
 				}
 				title="Add webhook endpoint"
 			>
 				<div className="grid gap-4">
 					<Field
-						help="HTTPS; private addresses are refused in production"
+						help="Must use HTTPS. Production environments don't accept private network addresses."
 						htmlFor="wh-url"
-						label="URL"
+						label="Endpoint URL"
 					>
 						<Input
 							className="font-mono"
@@ -282,10 +361,11 @@ function EndpointDialog({
 						<Input
 							id="wh-desc"
 							onChange={(e) => setDescription(e.target.value)}
+							placeholder="Production event consumer"
 							value={description}
 						/>
 					</Field>
-					<Field help="None selected means every event" label="Events">
+					<Field help="Leave all unchecked to get every event." label="Events">
 						<EventPicker onChange={setTypes} value={types} />
 					</Field>
 				</div>
@@ -306,6 +386,8 @@ function EndpointSheet({
 	onSecret: (s: string) => void;
 }) {
 	const { client, env } = useEnv();
+	const access = useAccess();
+	const canManage = access.allows(MANAGE);
 	const queryClient = useQueryClient();
 	const path = { endpoint_id: e.id };
 	const deliveries = useQuery({
@@ -335,9 +417,11 @@ function EndpointSheet({
 				})
 			),
 		onError: (err) =>
-			toast.error("Couldn't save", { description: errorText(err) }),
+			toast.error("Couldn't save the endpoint", {
+				description: errorText(err),
+			}),
 		onSuccess: () => {
-			toast.success("Saved");
+			toast.success("Endpoint saved");
 			onChanged();
 		},
 	});
@@ -350,9 +434,11 @@ function EndpointSheet({
 				})
 			),
 		onError: (err) =>
-			toast.error("Ping failed", { description: errorText(err) }),
+			toast.error("Couldn't send the test ping", {
+				description: errorText(err),
+			}),
 		onSuccess: () => {
-			toast.success("Ping queued");
+			toast.success("Test ping queued");
 			reloadDeliveries();
 		},
 	});
@@ -365,8 +451,13 @@ function EndpointSheet({
 				})
 			),
 		onError: (err) =>
-			toast.error("Couldn't rotate", { description: errorText(err) }),
+			toast.error("Couldn't rotate the secret", {
+				description: errorText(err),
+			}),
 		onSuccess: (r) => {
+			toast.success("Secret rotated", {
+				description: "The old secret stays valid for 24 hours.",
+			});
 			onSecret((r as { secret: string }).secret);
 			onChanged();
 		},
@@ -381,9 +472,11 @@ function EndpointSheet({
 				})
 			),
 		onError: (err) =>
-			toast.error("Couldn't replay", { description: errorText(err) }),
+			toast.error("Couldn't replay events", { description: errorText(err) }),
 		onSuccess: (r) => {
-			toast.success("Replay queued", { description: JSON.stringify(r) });
+			toast.success("Replay queued", {
+				description: `${plural(r.replayed, "delivery", "deliveries")} will be sent again.`,
+			});
 			reloadDeliveries();
 		},
 	});
@@ -396,7 +489,9 @@ function EndpointSheet({
 				})
 			),
 		onError: (err) =>
-			toast.error("Couldn't replay", { description: errorText(err) }),
+			toast.error("Couldn't redeliver the event", {
+				description: errorText(err),
+			}),
 		onSuccess: () => {
 			toast.success("Redelivery queued");
 			reloadDeliveries();
@@ -410,29 +505,41 @@ function EndpointSheet({
 				})
 			),
 		onError: (err) =>
-			toast.error("Couldn't delete", { description: errorText(err) }),
-		onSuccess: onDeleted,
+			toast.error("Couldn't delete the endpoint", {
+				description: errorText(err),
+			}),
+		onSuccess: () => {
+			toast.success("Endpoint deleted");
+			onDeleted();
+		},
 	});
+	const pingButton = (
+		<Gated requires={MANAGE}>
+			<Button
+				disabled={ping.isPending}
+				onClick={() => ping.mutate()}
+				size="sm"
+				variant="outline"
+			>
+				{ping.isPending ? "Sending…" : "Send test ping"}
+			</Button>
+		</Gated>
+	);
 	return (
 		<SheetContent
 			actions={
 				<>
-					<Button
-						disabled={ping.isPending}
-						onClick={() => ping.mutate()}
-						size="sm"
-						variant="outline"
-					>
-						Send ping
-					</Button>
-					<Button
-						disabled={rotate.isPending}
-						onClick={() => rotate.mutate()}
-						size="sm"
-						variant="outline"
-					>
-						Rotate secret
-					</Button>
+					{pingButton}
+					<Gated requires={MANAGE}>
+						<Button
+							disabled={rotate.isPending}
+							onClick={() => rotate.mutate()}
+							size="sm"
+							variant="outline"
+						>
+							{rotate.isPending ? "Rotating…" : "Rotate secret"}
+						</Button>
+					</Gated>
 				</>
 			}
 			description={<span className="font-mono text-xs">{e.id}</span>}
@@ -441,65 +548,83 @@ function EndpointSheet({
 			<div className="grid gap-8 p-6">
 				{e.previous_secret_expires_at ? (
 					<p className="text-muted-foreground text-xs">
-						The previous secret keeps signing until{" "}
+						The old secret stays valid until{" "}
 						<When value={e.previous_secret_expires_at} />.
 					</p>
 				) : null}
 				<Section title="Settings">
 					<div className="flex items-center justify-between">
-						<span className="text-sm">Enabled</span>
-						<Switch
-							ariaLabel="Enabled"
-							checked={enabled}
-							onChange={setEnabled}
-						/>
+						<span className="text-sm">Send events to this endpoint</span>
+						<Gated requires={MANAGE}>
+							<Switch
+								ariaLabel="Send events to this endpoint"
+								checked={enabled}
+								onChange={setEnabled}
+							/>
+						</Gated>
 					</div>
-					<EventPicker onChange={setTypes} value={types} />
+					<Field help="Leave all unchecked to get every event." label="Events">
+						<EventPicker
+							disabled={!canManage}
+							onChange={setTypes}
+							value={types}
+						/>
+					</Field>
 					<div className="flex gap-2">
-						<Button
-							disabled={save.isPending}
-							onClick={() => save.mutate()}
-							size="sm"
-							variant="primary"
-						>
-							Save
-						</Button>
-						<ConfirmButton
-							confirmLabel="Delete endpoint"
-							description="Pending deliveries to it are dropped."
-							onConfirm={() => remove.mutate()}
-							title="Delete this endpoint?"
-						>
-							Delete
-						</ConfirmButton>
+						<Gated requires={MANAGE}>
+							<Button
+								disabled={save.isPending}
+								onClick={() => save.mutate()}
+								size="sm"
+								variant="primary"
+							>
+								{save.isPending ? "Saving…" : "Save changes"}
+							</Button>
+						</Gated>
+						<Gated requires={MANAGE}>
+							<ConfirmButton
+								confirmLabel="Delete endpoint"
+								description="Events stop going to this endpoint and pending deliveries are dropped. You can't undo this."
+								disabled={remove.isPending}
+								onConfirm={() => remove.mutate()}
+								title={`Delete the endpoint for ${hostOf(e.url)}?`}
+							>
+								{remove.isPending ? "Deleting…" : "Delete endpoint"}
+							</ConfirmButton>
+						</Gated>
 					</div>
 				</Section>
 				<Section
-					description="Re-send every event since a point in time"
-					title="Replay"
+					description="Resend every event since the time you choose."
+					title="Replay events"
 				>
 					<div className="flex gap-2">
 						<Input
-							className="w-56"
+							aria-label="Replay events since"
+							className="h-8 w-56 text-sm"
 							onChange={(ev) => setSince(ev.target.value)}
 							type="datetime-local"
 							value={since}
 						/>
-						<Button
-							disabled={replayRange.isPending}
-							onClick={() => replayRange.mutate()}
-							size="sm"
-							variant="outline"
-						>
-							Replay since
-						</Button>
+						<Gated requires={MANAGE}>
+							<Button
+								disabled={replayRange.isPending}
+								onClick={() => replayRange.mutate()}
+								size="sm"
+								variant="outline"
+							>
+								{replayRange.isPending ? "Replaying…" : "Replay events"}
+							</Button>
+						</Gated>
 					</div>
 				</Section>
 				<Section title="Recent deliveries">
 					<QueryState
 						empty={{
-							description: "Send a ping to test the endpoint.",
-							title: "No deliveries",
+							action: pingButton,
+							description:
+								"Events sent to this endpoint appear here. Send a test ping to check it works.",
+							title: "No deliveries yet",
 							when: (deliveries.data ?? []).length === 0,
 						}}
 						query={deliveries}
@@ -524,15 +649,21 @@ function EndpointSheet({
 												className="hover:bg-muted/40 cursor-pointer"
 												onClick={() => setOpen(open === d.id ? null : d.id)}
 											>
-												<Td className="font-mono text-xs">{d.event_type}</Td>
 												<Td>
-													<StatusBadge
-														tones={DELIVERY_TONES}
-														value={d.status}
-													/>
+													<div className="text-sm">
+														{eventLabel(d.event_type)}
+													</div>
+													<div className="text-muted-foreground font-mono text-xs">
+														{d.event_type}
+													</div>
+												</Td>
+												<Td>
+													<Badge tone={DELIVERY_TONES[d.status] ?? "neutral"}>
+														{DELIVERY_LABELS[d.status] ?? d.status}
+													</Badge>
 												</Td>
 												<Td className="tabular-nums">{d.attempts}</Td>
-												<Td className="text-xs">
+												<Td className="text-xs whitespace-nowrap">
 													{d.last_status_code ?? "—"}
 													{d.last_latency_ms === null
 														? ""
@@ -541,17 +672,22 @@ function EndpointSheet({
 												<Td>
 													<When value={d.created_at} />
 												</Td>
-												<Td>
-													<Button
-														onClick={(ev) => {
-															ev.stopPropagation();
-															replay.mutate(d.id);
-														}}
-														size="xs"
-														variant="ghost"
-													>
-														Replay
-													</Button>
+												<Td className="text-right">
+													<Gated requires={MANAGE}>
+														<Button
+															disabled={
+																replay.isPending && replay.variables === d.id
+															}
+															onClick={(ev) => {
+																ev.stopPropagation();
+																replay.mutate(d.id);
+															}}
+															size="xs"
+															variant="ghost"
+														>
+															Redeliver
+														</Button>
+													</Gated>
 												</Td>
 											</Tr>
 											{open === d.id ? (

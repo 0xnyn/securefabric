@@ -1,8 +1,21 @@
 "use client";
 
 import { unwrap } from "@securefabric/client";
+import {
+	Command,
+	CommandDialog,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+	CommandSeparator,
+	CommandShortcut,
+} from "@securefabric/ui/primitives/command";
+import { useSidebar } from "@securefabric/ui/primitives/sidebar";
 import { useQuery } from "@tanstack/react-query";
 import {
+	BookOpenIcon,
 	Building2Icon,
 	CableIcon,
 	KeyboardIcon,
@@ -15,20 +28,13 @@ import {
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import type { ReactNode } from "react";
-import { useEnv, useHref } from "@/components/shell/env-context";
+import { useAccess, useEnv, useHref } from "@/components/shell/env-context";
 import {
-	Command,
-	CommandDialog,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-	CommandList,
-	CommandSeparator,
-	CommandShortcut,
-} from "@/components/ui/command";
-import { useSidebar } from "@/components/ui/sidebar";
-import { NAV_ITEMS, OPERATOR_ITEM, SETTINGS_SECTIONS } from "@/lib/nav";
+	DOCS_URL,
+	NAV_ITEMS,
+	OPERATOR_ITEM,
+	SETTINGS_SECTIONS,
+} from "@/lib/nav";
 import { useCommandStore } from "./command-store";
 import { ShortcutKeys } from "./shortcut-keys";
 
@@ -88,6 +94,7 @@ export function CommandPalette() {
 	const router = useRouter();
 	const href = useHref();
 	const { env, client, me } = useEnv();
+	const access = useAccess();
 	const { resolvedTheme, setTheme } = useTheme();
 	const { toggleSidebar } = useSidebar();
 	const connections = useQuery({
@@ -129,29 +136,45 @@ export function CommandPalette() {
 				<CommandList className="max-h-[min(26rem,60svh)]">
 					<CommandEmpty>Nothing matches “{query}”.</CommandEmpty>
 					<CommandGroup heading="Commands">
+						{access.can("provisioning:write") ? (
+							<>
+								<Item
+									icon={<PlusIcon />}
+									keywords={["new", "create", "connect", "sandbox"]}
+									onSelect={() => go("/connections?new=1")}
+									value="Add connection"
+								>
+									Add connection
+								</Item>
+								<Item
+									icon={<Building2Icon />}
+									keywords={["new", "customer"]}
+									onSelect={() => go("/organizations?new=1")}
+									value="Add organization"
+								>
+									Add organization
+								</Item>
+							</>
+						) : null}
+						{access.isAdmin ? (
+							<Item
+								icon={<LayersIcon />}
+								keywords={["new", "staging", "production"]}
+								onSelect={() => run(() => setCreateEnvOpen(true))}
+								value="Create environment"
+							>
+								Create environment
+							</Item>
+						) : null}
 						<Item
-							icon={<PlusIcon />}
-							keywords={["new", "create", "connect", "sandbox"]}
-							onSelect={() => go("/connections?new=1")}
-							value="Add connection"
+							icon={<BookOpenIcon />}
+							keywords={["docs", "api", "reference", "help", "guide"]}
+							onSelect={() =>
+								run(() => window.open(DOCS_URL, "_blank", "noopener"))
+							}
+							value="Open docs and API reference"
 						>
-							Add connection
-						</Item>
-						<Item
-							icon={<Building2Icon />}
-							keywords={["new", "customer"]}
-							onSelect={() => go("/organizations?new=1")}
-							value="Add organization"
-						>
-							Add organization
-						</Item>
-						<Item
-							icon={<LayersIcon />}
-							keywords={["new", "staging", "production"]}
-							onSelect={() => run(() => setCreateEnvOpen(true))}
-							value="Create environment"
-						>
-							Create environment
+							Open docs and API reference
 						</Item>
 						<Item
 							icon={resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />}
@@ -180,7 +203,7 @@ export function CommandPalette() {
 					</CommandGroup>
 					<CommandSeparator />
 					<CommandGroup heading="Go to">
-						{NAV_ITEMS.map((n) => (
+						{NAV_ITEMS.filter((n) => access.allows(n.requires)).map((n) => (
 							<Item
 								icon={<n.icon />}
 								key={n.href}
@@ -201,17 +224,19 @@ export function CommandPalette() {
 								{OPERATOR_ITEM.label}
 							</Item>
 						) : null}
-						{SETTINGS_SECTIONS.map((s) => (
-							<Item
-								icon={<s.icon />}
-								key={s.value}
-								keywords={["settings", s.description]}
-								onSelect={() => go(`/settings?tab=${s.value}`)}
-								value={`Settings: ${s.label}`}
-							>
-								Settings: {s.label}
-							</Item>
-						))}
+						{SETTINGS_SECTIONS.filter((s) => access.allows(s.requires)).map(
+							(s) => (
+								<Item
+									icon={<s.icon />}
+									key={s.value}
+									keywords={["settings", s.description]}
+									onSelect={() => go(`/settings?tab=${s.value}`)}
+									value={`Settings: ${s.label}`}
+								>
+									Settings: {s.label}
+								</Item>
+							)
+						)}
 					</CommandGroup>
 					{(connections.data?.items.length ?? 0) > 0 ? (
 						<CommandGroup heading="Connections">

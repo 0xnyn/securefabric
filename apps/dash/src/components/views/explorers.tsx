@@ -1,37 +1,33 @@
 "use client";
 
 import { unwrap } from "@securefabric/client";
+import { Badge } from "@securefabric/ui/components/badge";
+import { Button } from "@securefabric/ui/components/button";
+import { Card } from "@securefabric/ui/components/card";
+import { Dialog, SheetContent } from "@securefabric/ui/components/dialog";
+import { Field, Input, Textarea } from "@securefabric/ui/components/form";
+import { Select } from "@securefabric/ui/components/select";
+import { Table, Td, Th, Tr } from "@securefabric/ui/components/table";
+import { Tooltip } from "@securefabric/ui/components/tooltip";
+import { EntityAvatar } from "@securefabric/ui/patterns/avatar";
+import { KeyValue } from "@securefabric/ui/patterns/key-value";
+import { PageBody, PageHeader } from "@securefabric/ui/patterns/page";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDownIcon, ArrowUpIcon, ExternalLinkIcon } from "lucide-react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { KeyValue, PageBody, PageHeader } from "@/components/common";
-import {
-	errorText,
-	JsonBlock,
-	Pager,
-	QueryState,
-	SeverityLabel,
-	StatusBadge,
-	useCursorStack,
-	When,
-} from "@/components/kit";
-import { useEnv } from "@/components/shell/env-context";
-import { Button } from "@/components/ui/button";
-import { Dialog, Select, SheetContent } from "@/components/ui/overlay";
-import {
-	Badge,
-	Card,
-	Field,
-	Input,
-	Table,
-	Td,
-	Textarea,
-	Th,
-	Tr,
-} from "@/components/ui/primitives";
+import { Gated } from "@/components/domain/access";
+import { SeverityLabel } from "@/components/domain/badges";
+import { ConnectorLogo } from "@/components/domain/connector-logo";
+import { JsonBlock } from "@/components/domain/json-block";
+import { Pager, useCursorStack } from "@/components/domain/pager";
+import { errorText, QueryState } from "@/components/domain/query-state";
+import { When } from "@/components/domain/when";
+import { useEnv, useHref } from "@/components/shell/env-context";
 import { useDebounce } from "@/hooks/use-debounce";
+import { api } from "@/lib/api";
 import {
 	FINDING_STATE_TONES,
 	FINDING_STATES,
@@ -62,11 +58,95 @@ function scopeKey(scope: Scope): string {
 
 const ANY = "any";
 
-function options(values: readonly string[], anyLabel: string) {
+/** "REOPENED" → "Reopened", "accepted_risk" → "Accepted risk". */
+export function humanize(value: string): string {
+	const words = value.replaceAll("_", " ").toLowerCase();
+	return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** One finding's type, in words (singular, unlike the catalog's TYPE_LABELS). */
+const FINDING_TYPE_LABELS: Record<string, string> = {
+	CODE: "Code",
+	CONTAINER: "Container",
+	DEPENDENCY: "Dependency",
+	DOMAIN: "Domain",
+	HOST: "Host",
+	IAC: "Infrastructure as code",
+	SECRET: "Secret",
+};
+
+/** One resource's type, in words. */
+const RESOURCE_TYPE_LABELS: Record<string, string> = {
+	BRANCH: "Branch",
+	CONTAINER: "Container",
+	DEPENDENCY: "Dependency",
+	FUNCTION: "Function",
+	HOST: "Host",
+	IMAGE: "Image",
+	KUBERNETES: "Kubernetes",
+	REPOSITORY: "Repository",
+	SOFTWARE: "Software",
+	VENDOR: "Vendor",
+};
+
+function findingType(value: string): string {
+	return FINDING_TYPE_LABELS[value] ?? humanize(value);
+}
+
+function resourceType(value: string): string {
+	return RESOURCE_TYPE_LABELS[value] ?? humanize(value);
+}
+
+function options(
+	values: readonly string[],
+	anyLabel: string,
+	label: (v: string) => string = humanize
+) {
 	return [
 		{ label: anyLabel, value: ANY },
-		...values.map((v) => ({ label: v.toLowerCase(), value: v })),
+		...values.map((v) => ({ label: label(v), value: v })),
 	];
+}
+
+function FindingState({ value }: { value: string }) {
+	return (
+		<Badge tone={FINDING_STATE_TONES[value] ?? "neutral"}>
+			{humanize(value)}
+		</Badge>
+	);
+}
+
+/** Connector names and logos by id, from the shared catalog query. */
+function useConnectorInfo() {
+	const connectors = useQuery({
+		queryFn: () => unwrap(api.GET("/v1/connectors")),
+		queryKey: ["connectors"],
+		staleTime: 5 * 60_000,
+	});
+	const byId = new Map((connectors.data ?? []).map((c) => [c.id, c]));
+	return (id: string) => {
+		const c = byId.get(id);
+		return { logo: c?.logo_url ?? null, name: c?.name ?? humanize(id) };
+	};
+}
+
+function Vendor({ id }: { id: string }) {
+	const info = useConnectorInfo()(id);
+	return (
+		<span className="inline-flex items-center gap-2 whitespace-nowrap">
+			<ConnectorLogo id={id} logo={info.logo} name={info.name} size={20} />
+			{info.name}
+		</span>
+	);
+}
+
+/** A resource known only because something references it. */
+function PlaceholderBadge() {
+	return (
+		<Tooltip content="Known only from a reference so far. Details fill in when it syncs.">
+			<Badge className="ml-2">Placeholder</Badge>
+		</Tooltip>
+	);
 }
 
 /** A sortable column header: click toggles asc/desc, sent as `sort=field:dir`. */
@@ -149,6 +229,15 @@ export function FindingsExplorer({ scope }: { scope: Scope }) {
 			pages.reset();
 			fn(v);
 		};
+	const filtered =
+		severity !== ANY || state !== ANY || type !== ANY || cve !== "";
+	const clearFilters = () => {
+		pages.reset();
+		setSeverity(ANY);
+		setState(ANY);
+		setType(ANY);
+		setCveInput("");
+	};
 	return (
 		<div className="grid gap-3">
 			<div className="flex flex-wrap gap-2">
@@ -172,24 +261,31 @@ export function FindingsExplorer({ scope }: { scope: Scope }) {
 					ariaLabel="Type"
 					className="w-36"
 					onChange={filter(setType)}
-					options={options(FINDING_TYPES, "Any type")}
+					options={options(FINDING_TYPES, "Any type", findingType)}
 					size="sm"
 					value={type}
 				/>
 				<Input
-					className="h-7 w-44 text-xs"
+					aria-label="CVE ID"
+					className="h-8 w-44 text-sm"
 					onChange={(e) => {
 						pages.reset();
 						setCveInput(e.target.value);
 					}}
-					placeholder="CVE-2024-…"
+					placeholder="CVE-2024-3094"
 					value={cveInput}
 				/>
 			</div>
 			<QueryState
 				empty={{
-					description:
-						"Nothing matches these filters, or the first sync hasn't finished.",
+					action: filtered ? (
+						<Button onClick={clearFilters} size="sm" variant="outline">
+							Clear filters
+						</Button>
+					) : undefined,
+					description: filtered
+						? "Try different filters, or clear them."
+						: "Findings appear here once a connection finishes its first sync.",
 					title: "No findings",
 					when: (findings.data?.items.length ?? 0) === 0,
 				}}
@@ -242,9 +338,9 @@ export function FindingsExplorer({ scope }: { scope: Scope }) {
 											</div>
 										) : null}
 									</Td>
-									<Td className="text-xs">{f.type.toLowerCase()}</Td>
+									<Td className="whitespace-nowrap">{findingType(f.type)}</Td>
 									<Td>
-										<StatusBadge tones={FINDING_STATE_TONES} value={f.state} />
+										<FindingState value={f.state} />
 									</Td>
 									<Td>
 										<When value={f.last_seen} />
@@ -278,9 +374,9 @@ export function FindingsExplorer({ scope }: { scope: Scope }) {
 /** Tri-state fields: null means the connector can't say (NORM-07). */
 function triState(v: boolean | null): string {
 	if (v === null) {
-		return "unknown";
+		return "Unknown";
 	}
-	return v ? "yes" : "no";
+	return v ? "Yes" : "No";
 }
 
 const REASONS = [
@@ -332,12 +428,12 @@ function FindingSheet({ finding }: { finding: Finding }) {
 				})
 			),
 		onError: (e) =>
-			toast.error("The vendor didn't accept that", {
+			toast.error("Couldn't change the finding's state", {
 				description: errorText(e),
 			}),
 		onSuccess: async (a) => {
-			toast.success("Action requested", {
-				description: `Status ${a.status.toLowerCase()}. The finding is re-fetched from the vendor once it completes.`,
+			toast.success("State change requested", {
+				description: `${humanize(a.status)}. The finding updates once the vendor confirms.`,
 			});
 			await queryClient.invalidateQueries({ queryKey: ["findings", env.id] });
 		},
@@ -366,11 +462,9 @@ function FindingSheet({ finding }: { finding: Finding }) {
 						{ label: "Severity", value: <SeverityLabel value={f.severity} /> },
 						{
 							label: "State",
-							value: (
-								<StatusBadge tones={FINDING_STATE_TONES} value={f.state} />
-							),
+							value: <FindingState value={f.state} />,
 						},
-						{ label: "Type", value: f.type.toLowerCase() },
+						{ label: "Type", value: findingType(f.type) },
 						{
 							label: "Has fix",
 							value: triState(f.has_fix),
@@ -379,7 +473,10 @@ function FindingSheet({ finding }: { finding: Finding }) {
 							label: "Exploitable",
 							value: triState(f.exploitable),
 						},
-						{ label: "Reachability", value: f.reachability ?? "unknown" },
+						{
+							label: "Reachability",
+							value: f.reachability ? humanize(f.reachability) : "Unknown",
+						},
 						{ label: "First seen", value: <When value={f.first_seen} /> },
 						{ label: "Last seen", value: <When value={f.last_seen} /> },
 						{ label: "CVEs", value: f.cve_ids.join(", ") || "—" },
@@ -404,6 +501,9 @@ function FindingSheet({ finding }: { finding: Finding }) {
 				) : null}
 				<div className="grid gap-2">
 					<h3 className="text-sm font-semibold">Change state at the vendor</h3>
+					<p className="text-muted-foreground text-sm">
+						The finding updates once the vendor confirms the change.
+					</p>
 					<div className="grid grid-cols-2 gap-2">
 						<Select
 							ariaLabel="New state"
@@ -420,7 +520,7 @@ function FindingSheet({ finding }: { finding: Finding }) {
 							ariaLabel="Reason"
 							onChange={setReason}
 							options={REASONS.map((r) => ({
-								label: r.replace("_", " "),
+								label: humanize(r),
 								value: r,
 							}))}
 							size="sm"
@@ -436,14 +536,16 @@ function FindingSheet({ finding }: { finding: Finding }) {
 						/>
 					</Field>
 					<div>
-						<Button
-							disabled={act.isPending}
-							onClick={() => act.mutate()}
-							size="sm"
-							variant="primary"
-						>
-							Request change
-						</Button>
+						<Gated requires={{ scope: "actions:write" }}>
+							<Button
+								disabled={act.isPending}
+								onClick={() => act.mutate()}
+								size="sm"
+								variant="primary"
+							>
+								{act.isPending ? "Requesting…" : "Change state"}
+							</Button>
+						</Gated>
 					</div>
 				</div>
 				<div className="grid gap-2">
@@ -451,7 +553,7 @@ function FindingSheet({ finding }: { finding: Finding }) {
 					<QueryState query={history} rows={2}>
 						{(history.data ?? []).length === 0 ? (
 							<p className="text-muted-foreground text-sm">
-								No state changes recorded.
+								No state changes yet.
 							</p>
 						) : (
 							<ol className="grid gap-1 text-sm">
@@ -462,9 +564,12 @@ function FindingSheet({ finding }: { finding: Finding }) {
 									>
 										<When className="text-muted-foreground w-28" value={h.at} />
 										<span>
-											{h.from_state ?? "new"} → <strong>{h.to_state}</strong>
+											{h.from_state ? humanize(h.from_state) : "New"} →{" "}
+											<strong>{humanize(h.to_state)}</strong>
 										</span>
-										<Badge>{h.source}</Badge>
+										<span className="text-muted-foreground text-xs">
+											by {humanize(h.source).toLowerCase()}
+										</span>
 									</li>
 								))}
 							</ol>
@@ -535,6 +640,12 @@ export function ResourcesExplorer({ scope }: { scope: Scope }) {
 			pages.reset();
 			fn(v);
 		};
+	const filtered = type !== ANY || name !== "";
+	const clearFilters = () => {
+		pages.reset();
+		setType(ANY);
+		setNameInput("");
+	};
 	return (
 		<div className="grid gap-3">
 			<div className="flex flex-wrap gap-2">
@@ -542,23 +653,31 @@ export function ResourcesExplorer({ scope }: { scope: Scope }) {
 					ariaLabel="Type"
 					className="w-40"
 					onChange={filter(setType)}
-					options={options(RESOURCE_TYPES, "Any type")}
+					options={options(RESOURCE_TYPES, "Any type", resourceType)}
 					size="sm"
 					value={type}
 				/>
 				<Input
-					className="h-7 w-52 text-xs"
+					aria-label="Name contains"
+					className="h-8 w-52 text-sm"
 					onChange={(e) => {
 						pages.reset();
 						setNameInput(e.target.value);
 					}}
-					placeholder="Name contains…"
+					placeholder="api-gateway"
 					value={nameInput}
 				/>
 			</div>
 			<QueryState
 				empty={{
-					description: "Nothing matches, or the first sync hasn't finished.",
+					action: filtered ? (
+						<Button onClick={clearFilters} size="sm" variant="outline">
+							Clear filters
+						</Button>
+					) : undefined,
+					description: filtered
+						? "Try different filters, or clear them."
+						: "Resources appear here once a connection finishes its first sync.",
 					title: "No resources",
 					when: (resources.data?.items.length ?? 0) === 0,
 				}}
@@ -595,11 +714,13 @@ export function ResourcesExplorer({ scope }: { scope: Scope }) {
 								>
 									<Td className="max-w-md truncate font-medium">
 										{r.name}
-										{r.is_stub ? <Badge className="ml-2">stub</Badge> : null}
+										{r.is_stub ? <PlaceholderBadge /> : null}
 									</Td>
-									<Td className="text-xs">{r.type.toLowerCase()}</Td>
-									<Td className="text-xs">{r.vendor}</Td>
-									<Td className="text-xs">{r.state.toLowerCase()}</Td>
+									<Td className="whitespace-nowrap">{resourceType(r.type)}</Td>
+									<Td>
+										<Vendor id={r.vendor} />
+									</Td>
+									<Td>{humanize(r.state)}</Td>
 									<Td>
 										<When value={r.last_seen} />
 									</Td>
@@ -634,7 +755,7 @@ export function ResourcesExplorer({ scope }: { scope: Scope }) {
 									size="sm"
 									variant="outline"
 								>
-									Open <ExternalLinkIcon />
+									Open in vendor <ExternalLinkIcon />
 								</Button>
 							) : null
 						}
@@ -646,9 +767,9 @@ export function ResourcesExplorer({ scope }: { scope: Scope }) {
 						<div className="grid gap-6 p-6">
 							<KeyValue
 								items={[
-									{ label: "Type", value: selected.type },
-									{ label: "State", value: selected.state },
-									{ label: "Vendor", value: selected.vendor },
+									{ label: "Type", value: resourceType(selected.type) },
+									{ label: "State", value: humanize(selected.state) },
+									{ label: "Vendor", value: <Vendor id={selected.vendor} /> },
 									{
 										label: "First seen",
 										value: <When value={selected.first_seen} />,
@@ -694,6 +815,7 @@ function ScopePicker({
 	children: (scope: Scope) => React.ReactNode;
 }) {
 	const { client, env } = useEnv();
+	const href = useHref();
 	const params = useSearchParams();
 	const orgs = useQuery({
 		queryFn: () =>
@@ -711,8 +833,19 @@ function ScopePicker({
 	return (
 		<QueryState
 			empty={{
+				action: (
+					<Gated requires={{ scope: "provisioning:write" }}>
+						<Button
+							render={<Link href={href("/organizations?new=1")} />}
+							size="sm"
+							variant="primary"
+						>
+							Add organization
+						</Button>
+					</Gated>
+				),
 				description:
-					"Data is read per organization or connection. Add an organization and connect it first.",
+					"Add an organization and connect its tools to see data here.",
 				title: "No organizations yet",
 				when: (orgs.data?.items.length ?? 0) === 0,
 			}}
@@ -725,7 +858,12 @@ function ScopePicker({
 						className="w-72"
 						onChange={setOrg}
 						options={(orgs.data?.items ?? []).map((o) => ({
-							label: o.name,
+							label: (
+								<span className="inline-flex items-center gap-2">
+									<EntityAvatar name={o.name} size={16} />
+									{o.name}
+								</span>
+							),
 							value: o.id,
 						}))}
 						value={current ?? ""}
@@ -743,7 +881,7 @@ export function FindingsView() {
 	return (
 		<>
 			<PageHeader
-				description="Unified vulnerability findings, read with X-ORGANIZATION-ID. Filters and sort run on the server; paging is keyset."
+				description="Vulnerability findings from every connected tool, one organization at a time."
 				title="Findings"
 			/>
 			<PageBody>
@@ -759,7 +897,7 @@ export function ResourcesView() {
 	return (
 		<>
 			<PageHeader
-				description="Repositories, images, hosts and other assets the connectors found."
+				description="Repositories, images, hosts and other assets your connections found."
 				title="Resources"
 			/>
 			<PageBody>

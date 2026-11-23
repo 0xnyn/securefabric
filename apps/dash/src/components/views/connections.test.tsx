@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 
 import { createClient } from "@securefabric/client";
+import { TooltipProvider } from "@securefabric/ui/components/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EnvContext } from "@/components/shell/env-context";
-import { TooltipProvider } from "@/components/ui/overlay";
 import type { Connection, Environment, Me } from "@/lib/types";
 import { ConnectionsTable } from "./connections";
 
@@ -28,6 +28,22 @@ vi.mock("next/link", () => ({
 		</a>
 	),
 }));
+
+// The public catalogue (id → name), answered without a network.
+vi.mock("@/lib/api", async () => {
+	const client = await import("@securefabric/client");
+	return {
+		api: client.createClient("http://test/api/sf", {
+			fetch: () =>
+				Promise.resolve(
+					new Response(
+						JSON.stringify([{ id: "GITHUB", logo_url: null, name: "GitHub" }]),
+						{ headers: { "content-type": "application/json" }, status: 200 }
+					)
+				),
+		}),
+	};
+});
 
 const ENV: Environment = {
 	created_at: null,
@@ -133,7 +149,10 @@ describe("<ConnectionsTable>", () => {
 		container.remove();
 	});
 
-	async function render(api: ReturnType<typeof stubApi>) {
+	async function render(
+		api: ReturnType<typeof stubApi>,
+		{ onAdd, scopes = [] }: { onAdd?: () => void; scopes?: string[] } = {}
+	) {
 		const queryClient = new QueryClient({
 			defaultOptions: { queries: { retry: false } },
 		});
@@ -147,10 +166,10 @@ describe("<ConnectionsTable>", () => {
 								devMode: true,
 								env: ENV,
 								environments: [ENV],
-								me: ME,
+								me: { ...ME, scopes } as Me,
 							}}
 						>
-							<ConnectionsTable />
+							<ConnectionsTable onAdd={onAdd} />
 						</EnvContext>
 					</TooltipProvider>
 				</QueryClientProvider>
@@ -174,6 +193,8 @@ describe("<ConnectionsTable>", () => {
 		await render(api);
 		expect(rows()).toHaveLength(2);
 		expect(rows()[0]?.textContent).toContain("Acme Corp");
+		expect(rows()[0]?.textContent).toContain("GitHub");
+		expect(rows()[0]?.textContent).toContain("Active");
 		expect(rows()[0]?.textContent).toContain("Healthy");
 		expect(rows()[1]?.textContent).toContain("Unauthorized");
 		expect(
@@ -225,8 +246,30 @@ describe("<ConnectionsTable>", () => {
 		expect(rows()[0]?.textContent).toContain("acme-aaaa");
 	});
 
-	it("shows the empty state", async () => {
-		await render(stubApi({ first: { items: [], next_cursor: null } }));
-		expect(container.textContent).toContain("No connections");
+	const addButton = () =>
+		[...container.querySelectorAll<HTMLButtonElement>("button")].find((b) =>
+			b.textContent?.includes("Add connection")
+		);
+
+	it("shows the empty state with an add action", async () => {
+		const onAdd = vi.fn();
+		await render(stubApi({ first: { items: [], next_cursor: null } }), {
+			onAdd,
+			scopes: ["provisioning:read", "provisioning:write"],
+		});
+		expect(container.textContent).toContain("No connections yet");
+		expect(addButton()?.disabled).toBe(false);
+		await act(() => {
+			addButton()?.click();
+		});
+		expect(onAdd).toHaveBeenCalled();
+	});
+
+	it("disables the add action without provisioning:write", async () => {
+		await render(stubApi({ first: { items: [], next_cursor: null } }), {
+			onAdd: () => undefined,
+			scopes: ["provisioning:read"],
+		});
+		expect(addButton()?.disabled).toBe(true);
 	});
 });

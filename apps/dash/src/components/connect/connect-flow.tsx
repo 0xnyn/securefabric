@@ -5,16 +5,19 @@ import {
 	createClient,
 	unwrap,
 } from "@securefabric/client";
+import { Button } from "@securefabric/ui/components/button";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
 	CheckCircle2Icon,
+	ClockIcon,
 	ExternalLinkIcon,
 	LoaderCircleIcon,
-	ShieldCheckIcon,
+	LockIcon,
 	XCircleIcon,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { ConnectorLogo } from "@/components/domain/connector-logo";
 import {
 	compactValues,
 	defaultsFor,
@@ -22,8 +25,8 @@ import {
 	type JsonSchema,
 	SchemaForm,
 	validate,
-} from "@/components/schema-form";
-import { Button } from "@/components/ui/button";
+} from "@/components/domain/schema-form";
+import { BRAND_ACCENT, BrandMark } from "@/components/shell/logo";
 import { isConnectMessage, notifyParent, parentOrigin } from "./protocol";
 
 /*
@@ -48,7 +51,7 @@ interface Permission {
 	streams?: string[];
 }
 
-interface PublicConnector {
+export interface PublicConnector {
 	auth: { mode: string; connect: string };
 	credentials_schema?: JsonSchema;
 	description?: string;
@@ -60,14 +63,14 @@ interface PublicConnector {
 	permissions?: Permission[];
 }
 
-interface OfferedIntegration {
+export interface OfferedIntegration {
 	connector: PublicConnector;
 	display_name: string;
 	id: string;
 	key: string;
 }
 
-interface Branding {
+export interface Branding {
 	accent_color?: string | null;
 	environment?: string | null;
 	logo_url?: string | null;
@@ -77,6 +80,8 @@ interface Branding {
 
 type Outcome =
 	| { kind: "verifying"; connectionId: string }
+	// Ran past the polling limit: not a failure, we just stopped watching.
+	| { kind: "slow"; connectionId: string }
 	| { kind: "success"; connectionId: string; missing: string[] }
 	| { kind: "failed"; connectionId?: string; message: string };
 
@@ -94,64 +99,75 @@ function sessionError(error: unknown): { title: string; detail: string } {
 		if (error.status === 401) {
 			return {
 				detail:
-					"Open the link you were sent again, in this browser. If it keeps happening, ask for a new link.",
+					"Open the link again in this browser. If that doesn't work, ask for a new one.",
 				title: "This link isn't valid",
 			};
 		}
-		return { detail: error.message, title: "Something went wrong" };
+		return { detail: error.message, title: "Couldn't open this link" };
 	}
-	return { detail: String(error), title: "Something went wrong" };
+	return {
+		detail: "Check your internet connection, then reload the page.",
+		title: "Couldn't open this link",
+	};
 }
 
-function Shell({
-	branding,
-	children,
-}: {
+export interface ShellProps {
 	branding?: Branding;
 	children: React.ReactNode;
-}) {
-	const accent = branding?.accent_color ?? "#4f46e5";
+	/**
+	 * Force light or dark regardless of the branding. The settings preview
+	 * uses it to show both looks of a "follow the system" theme.
+	 */
+	forceTheme?: "light" | "dark";
+}
+
+function Shell({ branding, children, forceTheme }: ShellProps) {
+	const accent = branding?.accent_color || BRAND_ACCENT;
+	const theme = forceTheme ?? branding?.theme;
 	useEffect(() => {
 		const root = document.documentElement;
 		const had = root.classList.contains("dark");
-		if (branding?.theme === "dark") {
+		if (theme === "dark") {
 			root.classList.add("dark");
-		} else if (branding?.theme === "light") {
+		} else if (theme === "light") {
 			root.classList.remove("dark");
 		}
 		return () => {
 			root.classList.toggle("dark", had);
 		};
-	}, [branding?.theme]);
+	}, [theme]);
 	return (
 		<div
-			className="bg-background flex min-h-svh items-start justify-center px-4 py-10 sm:items-center"
+			className="bg-background flex min-h-svh flex-col items-center justify-start gap-4 px-4 py-10 sm:justify-center"
 			style={{ "--connect-accent": accent } as React.CSSProperties}
 		>
 			<main className="border-border bg-card w-full max-w-md rounded-xl border p-6 shadow-sm">
-				{branding ? (
-					<header className="mb-6 flex items-center gap-2">
-						{branding.logo_url ? (
-							// biome-ignore lint/performance/noImgElement: customer-provided URL
-							<img
-								alt=""
-								className="size-6 rounded"
-								height={24}
-								src={branding.logo_url}
-								width={24}
-							/>
-						) : null}
-						<span className="font-semibold">
-							{branding.name ?? branding.environment ?? "Connect"}
-						</span>
-					</header>
-				) : null}
+				<header className="mb-6 flex items-center gap-2.5">
+					{branding?.logo_url ? (
+						// biome-ignore lint/performance/noImgElement: customer-provided URL
+						<img
+							alt=""
+							className="size-7 rounded-md object-contain"
+							height={28}
+							src={branding.logo_url}
+							width={28}
+						/>
+					) : (
+						<BrandMark size={28} />
+					)}
+					<span className="font-semibold">
+						{branding?.name || "SecureFabric"}
+					</span>
+				</header>
 				{children}
 				<footer className="text-muted-foreground mt-8 flex items-center gap-1.5 text-xs">
-					<ShieldCheckIcon className="size-3.5" /> Credentials are encrypted
-					before they're stored and never shown again.
+					<LockIcon className="size-3.5 shrink-0" /> Your credentials are
+					encrypted and never shown again.
 				</footer>
 			</main>
+			<p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+				Secured by <BrandMark size={14} /> SecureFabric
+			</p>
 		</div>
 	);
 }
@@ -194,7 +210,7 @@ export function PermissionGuide({
 	}
 	return (
 		<div className="bg-muted/40 grid gap-2 rounded-lg p-3">
-			<span className="text-xs font-medium">Access this connection needs</span>
+			<span className="text-xs font-medium">What we'll be able to read</span>
 			<ul className="grid gap-1.5 text-sm">
 				{permissions.map((p) => (
 					<li
@@ -273,12 +289,7 @@ function usePollStatus(
 				// transient; keep polling until the limit
 			}
 			if (Date.now() - started.current > POLL_LIMIT_MS) {
-				setOutcome({
-					connectionId,
-					kind: "failed",
-					message:
-						"Verification is taking longer than expected. You can close this window; we'll keep trying.",
-				});
+				setOutcome({ connectionId, kind: "slow" });
 				return;
 			}
 			setTimeout(tick, POLL_MS);
@@ -302,34 +313,28 @@ function IntegrationPicker({
 	return (
 		<div className="grid gap-4">
 			<div className="grid gap-1">
-				<h1 className="text-lg font-semibold">Connect a tool</h1>
-				{orgName ? (
-					<p className="text-muted-foreground text-sm">for {orgName}</p>
-				) : null}
+				<h1 className="text-lg font-semibold">Choose a tool to connect</h1>
+				<p className="text-muted-foreground text-sm">
+					{orgName
+						? `We'll share its security findings with ${orgName}. Access is read-only.`
+						: "We'll read its security findings. Access is read-only."}
+				</p>
 			</div>
 			<ul className="grid gap-2">
 				{integrations.map((i) => (
 					<li key={i.id}>
 						<button
-							className="border-border hover:bg-muted/50 flex w-full items-center gap-3 rounded-lg border p-3 text-left"
+							className="border-border hover:bg-muted/50 focus-visible:ring-ring/40 flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-2"
 							onClick={() => onPick(i)}
 							type="button"
 						>
-							{i.connector.logo_url ? (
-								// biome-ignore lint/performance/noImgElement: manifest-provided URL
-								<img
-									alt=""
-									className="size-7 rounded"
-									height={28}
-									src={i.connector.logo_url}
-									width={28}
-								/>
-							) : (
-								<span className="bg-muted flex size-7 items-center justify-center rounded text-xs font-semibold">
-									{i.display_name.slice(0, 2)}
-								</span>
-							)}
-							<span className="grid">
+							<ConnectorLogo
+								id={i.connector.id}
+								logo={i.connector.logo_url}
+								name={i.display_name}
+								size={32}
+							/>
+							<span className="grid min-w-0">
 								<span className="font-medium">{i.display_name}</span>
 								{i.connector.description ? (
 									<span className="text-muted-foreground line-clamp-1 text-xs">
@@ -343,7 +348,8 @@ function IntegrationPicker({
 			</ul>
 			{integrations.length === 0 ? (
 				<p className="text-muted-foreground text-sm">
-					No tools are available for this link.
+					There's nothing to connect with this link. Ask whoever sent it for a
+					new one.
 				</p>
 			) : null}
 		</div>
@@ -435,7 +441,7 @@ function CredentialStep({
 						onClick={onBack}
 						type="button"
 					>
-						← All tools
+						← Choose a different tool
 					</button>
 				) : null}
 				<h1 className="text-lg font-semibold">
@@ -448,8 +454,8 @@ function CredentialStep({
 			<PermissionGuide permissions={connector.permissions ?? []} />
 			{redirect ? (
 				<p className="text-muted-foreground text-sm">
-					You'll continue at {connector.name} to approve access, then come back
-					here.
+					You'll sign in to {connector.name} in a new window to approve
+					read-only access, then come back here.
 				</p>
 			) : (
 				<SchemaForm
@@ -516,7 +522,7 @@ export function ConnectFlow() {
 					setOutcome({
 						connectionId,
 						kind: "failed",
-						message: "The vendor didn't grant access.",
+						message: "Access wasn't granted. Open the link again to retry.",
 					});
 				} else {
 					setOutcome({ connectionId, kind: "verifying" });
@@ -692,11 +698,24 @@ function OutcomeView({
 						style={{ color: "var(--connect-accent)" }}
 					/>
 				}
-				title="Checking access…"
+				title="Checking the connection…"
 			>
 				<p className="text-muted-foreground text-sm">
-					We're confirming what this connection can read. This usually takes a
-					few seconds.
+					We're making sure we can read your data. This usually takes a few
+					seconds.
+				</p>
+			</Result>
+		);
+	}
+	if (outcome.kind === "slow") {
+		return (
+			<Result
+				icon={<ClockIcon className="text-muted-foreground size-10" />}
+				title="Still checking"
+			>
+				<p className="text-muted-foreground text-sm">
+					This is taking longer than usual. You can close this window. We'll
+					keep checking.
 				</p>
 			</Result>
 		);
@@ -705,7 +724,7 @@ function OutcomeView({
 		return (
 			<Result
 				icon={<XCircleIcon className="text-destructive size-10" />}
-				title="We couldn't connect"
+				title="Couldn't connect"
 			>
 				<p className="text-muted-foreground text-sm">{outcome.message}</p>
 			</Result>
@@ -718,12 +737,12 @@ function OutcomeView({
 		>
 			{missing.length ? (
 				<p className="text-muted-foreground text-sm">
-					Connected, but some data isn't readable yet: {missing.join(", ")}.
-					Grant the missing permissions in the tool to include it.
+					We can't read everything yet. To fix that, grant these permissions in
+					the tool: {missing.join(", ")}.
 				</p>
 			) : (
 				<p className="text-muted-foreground text-sm">
-					You can close this window.
+					Your data starts syncing now. You can close this window.
 				</p>
 			)}
 		</Result>
@@ -760,7 +779,7 @@ export function ConnectDone() {
 			setOutcome({
 				connectionId: connectionId || undefined,
 				kind: "failed",
-				message: "The vendor didn't grant access. Try the link again.",
+				message: "Access wasn't granted. Open the link again to retry.",
 			});
 		} else {
 			setOutcome({ connectionId, kind: "verifying" });
@@ -787,5 +806,100 @@ export function ConnectDone() {
 				/>
 			) : null}
 		</Shell>
+	);
+}
+
+// ---------------------------------------------------------------------------
+// Preview
+
+/** What Settings sends the preview frame on every change. */
+export interface PreviewState {
+	branding: Branding;
+	forceTheme?: "light" | "dark";
+	integrations: OfferedIntegration[];
+	step: "pick" | "credentials" | "done";
+}
+
+export const PREVIEW_SOURCE = "securefabric-branding-preview";
+
+function isPreviewMessage(
+	data: unknown
+): data is { source: typeof PREVIEW_SOURCE; state: PreviewState } {
+	return (
+		typeof data === "object" &&
+		data !== null &&
+		(data as { source?: unknown }).source === PREVIEW_SOURCE &&
+		typeof (data as { state?: unknown }).state === "object"
+	);
+}
+
+/**
+ * `/connect/preview`: the real connect page, driven by Settings through
+ * postMessage instead of a session. Framed by the dashboard only, it calls no
+ * API and renders nothing but what its parent (same origin) sends it.
+ */
+export function ConnectPreview() {
+	const [state, setState] = useState<PreviewState | null>(null);
+	useEffect(() => {
+		const onMessage = (event: MessageEvent) => {
+			if (
+				event.origin === window.location.origin &&
+				isPreviewMessage(event.data)
+			) {
+				setState(event.data.state);
+			}
+		};
+		window.addEventListener("message", onMessage);
+		window.parent.postMessage(
+			{ source: PREVIEW_SOURCE, type: "ready" },
+			window.location.origin
+		);
+		return () => window.removeEventListener("message", onMessage);
+	}, []);
+	if (!state) {
+		return null;
+	}
+	return (
+		<Shell branding={state.branding} forceTheme={state.forceTheme}>
+			<PreviewStep state={state} />
+		</Shell>
+	);
+}
+
+function PreviewStep({ state }: { state: PreviewState }) {
+	const [first] = state.integrations;
+	if (state.step === "done") {
+		return (
+			<OutcomeView
+				missing={[]}
+				outcome={{ connectionId: "preview", kind: "success", missing: [] }}
+				redirectSuccess={null}
+			/>
+		);
+	}
+	return (
+		<>
+			{state.step === "credentials" && first ? (
+				<CredentialStep
+					connector={first.connector}
+					creds={defaultsFor(first.connector.credentials_schema)}
+					error={null}
+					errors={{}}
+					integration={first}
+					onBack={state.integrations.length > 1 ? () => undefined : null}
+					onChange={() => undefined}
+					onSubmit={() => undefined}
+					orgName="Acme Corp"
+					pending={false}
+					reauthorize={false}
+				/>
+			) : (
+				<IntegrationPicker
+					integrations={state.integrations}
+					onPick={() => undefined}
+					orgName="Acme Corp"
+				/>
+			)}
+		</>
 	);
 }

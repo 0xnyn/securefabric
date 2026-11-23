@@ -1,6 +1,7 @@
 "use client";
 
-import { Toaster } from "@securefabric/ui/components/sonner";
+import { TooltipProvider } from "@securefabric/ui/components/tooltip";
+import { Toaster } from "@securefabric/ui/primitives/sonner";
 import {
 	MutationCache,
 	QueryCache,
@@ -10,7 +11,6 @@ import {
 import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { useState } from "react";
-import { TooltipProvider } from "@/components/ui/overlay";
 import { redirectToSignIn, retryUnlessAuth } from "@/lib/auth";
 
 export function Providers({ children }: { children: React.ReactNode }) {

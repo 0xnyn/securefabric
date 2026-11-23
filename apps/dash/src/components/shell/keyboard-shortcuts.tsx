@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect } from "react";
-import { useHref } from "@/components/shell/env-context";
+import { useAccess, useHref } from "@/components/shell/env-context";
 import { NAV_ITEMS } from "@/lib/nav";
 import { isTypingTarget, SEQUENCE_TIMEOUT_MS } from "@/lib/shortcuts";
 import { useCommandStore } from "./command-store";
@@ -62,6 +62,7 @@ export function KeyboardShortcuts() {
 	const router = useRouter();
 	const href = useHref();
 	const { resolvedTheme, setTheme } = useTheme();
+	const access = useAccess();
 
 	useEffect(() => {
 		let pendingG = false;
@@ -74,7 +75,9 @@ export function KeyboardShortcuts() {
 			pendingG = false;
 			clearTimeout(timer);
 			const key = event.key.toLowerCase();
-			const item = NAV_ITEMS.find((n) => n.shortcut.toLowerCase() === key);
+			const item = NAV_ITEMS.find(
+				(n) => n.shortcut.toLowerCase() === key && access.allows(n.requires)
+			);
 			if (item) {
 				event.preventDefault();
 				router.push(href(item.href));
@@ -110,7 +113,7 @@ export function KeyboardShortcuts() {
 			window.removeEventListener("keydown", onKeyDown);
 			clearTimeout(timer);
 		};
-	}, [router, href, resolvedTheme, setTheme]);
+	}, [router, href, resolvedTheme, setTheme, access]);
 
 	return null;
 }
