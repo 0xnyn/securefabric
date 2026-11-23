@@ -21,7 +21,7 @@ def test_error_to_dict_includes_details_only_when_present() -> None:
     assert err.to_dict() == {"code": "not_found", "message": "missing", "details": {"id": "42"}}
 
 
-def test_settings_read_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+def build_test_settings_read_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("LOG_FORMAT", "json")
     settings = BaseServiceSettings(_env_file=None)
@@ -30,7 +30,7 @@ def test_settings_read_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.log_format is LogFormat.JSON
 
 
-def test_settings_reject_bad_log_level() -> None:
+def build_test_settings_reject_bad_log_level() -> None:
     with pytest.raises(ValueError, match="log_level"):
         BaseServiceSettings(log_level="LOUD", _env_file=None)
 

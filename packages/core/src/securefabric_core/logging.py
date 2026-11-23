@@ -6,6 +6,7 @@ from typing import Any, cast
 
 import structlog
 
+from securefabric_core.redact import structlog_processor
 from securefabric_core.settings import LogFormat
 
 
@@ -25,6 +26,8 @@ def configure_logging(level: str = "INFO", fmt: LogFormat = LogFormat.CONSOLE) -
         renderer = structlog.processors.JSONRenderer()
     else:
         renderer = structlog.dev.ConsoleRenderer()
+    # SEC-07: redaction is the last step before any renderer sees the line.
+    shared_processors.append(structlog_processor)
 
     structlog.configure(
         processors=[
