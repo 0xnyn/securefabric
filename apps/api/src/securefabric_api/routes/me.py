@@ -1,16 +1,18 @@
 """Session-only endpoints: /v1/me, onboarding, environments, members, audit (part 7, section 2)."""
 
+from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from pydantic import Field
 
-from securefabric_api.deps import PlatformDep, PrincipalDep, require_session
+from securefabric_api.deps import PlatformDep, PrincipalDep, allow_params, csv, require_session
+from securefabric_api.routes.common import Page, page
 from securefabric_api.schemas import RequestModel, ResponseModel, Timestamp
 from securefabric_core import NotFoundError, ValidationFailedError
 from securefabric_db import fetch_all, fetch_one
-from securefabric_domain import tenancy
+from securefabric_domain import audit_log, tenancy
 from securefabric_domain.workos import onboard
 
 router = APIRouter(tags=["account"])
@@ -291,6 +293,7 @@ async def remove_member(user_id: UUID, principal: PrincipalDep, platform: Platfo
 
 class AuditEventOut(ResponseModel):
     id: UUID
+    user_agent: str | None = None
     actor_kind: str
     actor_id: str | None = None
     action: str
@@ -302,19 +305,116 @@ class AuditEventOut(ResponseModel):
     at: Timestamp
 
 
+AUDIT_PARAMS = (
+    "action",
+    "actorKind",
+    "actorId",
+    "targetKind",
+    "targetId",
+    "search",
+    "since",
+    "until",
+)
+
+
+class AuditFacet(ResponseModel):
+    value: str
+    count: int
+
+
+class AuditBucket(ResponseModel):
+    at: Timestamp
+    count: int
+
+
+class AuditFacets(ResponseModel):
+    """Counts for the same filters the list takes, so the two always agree."""
+
+    total: int
+    since: Timestamp
+    until: Timestamp
+    bucket_seconds: int
+    histogram: list[AuditBucket]
+    action: list[AuditFacet]
+    actor_kind: list[AuditFacet]
+    actor_id: list[AuditFacet]
+    target_kind: list[AuditFacet]
+
+
 @router.get(
-    "/audit_events", name="list_audit_events", summary="Who did what in this environment (SEC-08)"
+    "/audit_events",
+    name="list_audit_events",
+    summary="Who did what in this environment (SEC-08)",
+    description=(
+        "Newest first, keyset-paged. Reads the last 90 days unless `since` is given. "
+        "Admins only. Comma-separate values to match any of them."
+    ),
+    dependencies=[Depends(allow_params(*AUDIT_PARAMS))],
 )
 async def list_audit_events(
-    principal: PrincipalDep, platform: PlatformDep, limit: int = 100
-) -> list[AuditEventOut]:
+    principal: PrincipalDep,
+    platform: PlatformDep,
+    action: str | None = None,
+    actorKind: str | None = None,
+    actorId: str | None = None,
+    targetKind: str | None = None,
+    targetId: str | None = None,
+    search: str | None = None,
+    since: datetime | None = None,
+    until: datetime | None = None,
+    cursor: str | None = None,
+    limit: int | None = None,
+) -> Page[AuditEventOut]:
     require_session(principal)
-    from securefabric_db import tenant_tx
+    principal.require_admin()
+    p = await audit_log.list_events(
+        platform,
+        principal,
+        action=csv(action),
+        actor_kind=csv(actorKind),
+        actor_id=actorId,
+        target_kind=csv(targetKind),
+        target_id=targetId,
+        search=search,
+        since=since,
+        until=until,
+        cursor=cursor,
+        limit=limit,
+    )
+    return Page[AuditEventOut](**page(p))
 
-    async with tenant_tx(platform.pool, principal.env) as conn:
-        rows = await fetch_all(
-            conn,
-            "select * from obs.audit_event where environment_id = %s order by at desc limit %s",
-            (principal.env, min(max(limit, 1), 500)),
+
+@router.get(
+    "/audit_events/facets",
+    name="get_audit_facets",
+    summary="Counts and a histogram for an audit log filter",
+    dependencies=[Depends(allow_params(*AUDIT_PARAMS))],
+)
+async def get_audit_facets(
+    principal: PrincipalDep,
+    platform: PlatformDep,
+    action: str | None = None,
+    actorKind: str | None = None,
+    actorId: str | None = None,
+    targetKind: str | None = None,
+    targetId: str | None = None,
+    search: str | None = None,
+    since: datetime | None = None,
+    until: datetime | None = None,
+) -> AuditFacets:
+    require_session(principal)
+    principal.require_admin()
+    return AuditFacets(
+        **await audit_log.facets(
+            platform,
+            principal,
+            action=csv(action),
+            actor_kind=csv(actorKind),
+            actor_id=actorId,
+            target_kind=csv(targetKind),
+            target_id=targetId,
+            search=search,
+            since=since,
+            until=until,
         )
-    return [AuditEventOut(**r) for r in rows]
+    )

@@ -150,8 +150,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Who did what in this environment (SEC-08) */
+        /**
+         * Who did what in this environment (SEC-08)
+         * @description Newest first, keyset-paged. Reads the last 90 days unless `since` is given. Admins only. Comma-separate values to match any of them.
+         */
         get: operations["account:list_audit_events"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audit_events/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Counts and a histogram for an audit log filter */
+        get: operations["account:get_audit_facets"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1294,6 +1314,16 @@ export interface components {
             /** Created By */
             created_by: string | null;
         };
+        /** AuditBucket */
+        AuditBucket: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Count */
+            count: number;
+        };
         /** AuditEventOut */
         AuditEventOut: {
             /**
@@ -1301,6 +1331,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** User Agent */
+            user_agent: string | null;
             /** Actor Kind */
             actor_kind: string;
             /** Actor Id */
@@ -1324,6 +1356,43 @@ export interface components {
              * Format: date-time
              */
             at: string;
+        };
+        /** AuditFacet */
+        AuditFacet: {
+            /** Value */
+            value: string;
+            /** Count */
+            count: number;
+        };
+        /**
+         * AuditFacets
+         * @description Counts for the same filters the list takes, so the two always agree.
+         */
+        AuditFacets: {
+            /** Total */
+            total: number;
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            /**
+             * Until
+             * Format: date-time
+             */
+            until: string;
+            /** Bucket Seconds */
+            bucket_seconds: number;
+            /** Histogram */
+            histogram: components["schemas"]["AuditBucket"][];
+            /** Action */
+            action: components["schemas"]["AuditFacet"][];
+            /** Actor Kind */
+            actor_kind: components["schemas"]["AuditFacet"][];
+            /** Actor Id */
+            actor_id: components["schemas"]["AuditFacet"][];
+            /** Target Kind */
+            target_kind: components["schemas"]["AuditFacet"][];
         };
         /** Authorization */
         Authorization: {
@@ -2369,6 +2438,15 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** Page[AuditEventOut] */
+        Page_AuditEventOut_: {
+            /** Items */
+            items: components["schemas"]["AuditEventOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Previous Cursor */
+            previous_cursor: string | null;
         };
         /** Page[ConnectionOut] */
         Page_ConnectionOut_: {
@@ -4116,7 +4194,16 @@ export interface operations {
     "account:list_audit_events": {
         parameters: {
             query?: {
-                limit?: number;
+                action?: string | null;
+                actorKind?: string | null;
+                actorId?: string | null;
+                targetKind?: string | null;
+                targetId?: string | null;
+                search?: string | null;
+                since?: string | null;
+                until?: string | null;
+                cursor?: string | null;
+                limit?: number | null;
             };
             header?: never;
             path?: never;
@@ -4130,7 +4217,126 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuditEventOut"][];
+                    "application/json": components["schemas"]["Page_AuditEventOut_"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Permission denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflicts with the current state */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    "account:get_audit_facets": {
+        parameters: {
+            query?: {
+                action?: string | null;
+                actorKind?: string | null;
+                actorId?: string | null;
+                targetKind?: string | null;
+                targetId?: string | null;
+                search?: string | null;
+                since?: string | null;
+                until?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditFacets"];
                 };
             };
             /** @description Bad request */
