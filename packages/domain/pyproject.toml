@@ -1,0 +1,23 @@
+[project]
+name = "securefabric-domain"
+version = "0.1.0"
+description = "SecureFabric control-plane domain: workspace, environments, integrations, connections, syncs"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "psycopg[binary]>=3.3",
+    "pydantic>=2.14",
+    "securefabric-core",
+    "securefabric-db",
+]
+
+[project.scripts]
+securefabric-seed = "securefabric_domain.seed:main"
+
+[build-system]
+requires = ["uv_build>=0.9.15,<0.10"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+securefabric-core = { workspace = true }
+securefabric-db = { workspace = true }
