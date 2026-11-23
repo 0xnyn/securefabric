@@ -4,7 +4,8 @@
 /* Every colour, radius, font and type step, light and dark, comes from the
    shared tokens. See packages/tokens/DESIGN.md before adding a value here. */
 @import "@securefabric/tokens/theme.css";
-@source "../../../apps/**/*.{ts,tsx}";
+/* The design system scans its own source. Each app adds its own (Next scans
+   the app it builds; Storybook names apps/dash in its preview.css). */
 @source "../**/*.{ts,tsx}";
 
 @custom-variant dark (&:is(.dark *));
@@ -18,5 +19,18 @@
 	}
 	html {
 		@apply font-sans;
+	}
+}
+
+/*
+ * Scrolls without drawing a scrollbar: for side panels (the sidebar, a table's
+ * filter list) whose edge already shows there is more below. Wheel, trackpad,
+ * touch and keyboard scrolling all still work.
+ */
+@utility no-scrollbar {
+	/* biome-ignore lint/suspicious/useBaseline: Firefox's only way to hide it; Chrome and Safari use the rule below */
+	scrollbar-width: none;
+	&::-webkit-scrollbar {
+		display: none;
 	}
 }
