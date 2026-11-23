@@ -1,0 +1,44 @@
+---
+title: "Black Duck SCA"
+sidebarTitle: "Black Duck SCA"
+description: "Coming soon: findings and resources from Black Duck SCA."
+icon: "shield-halved"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Expected between March and April 2027, as vendor access becomes available. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `BLACK_DUCK_SCA` |
+| Category | AppSec |
+| Expected | March to April 2027 |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `REPOSITORY`, `DEPENDENCY` |
+| Findings | `DEPENDENCY` |
+
+Resources: Black Duck project versions as `REPOSITORY`, and their components as `DEPENDENCY`.
+
+From Black Duck SCA:
+
+- Projects
+- Project versions
+- Vulnerable bill-of-materials components
+
+### How it will stay current
+
+Each sync reads each project version.
+
+## What your customers will need
+
+- A Black Duck API token.
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.

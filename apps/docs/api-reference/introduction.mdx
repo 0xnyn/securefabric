@@ -1,0 +1,45 @@
+---
+title: "API reference"
+sidebarTitle: "Introduction"
+description: "Conventions every SecureFabric endpoint follows."
+icon: "code"
+---
+
+The SecureFabric API is a JSON REST API. Every endpoint in this reference is generated from the API's own OpenAPI document, so parameters, request bodies and responses match what the API validates.
+
+## Base URL
+
+```text
+https://api.securefabric.dev/v1
+```
+
+Every endpoint is under `/v1`. See [Versioning](/api-reference/versioning).
+
+## Make your first request
+
+```bash
+curl https://api.securefabric.dev/v1/me \
+  -H "Authorization: Bearer $SF_API_KEY"
+```
+
+`GET /v1/me` returns the environment your key belongs to and the scopes it carries.
+
+## Conventions
+
+| Topic | Summary |
+|---|---|
+| [Authentication](/api-reference/authentication) | An API key in `Authorization: Bearer` or `X-API-KEY`, with scopes. |
+| [Errors](/api-reference/errors) | Every error is `application/problem+json` with a stable `code`. |
+| [Pagination](/api-reference/pagination) | Opaque cursors, `limit` up to 500. |
+| [Filtering and sorting](/api-reference/filtering-and-sorting) | Comma-separated values, strict parameters, `sort=field:asc`. |
+| [Rate limits](/api-reference/rate-limits) | Per environment, with `X-RateLimit-*` headers. |
+| [Idempotency](/api-reference/idempotency) | `Idempotency-Key` on creating requests. |
+
+- **IDs** are UUIDs, except event IDs (`evt_…`) and connector IDs (`GITHUB`).
+- **Timestamps** are ISO 8601 in UTC with milliseconds, such as `2026-12-01T10:15:00.000Z`.
+- **Request IDs.** Every response has an `X-Request-Id` header (`req_…`). Send your own `X-Request-Id` to trace a request through your systems. Quote it when you contact support.
+- **Unknown fields** in a request body fail with `422 validation_failed`. Unknown query parameters fail with `400 unknown_parameter`.
+
+## OpenAPI document
+
+This reference is generated from the API's OpenAPI 3.1 document, the same document the [TypeScript](/api-reference/clients/typescript) and [Python](/api-reference/clients/python) clients are generated from. Any OpenAPI 3.1 tool can generate a client in another language from it.

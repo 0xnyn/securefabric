@@ -1,0 +1,18 @@
+{
+  "name": "docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SecureFabric's customer documentation (Mintlify). The API reference is generated from the API's OpenAPI schema.",
+  "type": "module",
+  "scripts": {
+    "check": "mint validate",
+    "check-generated": "cd ../.. && uv run --frozen securefabric-openapi | node apps/docs/scripts/openapi.mjs --check apps/docs/api-reference/openapi.json",
+    "dev": "mint dev --port 3333",
+    "generate": "cd ../.. && uv run --frozen securefabric-openapi | node apps/docs/scripts/openapi.mjs apps/docs/api-reference/openapi.json",
+    "lint": "mint broken-links"
+  },
+  "devDependencies": {
+    "api": "workspace:*",
+    "mint": "^4.3.84"
+  }
+}

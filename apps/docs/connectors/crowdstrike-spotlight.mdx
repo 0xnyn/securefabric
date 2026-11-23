@@ -1,0 +1,42 @@
+---
+title: "CrowdStrike Falcon Exposure Management (Spotlight)"
+sidebarTitle: "CrowdStrike Spotlight"
+description: "Coming soon: findings and resources from CrowdStrike Falcon Exposure Management (Spotlight)."
+icon: "/logo/connectors/crowdstrike.png"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Planned. Work starts once SecureFabric has partner access to the vendor, so there is no date yet. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `CROWDSTRIKE_SPOTLIGHT` |
+| Category | Vulnerability management |
+| Expected | When partner access is in place |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `HOST` |
+| Findings | `HOST` |
+
+From CrowdStrike Spotlight:
+
+- Spotlight vulnerabilities
+- Hosts
+
+### How it will stay current
+
+Each sync reads vulnerabilities updated since the last sync. CrowdStrike removes expired vulnerabilities after 3 days, so syncs run at least daily.
+
+## What your customers will need
+
+- A CrowdStrike API client with the Vulnerabilities: Read and Hosts: Read scopes.
+- The Falcon Spotlight or Exposure Management module, which CrowdStrike licenses separately.
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.

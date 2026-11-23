@@ -1,0 +1,75 @@
+---
+title: "Connect UI overview"
+description: "Let your customers connect their security tools without credentials touching your servers."
+---
+
+The connect UI is a page SecureFabric hosts where your customer authorizes a [connection](/concepts/connections): they install the GitHub App, or enter credentials for a form-based connector. Your backend never handles their credentials.
+
+You open it with a **connect session**: a link that is valid for 30 minutes and creates one connection.
+
+## How it works
+
+<Steps>
+  <Step title="Your backend creates a connect session">
+    ```bash
+    curl https://api.securefabric.dev/v1/connect_sessions \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: $(uuidgen)" \
+      -d '{"organization_id": "'"$ORG_ID"'", "integrations": ["GITHUB"]}'
+    ```
+
+    ```json Response
+    {
+      "id": "0193b7f0-…",
+      "token": "sfcs_…",
+      "url": "https://…/connect/sfcs_…",
+      "expires_at": "2026-12-01T10:45:00.000Z",
+      "organization_id": "0193b79e-…",
+      "connection_id": null
+    }
+    ```
+
+    Requires the `provisioning:write` scope. Never expose your API key to the browser: create sessions on your backend.
+  </Step>
+  <Step title="Your customer opens the link">
+    [Embed it](/connect/embed) in a modal on your page with connect-js, or send the `url` to your customer as a link.
+  </Step>
+  <Step title="Your customer authorizes the tool">
+    The page lists the integrations the session offers, shows which permissions each needs, and then shows a credential form or sends the customer to the vendor. Vendor steps, such as installing the GitHub App, open in a popup.
+  </Step>
+  <Step title="SecureFabric verifies the connection">
+    The page waits for verification and reports success, missing permissions, or what went wrong. You learn the result from connect-js callbacks and from the `connection.create.succeeded` or `connection.create.failed` [webhook](/webhooks/event-types).
+  </Step>
+</Steps>
+
+## Session options
+
+| Field | Meaning |
+|---|---|
+| `organization_id` | Required. The organization the connection belongs to. |
+| `integrations` | Integration IDs, keys or connector IDs (such as `GITHUB`) to offer. A connector ID uses its [default integration](/concepts/integrations#the-default-integration). Omit to offer every integration in the environment. |
+| `option_presets` | Values to pre-fill in the connector's options. |
+| `connection_id` | [Re-authorize](/connect/reauthorize) this existing connection instead of creating one. |
+| `redirect_success`, `redirect_error` | Where to send the user after the flow when the link is opened as a full page. See [Redirect after the flow](#redirect-after-the-flow). |
+
+## Session rules
+
+- A session expires 30 minutes after it is created. An expired link fails with `410 connect_session_expired`; create a new session.
+- A session creates one connection. A second attempt fails with `410 connect_session_used`. If an attempt fails, for example because of a mistyped API key, the link stays usable.
+- A session can only create connections for its organization and its offered integrations.
+- `GET /v1/connect_sessions?organizationId=…` lists sessions with their `used_at`.
+
+## Redirect after the flow
+
+When your customer opens the link as a full page instead of in a modal, the page can send them back to your app. Set `redirect_success` and `redirect_error` on the session. SecureFabric appends `connection_id` and `status` query parameters.
+
+Redirect URLs must be on one of the environment's **allowed redirect origins**, which admins set in the dashboard under **Settings**. The list is empty by default; a URL on any other origin fails with `422 redirect_not_allowed`. Origins must use `https://`, except `http://localhost` for development.
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="Embed the connect UI" icon="window-restore" href="/connect/embed" />
+  <Card title="Re-authorize a connection" icon="key" href="/connect/reauthorize" />
+  <Card title="Brand the connect UI" icon="palette" href="/connect/branding" />
+</CardGroup>

@@ -1,0 +1,61 @@
+---
+title: "Connection health"
+description: "What each health code means, who can fix it, and how to fix it."
+---
+
+Every connection reports one health code, rolled up from its streams' latest syncs and permissions. The code tells you what is wrong and who can fix it, so you know whether to act, ask your customer, or wait.
+
+```json
+{
+  "health": {
+    "name": "UNAUTHORIZED",
+    "status": "UNHEALTHY",
+    "resolution_owner": "CUSTOMER",
+    "description": "The vendor rejected the credentials or a required permission is missing.",
+    "details": [
+      {
+        "data_export_type": "dependabot_alerts",
+        "endpoint": "GET /orgs/{org}/dependabot/alerts",
+        "reason": "permission_missing"
+      }
+    ]
+  }
+}
+```
+
+`health` appears on every connection. When the code changes you receive [`connection.health.changed`](/webhooks/event-types#connection-health-changed), and `GET /v1/connections/{connection_id}/health/history` lists the changes of the last 30 days.
+
+## Health codes
+
+When several problems exist, the connection shows the most severe one. The table lists codes from least to most severe.
+
+| Code | Status | Who fixes it | What happened | How to fix it |
+|---|---|---|---|---|
+| `HEALTHY` | `HEALTHY` | | Every enabled stream synced successfully. | Nothing to do. |
+| `INITIALIZING` | `INITIALIZING` | `PLATFORM` | The first sync has not completed yet. | Wait for the first `sync.completed`. |
+| `RATE_LIMIT_EXCEEDED` | `UNHEALTHY` | `VENDOR` | Vendor rate limits stopped a sync from finishing in time. | SecureFabric retries when the limit resets. If it persists, lengthen the stream's interval on the [integration](/concepts/integrations). |
+| `EXECUTION_TIMEOUT` | `UNHEALTHY` | `PLATFORM` | A sync exceeded its deadline. | SecureFabric retries on the next schedule. Contact support if it repeats. |
+| `VENDOR_SERVER_ERROR` | `UNHEALTHY` | `VENDOR` | The vendor returned server errors after all retries. | Check the vendor's status page. The next sync retries. |
+| `VENDOR_CLIENT_ERROR` | `UNHEALTHY` | `CUSTOMER` | The vendor rejected a request. | Check `details`, then ask your customer to check the tenant's configuration. |
+| `INTERNAL_ERROR` | `UNHEALTHY` | `PLATFORM` | An internal error occurred. SecureFabric has been alerted. | Nothing to do. Quote the connection ID if you contact support. |
+| `CONFIGURATION_ERROR` | `UNHEALTHY` | `CUSTOMER` | The connection's options or base URL are invalid. | Correct the options with `PATCH /v1/connections/{connection_id}`. |
+| `UNAUTHORIZED` | `UNHEALTHY` | `CUSTOMER` | The vendor rejected the credentials or a required permission is missing. | Ask your customer to grant the missing permission or [re-authorize](/connect/reauthorize). |
+| `REAUTHORIZATION_REQUIRED` | `UNHEALTHY` | `CUSTOMER` | Token refresh keeps failing. | [Re-authorize the connection](/connect/reauthorize). |
+
+## Permissions and missing features
+
+When a connection is verified, SecureFabric checks each enabled stream against the vendor:
+
+- A stream the credentials **cannot read** makes the connection `UNAUTHORIZED`, with `reason: permission_missing` and the stream in `details[].data_export_type`.
+- A stream whose **feature is off** in the vendor, such as code scanning not enabled on a GitHub organization, adds `reason: feature_not_enabled` to `details` without making the connection unhealthy. The vendor has no data for it.
+- A stream the vendor's **version doesn't support**, such as an older GitHub Enterprise Server, adds `reason: unsupported`.
+
+`GET /v1/connections/{connection_id}` lists each stream with its `grant`: `GRANTED`, `UNAUTHORIZED`, `NOT_ENABLED`, `UNSUPPORTED` or `UNKNOWN`.
+
+## Uninstalled or suspended apps
+
+If your customer uninstalls or suspends the GitHub App, the connection stays `ACTIVE` but turns `UNAUTHORIZED`, its schedules pause, and you receive `connection.sync.unauthorized` once. Its data stays readable.
+
+- After a **suspension**, unsuspending the app restores the connection and restarts its schedules.
+- After an **uninstall**, [re-authorize the connection](/connect/reauthorize). It keeps its ID and data.
+- When your customer **accepts new permissions** for the app, SecureFabric checks the connection's permissions again.

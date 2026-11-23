@@ -1,0 +1,106 @@
+---
+title: "TypeScript client"
+description: "Call the API with paths, parameters, bodies and responses checked by the TypeScript compiler."
+icon: "js"
+---
+
+`@securefabric/client` is a typed client generated from the same OpenAPI document as this reference. Every path, query parameter, header, request body and response is a TypeScript type, so a typo in a parameter name or a missing required field fails at compile time, not in production.
+
+It is a thin layer over [openapi-fetch](https://openapi-ts.dev/openapi-fetch/): no runtime schema, standard `fetch`.
+
+<Note>
+  `@securefabric/client` is not on the public npm registry yet. Until it is, generate types from SecureFabric's OpenAPI document with [openapi-typescript](https://openapi-ts.dev/) and use them with openapi-fetch; the calls below work the same way.
+</Note>
+
+## Create a client
+
+```typescript
+import { createClient } from "@securefabric/client";
+
+const api = createClient("https://api.securefabric.dev", {
+  token: process.env.SF_API_KEY, // sent as Authorization: Bearer
+});
+```
+
+`createClient(baseUrl, options)` accepts:
+
+| Option | Meaning |
+|---|---|
+| `token` | Your API key. |
+| `headers` | Headers to send on every request. |
+| `fetch` | A custom `fetch`, for example for tests. |
+
+## Make typed requests
+
+Call `GET`, `POST`, `PATCH`, `PUT` and `DELETE` with a path from this reference. `unwrap` returns the typed response body or throws an error.
+
+```typescript
+import { createClient, unwrap } from "@securefabric/client";
+
+const api = createClient("https://api.securefabric.dev", { token: process.env.SF_API_KEY });
+
+const org = await unwrap(
+  api.POST("/v1/organizations", {
+    body: { identifier: "acme", name: "Acme Corp" },
+    headers: { "Idempotency-Key": crypto.randomUUID() },
+  })
+);
+
+const page = await unwrap(
+  api.GET("/v1/vulnerability_findings", {
+    params: {
+      header: { "X-ORGANIZATION-ID": org.id },
+      query: { severity: "CRITICAL,HIGH", state: "OPEN", limit: 100 },
+    },
+  })
+);
+
+for (const finding of page.items) {
+  console.log(finding.severity, finding.title, finding.vendor_attributes.url);
+}
+```
+
+`org.id`, `page.items` and `finding.severity` are all typed. Passing `{ identifer: "acme" }` or `query: { updated_since }` is a compile error.
+
+## Handle errors
+
+`unwrap` throws a `ClientResponseError` built from the API's [problem details](/api-reference/errors):
+
+| Property | Meaning |
+|---|---|
+| `code` | The stable error code, such as `scope_missing`. |
+| `status` | The HTTP status. |
+| `requestId` | The request ID to quote to support. |
+| `errors` | Field errors, `[{ field, message }]`. |
+| `fieldErrors` | The same, keyed by field path, for showing next to form inputs. |
+
+Subclasses mark common cases: `NotFoundResponseError` (404), `ValidationResponseError` (422) and `TooManyRequestsResponseError` (429), which also has `retryAfter` in seconds.
+
+```typescript
+import { isApiError, TooManyRequestsResponseError, unwrap } from "@securefabric/client";
+
+try {
+  await unwrap(api.POST("/v1/organizations", { body: { identifier: "acme", name: "Acme Corp" } }));
+} catch (error) {
+  if (isApiError(error, "organization_exists")) {
+    // already created: look it up instead
+  } else if (error instanceof TooManyRequestsResponseError) {
+    await sleep((error.retryAfter ?? 1) * 1000);
+  } else {
+    throw error;
+  }
+}
+```
+
+## Use the types
+
+The package exports the generated types, so your own functions can share them:
+
+```typescript
+import type { RequestBody, schemas } from "@securefabric/client";
+
+type Finding = schemas["FindingOut"];
+type NewConnection = RequestBody<"connections:create_connection">;
+```
+
+`schemas` holds every response and request model by name. `RequestBody` takes an operation ID, `<tag>:<name>`.

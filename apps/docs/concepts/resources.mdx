@@ -1,0 +1,47 @@
+---
+title: "Resources"
+description: "The assets findings are about: repositories, branches, hosts, images and more."
+---
+
+A resource is a thing findings are about: a repository, a branch, a host, a container image. Connectors sync resources from their own streams, such as GitHub's `repositories` and `branches`, and link findings to them.
+
+## Resource types and states
+
+| Field | Values |
+|---|---|
+| `type` | `REPOSITORY`, `BRANCH`, `HOST`, `CONTAINER`, `IMAGE`, `DEPENDENCY`, `KUBERNETES`, `FUNCTION`, `SOFTWARE`, `VENDOR`, `UNKNOWN` |
+| `state` | `ACTIVE`, `INACTIVE`, `IGNORED`, `QUARANTINED`, `DELETED`, `UNKNOWN` |
+
+Like finding values, treat these as open lists.
+
+## Fields
+
+| Field | Meaning |
+|---|---|
+| `name`, `url` | How the vendor names and links to the resource. |
+| `vendor` | The connector the resource came from, such as `GITHUB`. |
+| `groups`, `tags` | The vendor's grouping and labels. |
+| `cloud_metadata` | Cloud provider, account and region, when the vendor reports them. |
+| `data` | Type-specific detail. GitHub repositories include `repo_url`, `default_branch` and `security_features`. |
+| `first_seen`, `last_seen` | When the vendor first and last reported the resource. |
+| `vendor_attributes` | The vendor's own ID and raw data. |
+| `is_stub` | `true` when a finding referenced the resource before its own stream synced it. The stub fills in on the next sync. |
+| `_meta` | `stream`, `natural_key` and `derived`, as on [findings](/concepts/findings#what-securefabric-adds). |
+
+## Read resources
+
+```bash
+curl "https://api.securefabric.dev/v1/resources?type=REPOSITORY&state=ACTIVE" \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "X-CONNECTION-ID: $CONNECTION_ID"
+```
+
+`GET /v1/resources` filters by `name`, `vendor`, `state`, `type`, `updatedSince`, `ids`, `changeType` and `connectionId`. See [Filtering and sorting](/api-reference/filtering-and-sorting).
+
+To list the findings of one resource, filter findings by it:
+
+```bash
+curl "https://api.securefabric.dev/v1/vulnerability_findings?resourceId=$RESOURCE_ID" \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "X-CONNECTION-ID: $CONNECTION_ID"
+```

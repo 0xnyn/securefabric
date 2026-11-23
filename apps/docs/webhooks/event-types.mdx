@@ -1,0 +1,141 @@
+---
+title: "Event types"
+description: "Every event SecureFabric sends, when it is sent, and what its data contains."
+---
+
+Subscribe an endpoint to specific types with `event_types`, or leave it empty to receive every type. Each event has the [common fields](/concepts/events#the-event-object); the tables below describe `data`.
+
+| Event type | Sent when |
+|---|---|
+| [`connection.create.succeeded`](#connection-create-succeeded) | A new connection was verified and is now `ACTIVE`. |
+| [`connection.create.failed`](#connection-create-failed) | A new connection could not be verified. |
+| [`sync.completed`](#sync-completed) | A job finished, whatever its outcome. |
+| [`connection.sync.succeeded`](#connection-sync-succeeded) | A job finished with `SUCCESS` or `PARTIAL`. |
+| [`connection.sync.failed`](#connection-sync-failed) | A job failed, for a reason other than authorization. |
+| [`connection.sync.unauthorized`](#connection-sync-unauthorized) | A job failed because of credentials or permissions, or the vendor app was uninstalled or suspended. |
+| [`connection.health.changed`](#connection-health-changed) | A connection's health code changed. |
+| [`connection.paused`](#connection-paused-resumed-and-deleted) | A connection was paused. |
+| [`connection.resumed`](#connection-paused-resumed-and-deleted) | A connection was resumed. |
+| [`connection.deleted`](#connection-paused-resumed-and-deleted) | A connection was deleted. |
+| [`action.completed`](#action-completed-and-action-failed) | A write-back action succeeded. |
+| [`action.failed`](#action-completed-and-action-failed) | A write-back action failed. |
+| [`webhook.ping`](#webhook-ping) | You pinged an endpoint. |
+
+`finding.created`, `finding.updated`, `finding.deleted`, `resource.created`, `resource.updated` and `resource.deleted` are reserved. You can subscribe to them, but SecureFabric doesn't send them yet. To follow record changes, use [`sync.completed`](#sync-completed) and the [incremental feed](/guides/sync-incrementally).
+
+## connection.create.succeeded
+
+```json
+{
+  "vendor": "GITHUB",
+  "error": null,
+  "description": "acme-sec",
+  "grants": {
+    "repositories": "GRANTED",
+    "branches": "GRANTED",
+    "code_scanning_alerts": "NOT_ENABLED",
+    "secret_scanning_alerts": "GRANTED",
+    "dependabot_alerts": "GRANTED"
+  }
+}
+```
+
+`description` is the vendor tenant's name. `grants` gives each enabled stream's [grant](/concepts/connection-health#permissions-and-missing-features).
+
+## connection.create.failed
+
+```json
+{ "vendor": "SANDBOX", "error": "UNAUTHORIZED", "description": "The API key was rejected." }
+```
+
+`error` is a [health code](/concepts/connection-health#health-codes), or `DUPLICATE_CONNECTION` when the tenant is [already connected](/concepts/connections#duplicate-tenants). The connection stays `PENDING` and its `pending_detail` repeats `description`.
+
+## sync.completed
+
+```json
+{
+  "job_id": "0193b7c2-…",
+  "vendor": "GITHUB",
+  "type": "SCHEDULED",
+  "status": "SUCCESS",
+  "streams": {
+    "dependabot_alerts": {
+      "state": "SUCCEEDED",
+      "mode": "incremental",
+      "added": 3,
+      "updated": 12,
+      "deleted": 0,
+      "unchanged": 0,
+      "quarantined": 0,
+      "health_code": "HEALTHY",
+      "warning": null
+    }
+  },
+  "totals": { "added": 3, "updated": 12, "deleted": 0 },
+  "window": { "from": "2026-12-01T10:00:02.114000+00:00", "to": "2026-12-01T10:00:41.870000+00:00" },
+  "has_changes": true
+}
+```
+
+When `has_changes` is `true`, read the changes with the [incremental feed](/guides/sync-incrementally). `quarantined` counts vendor records that couldn't be normalized and were set aside.
+
+## connection.sync.succeeded
+
+```json
+{ "job_id": "0193b7c2-…", "vendor": "GITHUB", "type": "SCHEDULED", "status": "SUCCESS", "error": null, "description": null }
+```
+
+## connection.sync.failed
+
+```json
+{ "job_id": "0193b7c2-…", "vendor": "GITHUB", "type": "SCHEDULED", "status": "FAILED", "error": "VENDOR_SERVER_ERROR", "description": "…" }
+```
+
+`error` is the job's worst [health code](/concepts/connection-health#health-codes).
+
+## connection.sync.unauthorized
+
+The same shape as `connection.sync.failed`, with `error` set to `UNAUTHORIZED` or `REAUTHORIZATION_REQUIRED`. When the vendor app was uninstalled or suspended, `data` has only `error` and `description`. Ask your customer to [re-authorize](/connect/reauthorize).
+
+## connection.health.changed
+
+```json
+{
+  "previous": "HEALTHY",
+  "health": {
+    "name": "UNAUTHORIZED",
+    "status": "UNHEALTHY",
+    "description": "The vendor rejected the credentials or a required permission is missing.",
+    "resolution_owner": "CUSTOMER",
+    "details": [{ "data_export_type": "dependabot_alerts", "endpoint": "…", "reason": "permission_missing" }]
+  }
+}
+```
+
+## connection.paused, resumed and deleted
+
+```json
+{ "vendor": "GITHUB" }
+```
+
+`connection.deleted` also has `purge_after`, when the connection's data is permanently deleted.
+
+## action.completed and action.failed
+
+```json
+{
+  "action_id": "0193b7d0-…",
+  "finding_id": "0193b7a2-…",
+  "params": { "state": "IGNORED", "reason": "false_positive", "comment": null },
+  "status": "SUCCEEDED",
+  "message": null
+}
+```
+
+On `action.failed`, `message` carries the vendor's answer. See [Update a finding's state](/guides/update-finding-state).
+
+## webhook.ping
+
+```json
+{ "endpoint_id": "0193b7e1-…", "message": "Hello from SecureFabric" }
+```

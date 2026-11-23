@@ -1,0 +1,93 @@
+---
+title: "Findings"
+description: "The normalized vulnerability finding: its fields, values, and what SecureFabric adds."
+---
+
+A finding is one security issue a tool reports: a Dependabot alert, a code scanning alert, a leaked secret, a host vulnerability. SecureFabric maps every vendor's findings into one shape, so the same filters and fields work for every connector.
+
+The shape is Leen V2's vulnerability finding. Fields SecureFabric adds are listed [below](#what-securefabric-adds).
+
+```json Example finding (trimmed)
+{
+  "id": "0193b7a2-7c41-7d5e-9a0b-2f6c8e4d1a53",
+  "title": "Prototype pollution in lib-1",
+  "severity": "HIGH",
+  "state": "OPEN",
+  "type": "DEPENDENCY",
+  "has_fix": true,
+  "exploitable": null,
+  "reachability": "UNREACHABLE",
+  "remediation": "Upgrade `lib-1` to `4.17.21` or later.",
+  "cve_ids": ["CVE-2021-23301"],
+  "first_seen": "2025-12-02T00:00:00.000Z",
+  "last_seen": "2025-12-04T00:00:00.000Z",
+  "connection_id": "0193b79f-1e2d-7c3a-8b4f-5a6e7d8c9b0a",
+  "organization_id": "0193b79e-0a1b-7c2d-9e3f-4a5b6c7d8e9f",
+  "resources": [
+    { "id": "0193b7a1-…", "name": "acme-sec/web-app", "type": "REPOSITORY", "role": "primary" }
+  ],
+  "vendor_attributes": {
+    "id": "1",
+    "url": "https://github.com/acme-sec/web-app/security/dependabot/1",
+    "severity": "high",
+    "state": "open"
+  },
+  "_meta": {
+    "stream": "dependabot_alerts",
+    "natural_key": "dependabot:700001:1",
+    "derived": []
+  }
+}
+```
+
+## Normalized values
+
+| Field | Values |
+|---|---|
+| `severity` | `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFO`, `UNKNOWN` |
+| `state` | `OPEN`, `CLOSED`, `REOPENED`, `IGNORED`, `DELETED`, `UNKNOWN` |
+| `type` | `DEPENDENCY`, `CODE`, `SECRET`, `CONTAINER`, `IAC`, `HOST`, `DOMAIN`, `UNKNOWN` |
+| `reachability` | `REACHABLE`, `POTENTIALLY_REACHABLE`, `UNREACHABLE`, `UNKNOWN`, or `null` |
+| `has_fix`, `exploitable` | `true`, `false`, or `null` |
+
+`IGNORED` means someone dismissed the finding in the vendor, for example as a false positive or accepted risk. `CLOSED` means it was fixed or resolved.
+
+<Note>
+  `null` means the vendor doesn't say. SecureFabric never guesses a value. When a filter such as `exploitable` can't be evaluated for any connector in scope, the response carries an `X-Unsupported-Filters` header naming it, so you can tell "no matches" from "this vendor never reports it". Each connector page lists which of these fields it supports.
+</Note>
+
+Treat these values as open lists: new values can be added. See [Versioning](/api-reference/versioning).
+
+## The vendor's own values
+
+`vendor_attributes` keeps the vendor's original `id`, `url`, `severity`, `state`, timestamps and identifiers (such as GHSA and CVE IDs). Use it to link back to the vendor or to apply vendor-specific logic.
+
+## What SecureFabric adds
+
+| Field | Meaning |
+|---|---|
+| `connection_id`, `organization_id` | Where the finding came from. |
+| `created_at`, `updated_at`, `deleted_at` | When SecureFabric first stored, last changed and deleted the finding. `updated_at` drives the [incremental feed](/guides/sync-incrementally). |
+| `cve_ids` | The CVEs the finding references. |
+| `enrichment` | Public vulnerability data for those CVEs: NVD, the CISA Known Exploited Vulnerabilities catalog (KEV) and EPSS scores. Includes CVEs matched through GHSA aliases. Vendor values are never overwritten. |
+| `_meta.stream` | The stream the finding came from. |
+| `_meta.natural_key` | The vendor's stable identity for the finding. |
+| `_meta.derived` | Fields SecureFabric derived rather than read from the vendor, such as `severity` for GitHub secret alerts when the `secret_severity` option is set. |
+
+## Resources on a finding
+
+`resources` lists the [resources](/concepts/resources) a finding affects, such as the repository of a Dependabot alert. List endpoints return compact references; pass `include=resources` to get full resource objects. `GET /v1/vulnerability_findings/{finding_id}` always returns full resources.
+
+`resource_related` describes what is affected inside the resource, such as the package, version and fixed version.
+
+## State history
+
+`GET /v1/vulnerability_findings/{finding_id}/history` lists every state change with `from_state`, `to_state`, `at` and `source`.
+
+## Counts
+
+`GET /v1/vulnerability_findings/summary` returns counts by severity, state and type, plus open findings by severity. Without a scope header, it counts every connection in the environment.
+
+## CVE lookup
+
+`GET /v1/enrichments/cves/{cve_id}` returns SecureFabric's NVD, KEV and EPSS data for one CVE, or for a GHSA ID that maps to one.

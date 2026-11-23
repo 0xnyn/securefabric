@@ -1,0 +1,42 @@
+---
+title: "Re-authorize a connection"
+description: "Fix expired credentials or missing permissions without losing the connection's ID or data."
+---
+
+Re-authorize a connection when its [health](/concepts/connection-health) is `UNAUTHORIZED` or `REAUTHORIZATION_REQUIRED`, when your customer uninstalled the GitHub App, or when they need to grant new permissions. The connection keeps its ID, history and data.
+
+## Send your customer a re-authorization link
+
+Create a connect session with the connection's `connection_id`:
+
+```bash
+curl https://api.securefabric.dev/v1/connect_sessions \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"organization_id": "'"$ORG_ID"'", "connection_id": "'"$CONNECTION_ID"'"}'
+```
+
+The session offers only the connection's integration. Open the `url` with [connect-js](/connect/embed) or send it to your customer.
+
+- **Form connectors**: your customer enters new credentials. SecureFabric verifies them before switching; if they are rejected, the old credentials stay in place.
+- **Redirect connectors** such as GitHub: your customer goes through the vendor's authorization again.
+
+The `connection_id` must belong to `organization_id`, otherwise the request fails with `404 connection_not_found`.
+
+## Rotate credentials yourself
+
+If you hold the credentials for a form connector, send them directly:
+
+```bash
+curl -X PATCH https://api.securefabric.dev/v1/connections/$CONNECTION_ID \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"credentials": {"api_key": "sbx_new_key"}}'
+```
+
+The same verification applies. See [Rotate credentials](/concepts/connections#rotate-credentials).
+
+## From the dashboard
+
+On a connection's page in the dashboard, create a re-authorization link and copy it for your customer.

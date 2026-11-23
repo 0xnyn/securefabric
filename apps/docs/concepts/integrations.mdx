@@ -1,0 +1,55 @@
+---
+title: "Integrations"
+description: "Enable a connector in an environment and choose what it syncs."
+---
+
+A [connector](/connectors/overview) is SecureFabric's support for one vendor product. An integration is that connector enabled in one of your [environments](/concepts/environments), with your settings. Every [connection](/concepts/connections) goes through one integration.
+
+## The default integration
+
+You don't have to create an integration. The first time you create a connection or a connect session for a connector, by passing its ID such as `GITHUB`, SecureFabric creates a default integration for it. Its key is the connector ID in lowercase (`github`), and it syncs the connector's default streams.
+
+Create your own integration when you want different settings, or several configurations of the same connector.
+
+## Create an integration
+
+```bash
+curl https://api.securefabric.dev/v1/integrations \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "connector_id": "GITHUB",
+    "key": "github-alerts",
+    "enabled_streams": ["repositories", "dependabot_alerts", "code_scanning_alerts"],
+    "stream_intervals": {"dependabot_alerts": 1800},
+    "option_defaults": {"secret_severity": "by_validity"},
+    "write_back_enabled": true
+  }'
+```
+
+| Field | What it controls |
+|---|---|
+| `connector_id` | The connector, such as `GITHUB` or `SANDBOX`. |
+| `key` | Your name for the integration: lowercase letters, digits, `-` and `_`. Pass it as `integration` when you create connections. |
+| `enabled_streams` | Which of the connector's streams to sync. |
+| `stream_intervals` | Seconds between scheduled syncs, per stream, within the range the connector allows. |
+| `option_defaults` | Default values for the connector's options. A connection can override them. |
+| `write_back_enabled` | Allows [actions](/guides/update-finding-state) that change data in the vendor. Off by default. |
+| `vendor_app_id` | Use one of your own vendor apps instead of SecureFabric's default. |
+
+Requires the `provisioning:write` scope. Each connector page lists its streams and options, for example [GitHub](/connectors/github#streams).
+
+## Vendor apps
+
+Some connectors authenticate through an app registered with the vendor, such as a GitHub App. SecureFabric provides default vendor apps, so you can connect without registering anything.
+
+Register your own vendor app with `POST /v1/vendor_apps` when you want the app to carry your name, or when the vendor requires one per installation, such as GitHub Enterprise Server. Secrets you send (`private_key`, `client_secret`) are write-only: no endpoint returns them.
+
+<Note>
+  With write-back on, GitHub connections use an app that asks for write permissions. Without it, they use a read-only app. Your customers grant only what you need.
+</Note>
+
+## Delete an integration
+
+`DELETE /v1/integrations/{integration_id}` fails with `409 integration_has_connections` while connections use it. A vendor app that an integration uses fails with `409 vendor_app_in_use`.

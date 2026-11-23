@@ -1,0 +1,2 @@
+# The root .gitignore ignores openapi.json everywhere; this one is generated and committed.
+!api-reference/openapi.json

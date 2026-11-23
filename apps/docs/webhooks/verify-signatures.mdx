@@ -1,0 +1,252 @@
+---
+title: "Verify webhook signatures"
+description: "Check that a delivery came from SecureFabric and wasn't replayed."
+---
+
+Every delivery is signed with your endpoint's secret. Verify the signature before you trust the body: anyone can send a request to your URL.
+
+## How the signature works
+
+`SecureFabric-Signature` is `v1=` followed by the hex HMAC-SHA256 of the string `{timestamp}.{raw body}`, keyed with the endpoint's `whsec_` secret. `timestamp` is the `SecureFabric-Timestamp` header.
+
+<Steps>
+  <Step title="Read the raw body">
+    Use the bytes exactly as received, before any JSON parsing. Parsing and re-serializing changes the bytes and breaks the signature.
+  </Step>
+  <Step title="Check the timestamp">
+    Reject a timestamp more than 5 minutes from your clock. This stops an attacker from replaying an old delivery.
+  </Step>
+  <Step title="Compute the expected signature">
+    `"v1=" + hex(HMAC-SHA256(secret, timestamp + "." + raw_body))`
+  </Step>
+  <Step title="Compare in constant time">
+    Split the header on commas and compare the expected value with each part using a constant-time comparison. Accept the delivery if any part matches.
+  </Step>
+</Steps>
+
+After you rotate the secret, the header carries two comma-separated signatures for 24 hours, one per secret. The verifiers below accept either, so you can deploy the new secret at your own pace.
+
+## Verifiers
+
+These verifiers use only each language's standard library. SecureFabric's test suite runs each one against real signed deliveries: valid, rotated, tampered, wrong secret and stale.
+
+<CodeGroup>
+```python verify.py
+"""Verify a SecureFabric webhook (Python 3, standard library only)."""
+
+import hashlib
+import hmac
+import sys
+import time
+
+
+def verify(
+    secret: str, signature_header: str, timestamp: str, raw_body: bytes, tolerance_s: int = 300
+) -> bool:
+    """True if any v1= signature matches and the timestamp is fresh."""
+    try:
+        ts = int(timestamp)
+    except ValueError:
+        return False
+    if abs(time.time() - ts) > tolerance_s:  # replay protection
+        return False
+    expected = (
+        "v1=" + hmac.new(secret.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256).hexdigest()
+    )
+    # During a secret rotation two signatures are sent, comma-separated.
+    return any(hmac.compare_digest(expected, part.strip()) for part in signature_header.split(","))
+
+
+if (
+    __name__ == "__main__"
+):  # verify.py <secret> <SecureFabric-Signature> <SecureFabric-Timestamp> < body
+    ok = verify(sys.argv[1], sys.argv[2], sys.argv[3], sys.stdin.buffer.read())
+    sys.exit(0 if ok else 1)
+```
+
+```javascript verify.mjs
+// Verify a SecureFabric webhook (Node.js 18+, ES module, no dependencies).
+import crypto from "node:crypto";
+import { fileURLToPath } from "node:url";
+
+export function verify(
+	secret,
+	signatureHeader,
+	timestamp,
+	rawBody,
+	toleranceSeconds = 300
+) {
+	const ts = Number.parseInt(timestamp, 10);
+	if (!Number.isFinite(ts)) {
+		return false;
+	}
+	if (Math.abs(Date.now() / 1000 - ts) > toleranceSeconds) {
+		return false; // replay protection
+	}
+	const expected =
+		"v1=" +
+		crypto
+			.createHmac("sha256", secret)
+			.update(Buffer.concat([Buffer.from(`${ts}.`), rawBody]))
+			.digest("hex");
+	const want = Buffer.from(expected);
+	// During a secret rotation two signatures are sent, comma-separated.
+	return signatureHeader.split(",").some((part) => {
+		const candidate = Buffer.from(part.trim());
+		return (
+			candidate.length === want.length &&
+			crypto.timingSafeEqual(candidate, want)
+		);
+	});
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+	// node verify.mjs <secret> <SecureFabric-Signature> <SecureFabric-Timestamp> < body
+	const chunks = [];
+	for await (const chunk of process.stdin) {
+		chunks.push(chunk);
+	}
+	const [secret, header, timestamp] = process.argv.slice(2);
+	process.exit(
+		verify(secret, header, timestamp, Buffer.concat(chunks)) ? 0 : 1
+	);
+}
+```
+
+```go verify.go
+// Verify a SecureFabric webhook (Go, standard library only).
+package main
+
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
+	"math"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// Verify reports whether any v1= signature matches and the timestamp is fresh.
+func Verify(secret, signatureHeader, timestamp string, rawBody []byte, tolerance time.Duration) bool {
+	ts, err := strconv.ParseInt(timestamp, 10, 64)
+	if err != nil {
+		return false
+	}
+	if math.Abs(float64(time.Now().Unix()-ts)) > tolerance.Seconds() { // replay protection
+		return false
+	}
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(strconv.FormatInt(ts, 10) + "."))
+	mac.Write(rawBody)
+	expected := "v1=" + hex.EncodeToString(mac.Sum(nil))
+	// During a secret rotation two signatures are sent, comma-separated.
+	for _, part := range strings.Split(signatureHeader, ",") {
+		if hmac.Equal([]byte(strings.TrimSpace(part)), []byte(expected)) {
+			return true
+		}
+	}
+	return false
+}
+
+// go run verify.go <secret> <SecureFabric-Signature> <SecureFabric-Timestamp> < body
+func main() {
+	body, _ := io.ReadAll(os.Stdin)
+	if Verify(os.Args[1], os.Args[2], os.Args[3], body, 5*time.Minute) {
+		os.Exit(0)
+	}
+	os.Exit(1)
+}
+```
+
+```ruby verify.rb
+# Verify a SecureFabric webhook (Ruby, standard library only).
+require "openssl"
+
+# Constant-time comparison (works on every Ruby; newer ones also have
+# OpenSSL.fixed_length_secure_compare).
+def secure_compare(a, b)
+  return false unless a.bytesize == b.bytesize
+
+  diff = 0
+  a.bytes.zip(b.bytes) { |x, y| diff |= x ^ y }
+  diff.zero?
+end
+
+def verify(secret, signature_header, timestamp, raw_body, tolerance_seconds = 300)
+  ts = begin
+    Integer(timestamp)
+  rescue ArgumentError, TypeError
+    return false
+  end
+  return false if (Time.now.to_i - ts).abs > tolerance_seconds # replay protection
+
+  expected = "v1=" + OpenSSL::HMAC.hexdigest("SHA256", secret, "#{ts}." + raw_body)
+  # During a secret rotation two signatures are sent, comma-separated.
+  signature_header.split(",").any? { |part| secure_compare(part.strip, expected) }
+end
+
+if __FILE__ == $PROGRAM_NAME
+  # ruby verify.rb <secret> <SecureFabric-Signature> <SecureFabric-Timestamp> < body
+  body = $stdin.binmode.read
+  exit(verify(ARGV[0], ARGV[1], ARGV[2], body) ? 0 : 1)
+end
+```
+</CodeGroup>
+
+Each file also runs from the command line: pass the secret, the `SecureFabric-Signature` header and the `SecureFabric-Timestamp` header as arguments and the body on standard input. It exits `0` when the signature is valid.
+
+## Read the raw body in your framework
+
+<Tabs>
+  <Tab title="Express">
+    ```javascript
+    app.post(
+      "/webhooks/securefabric",
+      express.raw({ type: "application/json" }),
+      (req, res) => {
+        const ok = verify(
+          process.env.SF_WEBHOOK_SECRET,
+          req.get("SecureFabric-Signature") ?? "",
+          req.get("SecureFabric-Timestamp") ?? "",
+          req.body // a Buffer
+        );
+        if (!ok) return res.sendStatus(400);
+        res.sendStatus(204);
+        handle(JSON.parse(req.body));
+      }
+    );
+    ```
+  </Tab>
+  <Tab title="Flask">
+    ```python
+    @app.post("/webhooks/securefabric")
+    def securefabric_webhook():
+        ok = verify(
+            os.environ["SF_WEBHOOK_SECRET"],
+            request.headers.get("SecureFabric-Signature", ""),
+            request.headers.get("SecureFabric-Timestamp", ""),
+            request.get_data(),  # raw bytes
+        )
+        if not ok:
+            abort(400)
+        handle(request.get_json())
+        return "", 204
+    ```
+  </Tab>
+</Tabs>
+
+## Rotate the secret
+
+```bash
+curl -X POST https://api.securefabric.dev/v1/webhook_endpoints/$ENDPOINT_ID/rotate_secret \
+  -H "Authorization: Bearer $SF_API_KEY"
+```
+
+The response contains the new `secret`, shown once. For the next 24 hours SecureFabric signs with both the old and the new secret; after that, only the new one.
+
+## Differences from Leen
+
+Leen signs with `X-Leen-Signature: v0=sha256=<hex>`. SecureFabric signs the same message with the same algorithm, so change only the header names (`SecureFabric-Signature`, `SecureFabric-Timestamp`) and the `v1=` prefix. See [Migrate from Leen](/guides/leen-migration).

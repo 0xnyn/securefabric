@@ -1,0 +1,23 @@
+---
+title: "Brand the connect UI"
+description: "Show your name, logo and colors on the hosted connect page."
+---
+
+The connect UI can carry your brand, so your customers see your product rather than SecureFabric's. Branding is set per [environment](/concepts/environments).
+
+## Set your branding
+
+Admins set branding in the dashboard under **Settings**, on the **Connect page** tab:
+
+| Setting | Effect | Default |
+|---|---|---|
+| Display name | The name at the top of the page. | The environment's name |
+| Logo URL | An HTTPS image shown next to the name. | None |
+| Accent colour | The color of buttons and highlights. | `#4f46e5` |
+| Theme | `system` follows the visitor's setting; `light` or `dark` forces one. | `system` |
+
+The settings apply to every new and open connect session in the environment.
+
+## Set allowed redirect origins
+
+On the **General** tab of **Settings**, list the origins the connect UI may redirect to after the flow, such as `https://app.example.com`. See [Redirect after the flow](/connect/overview#redirect-after-the-flow).

@@ -1,0 +1,78 @@
+---
+title: "Embed the connect UI"
+description: "Open the hosted connect flow in a modal on your page with connect-js."
+---
+
+`@securefabric/connect-js` opens a [connect session](/connect/overview) in a modal on your page and tells you when the connection is created. The flow runs in an iframe on SecureFabric's origin, so your page never sees your customer's credentials.
+
+<Note>
+  `@securefabric/connect-js` is not on the public npm registry yet. Until it is, open the session `url` in a new window or send it as a link. The flow is the same.
+</Note>
+
+## Open the flow
+
+<Steps>
+  <Step title="Create a session on your backend">
+    Call `POST /v1/connect_sessions` with your API key, as in [Connect UI overview](/connect/overview#how-it-works), and return the `url` to your page.
+  </Step>
+  <Step title="Open it on your page">
+    <CodeGroup>
+    ```typescript Browser
+    import { SecureFabric } from "@securefabric/connect-js";
+
+    const { url } = await fetch("/api/connect-session", { method: "POST" }).then((r) => r.json());
+
+    SecureFabric.connect({
+      url,
+      onSuccess: ({ connectionId }) => saveConnection(connectionId),
+      onError: ({ code, message }) => showError(code, message),
+      onClose: () => refreshConnections(),
+    }).open();
+    ```
+
+    ```tsx React
+    import { ConnectButton } from "@securefabric/connect-js/react";
+
+    export function ConnectTools({ url }: { url: string }) {
+      return (
+        <ConnectButton url={url} onSuccess={({ connectionId }) => saveConnection(connectionId)}>
+          Connect your tools
+        </ConnectButton>
+      );
+    }
+    ```
+    </CodeGroup>
+  </Step>
+  <Step title="Store the connection ID">
+    `onSuccess` receives the new `connectionId`. Store it against your customer, and use it as `X-CONNECTION-ID` when you [read their data](/concepts/findings).
+  </Step>
+</Steps>
+
+## Options
+
+| Option | Meaning |
+|---|---|
+| `url` | The session `url` from `POST /v1/connect_sessions`. |
+| `token`, `baseUrl` | Instead of `url`: the session `token` (`sfcs_…`) and the base URL the connect UI is served from. |
+| `mode` | `"modal"` (default) shows an iframe over your page. `"popup"` runs the flow in a separate window, for browsers that block cookies in third-party frames. |
+| `container` | The element to mount the modal in. Defaults to `document.body`. |
+| `onSuccess` | Called with `{ connectionId, status }` when the connection is created. |
+| `onError` | Called with `{ code, message, connectionId? }` when the flow fails. |
+| `onClose` | Called exactly once, however the flow ends. |
+| `onEvent` | Called with every message from the flow, including `ready`. |
+
+`SecureFabric.connect()` returns a handle with `open()`, `close()` and `isOpen`. The React hook `useSecureFabricConnect(options)` returns the same three.
+
+In modal mode, Escape, the close button or a click on the backdrop closes the flow. When a vendor step needs its own window, such as installing the GitHub App, the flow opens a popup from inside the modal and continues when it closes.
+
+## Handle errors
+
+`onError` receives the error `code` and a `message` to show. `popup_blocked` means the browser blocked the popup in `"popup"` mode: ask the user to allow popups, or call `open()` directly from a click handler.
+
+Whatever the outcome, confirm the connection on your backend: listen for `connection.create.succeeded` and `connection.create.failed` [webhooks](/webhooks/event-types), or read the connection with `GET /v1/connections/{connection_id}`.
+
+## Security
+
+- connect-js accepts messages only from the connect link's origin, and only from the frame or popup it opened. It ignores everything else.
+- The hosted page swaps the session token in the URL for a cookie scoped to the connect UI, so the token doesn't stay in the address bar, browser history or referrers.
+- Connect links must use HTTPS, except on `localhost`.

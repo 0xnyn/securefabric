@@ -1,0 +1,62 @@
+---
+title: "Filtering and sorting"
+description: "Narrow lists with filters and order them with sort."
+---
+
+## Filter rules
+
+- **Several values** in one filter are comma-separated and match any of them: `severity=CRITICAL,HIGH`.
+- **Several filters** must all match: `severity=CRITICAL&state=OPEN`.
+- **Enumerations** such as `severity` and `state` accept any letter case and are checked: an unknown value fails with `422 invalid_filter`.
+- **Booleans** accept `true` or `false` (`1` and `0` also work). A finding whose value is `null` matches neither.
+- **Times** are ISO 8601, such as `2026-12-01T00:00:00Z`. `…Since` filters include records at exactly that time.
+- **IDs** are UUIDs. `ids` accepts at most 100.
+- **Unknown parameters** fail with `400 unknown_parameter`. Names are case-sensitive: `updatedSince`, not `updated_since`.
+
+## Finding filters
+
+`GET /v1/vulnerability_findings` needs a scope header, `X-CONNECTION-ID` or `X-ORGANIZATION-ID`, and accepts:
+
+| Parameter | Matches |
+|---|---|
+| `severity` | `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFO`, `UNKNOWN` |
+| `state` | `OPEN`, `CLOSED`, `REOPENED`, `IGNORED`, `DELETED`, `UNKNOWN`. Deleted findings are left out unless you ask for `DELETED` or send `updatedSince`. |
+| `type` | `DEPENDENCY`, `CODE`, `SECRET`, `CONTAINER`, `IAC`, `HOST`, `DOMAIN`, `UNKNOWN` |
+| `has_fix`, `exploitable` | `true` or `false` |
+| `reachability` | `REACHABLE`, `POTENTIALLY_REACHABLE`, `UNREACHABLE`, `UNKNOWN` |
+| `firstSeenSince`, `lastSeenSince`, `stateUpdatedSince`, `updatedSince` | Findings first seen, last seen, changing state, or changed in SecureFabric at or after this time. |
+| `resourceId` | Findings that affect these resources. |
+| `ids` | These findings. |
+| `cveId` | Findings that reference these CVEs, directly or through a GHSA alias. |
+| `changeType` | `added`, `updated` or `deleted`. See [Sync findings incrementally](/guides/sync-incrementally#only-some-kinds-of-change). |
+| `connectionId` | With `X-ORGANIZATION-ID`: only these connections of the organization. |
+| `include` | `resources`: embed full resource objects instead of references. |
+
+### Unsupported filters
+
+Some vendors never report some fields; for example, GitHub makes no exploitability claim. When no connector in scope can evaluate `has_fix`, `exploitable` or `reachability`, the request still succeeds and the response carries a header naming the filter:
+
+```text
+X-Unsupported-Filters: exploitable
+```
+
+An empty result with this header means "unknown", not "none".
+
+## Resource filters
+
+`GET /v1/resources` needs a scope header and accepts `name`, `vendor`, `state`, `type`, `updatedSince`, `ids`, `changeType` and `connectionId`, with the same rules. See [Resources](/concepts/resources) for the values of `type` and `state`.
+
+## Connection filters
+
+`GET /v1/connections` accepts `organizationId`, `vendor`, `state`, `healthStatus`, `healthStatusCodes` and `integrationId`, plus tag filters such as `tags[env]=prod`.
+
+## Sorting
+
+Send `sort` as `field:asc` or `field:desc`. The default is `updated_at:asc`, which is the order the [incremental feed](/guides/sync-incrementally) needs.
+
+| Endpoint | Sort fields |
+|---|---|
+| `GET /v1/vulnerability_findings` | `updated_at`, `severity`, `state_updated_at`, `first_seen`, `last_seen` |
+| `GET /v1/resources` | `updated_at`, `first_seen`, `last_seen` |
+
+`sort=severity:desc` lists the most severe findings first. Ties are broken by record ID, so the order is stable across pages. Any other field fails with `400 invalid_sort`.

@@ -1,0 +1,116 @@
+---
+title: "Connectors"
+description: "The security tools SecureFabric connects to today, and the ones on the way."
+icon: "plug"
+---
+
+A connector is SecureFabric's support for one vendor product. Every connector maps its vendor's data into the same [findings](/concepts/findings) and [resources](/concepts/resources), so code you write for one works for all of them.
+
+`GET /v1/connectors` returns the live catalog, with each connector's streams, permissions, options and credential fields. It needs no API key.
+
+## Available
+
+<CardGroup cols={3}>
+  <Card title="GitHub Advanced Security" icon="/logo/connectors/github.svg" href="/connectors/github">
+    Code scanning, secret scanning and Dependabot alerts, with repositories and branches. Beta.
+  </Card>
+  <Card title="SecureFabric Sandbox" icon="/favicon.svg" href="/connectors/sandbox">
+    Synthetic data of every type, and simulated vendor failures, for building and testing.
+  </Card>
+</CardGroup>
+
+## Coming soon
+
+Connectors below are planned. Each page describes what it will sync and what your customers will need; details can change before release.
+
+### Expected in February 2027
+
+<CardGroup cols={3}>
+  <Card title="Tenable" icon="/logo/connectors/tenable.svg" href="/connectors/tenable">
+    Vulnerability management. Findings: `HOST`.
+  </Card>
+  <Card title="Microsoft Defender" icon="/logo/connectors/microsoft-defender.svg" href="/connectors/microsoft-defender">
+    Vulnerability management. Findings: `HOST`.
+  </Card>
+  <Card title="Amazon Inspector" icon="/logo/connectors/aws.svg" href="/connectors/aws-inspector">
+    Vulnerability management and AppSec. Findings: `HOST`, `CONTAINER`, `DEPENDENCY`, `CODE`, `IAC`.
+  </Card>
+  <Card title="Qualys" icon="/logo/connectors/qualys.svg" href="/connectors/qualys">
+    Vulnerability management. Findings: `HOST`.
+  </Card>
+  <Card title="GitLab" icon="/logo/connectors/gitlab.svg" href="/connectors/gitlab">
+    AppSec. Findings: `CODE`, `DEPENDENCY`, `CONTAINER`, `SECRET`, `IAC`.
+  </Card>
+  <Card title="SonarQube" icon="/logo/connectors/sonarqube.svg" href="/connectors/sonarqube">
+    AppSec. Findings: `CODE`.
+  </Card>
+  <Card title="Semgrep" icon="/logo/connectors/semgrep.svg" href="/connectors/semgrep">
+    AppSec. Findings: `CODE`, `DEPENDENCY`, `SECRET`.
+  </Card>
+  <Card title="Aikido" icon="/logo/connectors/aikido.png" href="/connectors/aikido">
+    AppSec. Findings: `CODE`, `DEPENDENCY`, `SECRET`, `CONTAINER`, `IAC`.
+  </Card>
+  <Card title="Socket" icon="shield-halved" href="/connectors/socket">
+    Supply chain security. Findings: `DEPENDENCY`.
+  </Card>
+</CardGroup>
+
+### When partner access is in place
+
+These depend on access from each vendor's partner program. They have no date yet.
+
+<CardGroup cols={3}>
+  <Card title="CrowdStrike Spotlight" icon="/logo/connectors/crowdstrike.png" href="/connectors/crowdstrike-spotlight">
+    Vulnerability management. Findings: `HOST`.
+  </Card>
+  <Card title="Wiz vulnerabilities" icon="/logo/connectors/wiz.png" href="/connectors/wiz-vulnerabilities">
+    Vulnerability management. Findings: `HOST`, `CONTAINER`, `DEPENDENCY`.
+  </Card>
+  <Card title="Wiz Code" icon="/logo/connectors/wiz.png" href="/connectors/wiz-code">
+    AppSec. Findings: `CODE`, `DEPENDENCY`, `SECRET`, `IAC`.
+  </Card>
+  <Card title="Snyk" icon="/logo/connectors/snyk.svg" href="/connectors/snyk">
+    AppSec. Findings: `DEPENDENCY`, `CODE`, `CONTAINER`, `IAC`.
+  </Card>
+  <Card title="Upwind" icon="/logo/connectors/upwind.png" href="/connectors/upwind">
+    Cloud security (CNAPP). Findings: `HOST`, `CONTAINER`, `DEPENDENCY`, `CODE`, `SECRET`, `IAC`.
+  </Card>
+  <Card title="Tanium" icon="/logo/connectors/tanium.svg" href="/connectors/tanium">
+    Vulnerability management. Findings: `HOST`.
+  </Card>
+</CardGroup>
+
+### Expected March to April 2027
+
+<CardGroup cols={3}>
+  <Card title="Rapid7 InsightVM" icon="/logo/connectors/rapid7.png" href="/connectors/rapid7-insightvm">
+    Vulnerability management. Findings: `HOST`.
+  </Card>
+  <Card title="SentinelOne" icon="/logo/connectors/sentinelone.png" href="/connectors/sentinelone">
+    Vulnerability management. Findings: `HOST`.
+  </Card>
+  <Card title="Defender GCC High" icon="/logo/connectors/microsoft-defender.svg" href="/connectors/microsoft-defender-gcc-high">
+    Vulnerability management. Findings: `HOST`.
+  </Card>
+  <Card title="Mend" icon="/logo/connectors/mend.png" href="/connectors/mend">
+    AppSec. Findings: `DEPENDENCY`, `CODE`, `CONTAINER`.
+  </Card>
+  <Card title="Orca" icon="/logo/connectors/orca.svg" href="/connectors/orca">
+    Cloud security (CNAPP). Findings: `HOST`, `CONTAINER`, `DEPENDENCY`.
+  </Card>
+  <Card title="Checkmarx" icon="/logo/connectors/checkmarx.svg" href="/connectors/checkmarx">
+    AppSec. Findings: `CODE`, `DEPENDENCY`, `IAC`, `CONTAINER`.
+  </Card>
+  <Card title="Black Duck SCA" icon="shield-halved" href="/connectors/black-duck-sca">
+    AppSec. Findings: `DEPENDENCY`.
+  </Card>
+  <Card title="Black Duck Coverity" icon="shield-halved" href="/connectors/black-duck-coverity">
+    AppSec. Findings: `CODE`.
+  </Card>
+  <Card title="Arnica" icon="shield-halved" href="/connectors/arnica">
+    AppSec. Findings: `CODE`, `SECRET`, `DEPENDENCY`.
+  </Card>
+  <Card title="Heeler" icon="shield-halved" href="/connectors/heeler">
+    AppSec. Findings: `DEPENDENCY`, `SECRET`.
+  </Card>
+</CardGroup>

@@ -1,0 +1,108 @@
+---
+title: "Quickstart"
+description: "Create an organization, connect a test tool through the hosted connect UI, and read its findings."
+icon: "rocket"
+---
+
+This guide uses the [SecureFabric Sandbox](/connectors/sandbox) connector, which serves synthetic hosts, images and findings of every type. It needs no vendor account. The same steps work for [GitHub](/connectors/github).
+
+You need access to the SecureFabric dashboard and a terminal with `curl`.
+
+<Steps>
+  <Step title="Create an API key">
+    In the dashboard, switch to your test environment (`dev`), open **API keys**, and select **Create key**. Keep every scope selected for this guide.
+
+    The key starts with `sfk_test_` and is shown once. Store it in your shell:
+
+    ```bash
+    export SF_API_KEY="sfk_test_..."
+    ```
+
+    <Note>
+      An API key belongs to one [environment](/concepts/environments). Everything you create with it stays in that environment.
+    </Note>
+  </Step>
+
+  <Step title="Create an organization">
+    An [organization](/concepts/organizations) represents one of your customers. Use your own identifier for it, such as your customer ID.
+
+    ```bash
+    curl https://api.securefabric.dev/v1/organizations \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"identifier": "acme", "name": "Acme Corp"}'
+    ```
+
+    Save the `id` from the response:
+
+    ```bash
+    export ORG_ID="..."
+    ```
+  </Step>
+
+  <Step title="Open the hosted connect UI">
+    Create a [connect session](/connect/overview) for the organization. `integrations` limits which tools the session offers.
+
+    ```bash
+    curl https://api.securefabric.dev/v1/connect_sessions \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"organization_id": "'"$ORG_ID"'", "integrations": ["SANDBOX"]}'
+    ```
+
+    The response contains a `url`, valid for 30 minutes and usable once. Open it in your browser. For the sandbox, enter any API key that starts with `sbx_`, such as `sbx_quickstart`.
+
+    In your product, you open the same link in a modal with [connect-js](/connect/embed) instead.
+  </Step>
+
+  <Step title="Wait for the first sync">
+    SecureFabric verifies the credentials, activates the [connection](/concepts/connections), and starts its first sync. Find the connection:
+
+    ```bash
+    curl "https://api.securefabric.dev/v1/connections?organizationId=$ORG_ID" \
+      -H "Authorization: Bearer $SF_API_KEY"
+    ```
+
+    Save its `id`, then list its jobs until the first one reports `SUCCESS`:
+
+    ```bash
+    export CONNECTION_ID="..."
+
+    curl https://api.securefabric.dev/v1/connections/$CONNECTION_ID/jobs \
+      -H "Authorization: Bearer $SF_API_KEY"
+    ```
+
+    <Tip>
+      In production, subscribe to the `sync.completed` [webhook](/webhooks/setup) instead of polling.
+    </Tip>
+  </Step>
+
+  <Step title="Read findings">
+    Read the connection's findings. The `X-CONNECTION-ID` header sets the scope of every data request.
+
+    ```bash
+    curl "https://api.securefabric.dev/v1/vulnerability_findings?severity=CRITICAL,HIGH&state=OPEN&limit=10" \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "X-CONNECTION-ID: $CONNECTION_ID"
+    ```
+
+    The response is a page of findings and a `next_cursor`. Pass the cursor back as `cursor` to read the next page. See [Pagination](/api-reference/pagination).
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Embed the connect UI" icon="window-restore" href="/connect/embed">
+    Let your customers connect tools from your product.
+  </Card>
+  <Card title="Sync findings incrementally" icon="arrows-rotate" href="/guides/sync-incrementally">
+    Read only what changed since your last read.
+  </Card>
+  <Card title="Set up webhooks" icon="bell" href="/webhooks/setup">
+    Get told when a sync finishes or a connection breaks.
+  </Card>
+  <Card title="Connect GitHub" icon="github" href="/connectors/github">
+    Move from synthetic data to real alerts.
+  </Card>
+</CardGroup>

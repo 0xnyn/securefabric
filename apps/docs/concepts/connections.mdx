@@ -1,0 +1,105 @@
+---
+title: "Connections"
+description: "One vendor tenant, connected for one organization: its lifecycle, credentials and settings."
+---
+
+A connection is one vendor tenant connected for one of your [organizations](/concepts/organizations) through one [integration](/concepts/integrations). For GitHub, a tenant is one GitHub App installation on an organization or user account. A connection has its own credentials, schedules, [health](/concepts/connection-health) and data.
+
+## Create a connection
+
+Most connections are created by your customer in the [hosted connect UI](/connect/overview), so credentials never reach your servers. You can also create one with the API:
+
+<Tabs>
+  <Tab title="Credential form connectors">
+    Connectors that take credentials, such as the [Sandbox](/connectors/sandbox), accept them in `credentials`:
+
+    ```bash
+    curl https://api.securefabric.dev/v1/organizations/$ORG_ID/connections \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: $(uuidgen)" \
+      -d '{"vendor": "SANDBOX", "credentials": {"api_key": "sbx_example"}, "identifier": "acme-sandbox"}'
+    ```
+
+    Credentials are write-only. No endpoint returns them.
+  </Tab>
+  <Tab title="Redirect connectors">
+    Connectors that authorize through the vendor, such as [GitHub](/connectors/github), take no credentials. The response contains an `authorize_url` to open in the user's browser:
+
+    ```bash
+    curl https://api.securefabric.dev/v1/organizations/$ORG_ID/connections \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: $(uuidgen)" \
+      -d '{"vendor": "GITHUB"}'
+    ```
+  </Tab>
+</Tabs>
+
+Pass `vendor` to use the connector's default integration, or `integration` with an integration ID or key. Requires the `provisioning:write` scope.
+
+| Field | Rules |
+|---|---|
+| `identifier` | Optional. Your ID for the connection, unique among the organization's connections (`409 connection_identifier_exists`). |
+| `options` | Optional. Overrides the integration's option defaults. Checked against the connector's options (`422 invalid_options`). |
+| `tags` | Optional. Up to 10 string pairs. Filter by them with `GET /v1/connections?tags[env]=prod`. |
+| `metadata` | Optional. Up to 16 KB of JSON for your own data. |
+| `is_sandbox` | Optional. Creates a [sandbox connection](#sandbox-connections) that replays recorded data. |
+
+## Lifecycle
+
+| State | Meaning |
+|---|---|
+| `PENDING` | Created, not yet verified. `pending_detail` says what it is waiting for, or why verification failed. |
+| `ACTIVE` | Verified. It syncs on schedule. |
+| `PAUSED` | Schedules stopped. Its data stays readable. |
+| `DELETED` | Deleted. Its credentials are gone and its data is no longer returned. Data is purged 30 days later. |
+
+When a connection becomes `ACTIVE`, SecureFabric records which streams the credentials can read and starts the first sync. You receive `connection.create.succeeded`, or `connection.create.failed` if verification fails. A connection still `PENDING` after 7 days is deleted.
+
+State and health are separate. An `ACTIVE` connection can be unhealthy, for example when your customer uninstalls the GitHub App. See [Connection health](/concepts/connection-health).
+
+### Pause, resume and delete
+
+```bash
+# Pause: running syncs stop after their current page
+curl -X PATCH https://api.securefabric.dev/v1/connections/$CONNECTION_ID \
+  -H "Authorization: Bearer $SF_API_KEY" -H "Content-Type: application/json" \
+  -d '{"state": "PAUSED"}'
+
+# Resume: catches up on every enabled stream
+curl -X PATCH https://api.securefabric.dev/v1/connections/$CONNECTION_ID \
+  -H "Authorization: Bearer $SF_API_KEY" -H "Content-Type: application/json" \
+  -d '{"state": "ACTIVE"}'
+```
+
+### Delete a connection
+
+```bash
+curl -X DELETE https://api.securefabric.dev/v1/connections/$CONNECTION_ID \
+  -H "Authorization: Bearer $SF_API_KEY"
+```
+
+The connection's credentials are deleted at once, and its findings and resources stop appearing in the API. You receive `connection.deleted`. A state change that the lifecycle doesn't allow, such as resuming a deleted connection, fails with `409 invalid_state_transition`.
+
+## Test the credentials
+
+`GET /v1/connections/{connection_id}/test` checks the credentials against the vendor now and waits up to 30 seconds for the answer. A rejection is a `200` response with `is_valid: false`, not an error.
+
+## Rotate credentials
+
+Send new `credentials` in `PATCH /v1/connections/{connection_id}`. SecureFabric verifies them before it switches: the connection keeps syncing with the old credentials until the new ones work, and nothing changes if they are rejected.
+
+For redirect connectors such as GitHub, [re-authorize](/connect/reauthorize) the connection through a connect session instead. The connection keeps its ID and data.
+
+## Duplicate tenants
+
+One vendor tenant can be connected only once per organization and integration. A second connection to the same tenant stays `PENDING`, its `pending_detail` names the existing connection, and you receive `connection.create.failed` with error `DUPLICATE_CONNECTION`.
+
+## Sandbox connections
+
+Create a connection with `"is_sandbox": true` to try a connector without a vendor account. It needs no credentials, even for GitHub, and replays recorded vendor responses instead of calling the vendor. Use it to build against real data shapes.
+
+## Metadata
+
+`PUT /v1/connections/{connection_id}/metadata` replaces the connection's metadata, and `PATCH` merges into it. Metadata is limited to 16 KB (`422 metadata_too_large`).

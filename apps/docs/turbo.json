@@ -1,0 +1,22 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "check-generated": {
+      "inputs": [
+        "api-reference/openapi.json",
+        "package.json",
+        "scripts/openapi.mjs"
+      ]
+    },
+    "lint": {
+      "inputs": [
+        "**/*.mdx",
+        "docs.json",
+        "api-reference/openapi.json",
+        "logo/**",
+        "favicon.svg"
+      ]
+    }
+  }
+}

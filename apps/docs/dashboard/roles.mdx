@@ -1,0 +1,40 @@
+---
+title: "Roles and permissions"
+description: "What admins, developers and support members can see and do."
+---
+
+Every member of your account has one role. The role decides which [scopes](/api-reference/authentication#scopes) the member's dashboard session carries, and a few actions are reserved for admins.
+
+| Role | Scopes | For |
+|---|---|---|
+| **Admin** | All scopes | Full access, including API keys, team members, environment settings and the audit log. |
+| **Developer** | All scopes except `keys:manage` | Building the integration: organizations, connections, syncs, webhooks and the data API. |
+| **Support** | `provisioning:read`, `data:read` | Read-only access to connections, findings, resources, logs and status, for helping your customers. |
+
+## What each role can do
+
+| Action | Admin | Developer | Support |
+|---|:-:|:-:|:-:|
+| View organizations, connections, jobs, operation logs and usage | ✓ | ✓ | ✓ |
+| View findings and resources | ✓ | ✓ | ✓ |
+| Create and change organizations, integrations and connections | ✓ | ✓ | |
+| Create connect sessions and re-authorization links | ✓ | ✓ | |
+| Start, cancel and reset syncs | ✓ | ✓ | |
+| Manage webhook endpoints and replay deliveries | ✓ | ✓ | |
+| Update a finding's state in the vendor | ✓ | ✓ | |
+| Create and revoke API keys | ✓ | | |
+| Invite, change and remove team members | ✓ | | |
+| Change environment settings and connect page branding | ✓ | | |
+| Create environments | ✓ | | |
+| View the audit log | ✓ | | |
+| Wipe a connection's data during a reset | ✓ | | |
+
+The API enforces these rules. A member who tries an action their role doesn't allow gets `403 scope_missing` or `403 role_required`.
+
+## API keys
+
+API keys don't have roles. A key carries the scopes chosen when it was created, and a key can't create another key with scopes it lacks (`403 scope_escalation`). See [Authentication](/api-reference/authentication#scopes).
+
+## Change a member's role
+
+Admins change roles under **Settings**, on the **Team** tab. See [Manage your team](/dashboard/team).

@@ -1,0 +1,87 @@
+---
+title: "Python client"
+description: "Call the API with typed models, synchronously or with asyncio."
+icon: "python"
+---
+
+`securefabric-client` is a Python client generated from the same OpenAPI document as this reference, with [openapi-python-client](https://github.com/openapi-generators/openapi-python-client). Request bodies and responses are typed `attrs` models, so your editor and type checker know every field. It supports Python 3.11 and later.
+
+<Note>
+  `securefabric-client` is not on PyPI yet. Until it is, generate a client from SecureFabric's OpenAPI document with openapi-python-client; the calls below work the same way.
+</Note>
+
+## Create a client
+
+```python
+import os
+from securefabric_client import AuthenticatedClient
+
+client = AuthenticatedClient(
+    base_url="https://api.securefabric.dev",
+    token=os.environ["SF_API_KEY"],  # sent as Authorization: Bearer
+)
+```
+
+## Make typed requests
+
+Each endpoint is a module under `securefabric_client.api.<tag>`, named after the operation. Each module has four functions:
+
+| Function | Returns |
+|---|---|
+| `sync` | The parsed response body. |
+| `sync_detailed` | A `Response` with `status_code`, `headers` and `parsed`. |
+| `asyncio` | Like `sync`, with `await`. |
+| `asyncio_detailed` | Like `sync_detailed`, with `await`. |
+
+```python
+from securefabric_client.api.organizations import create_organization
+from securefabric_client.api.data import list_vulnerability_findings
+from securefabric_client.models import OrganizationIn
+
+org = create_organization.sync(
+    client=client,
+    body=OrganizationIn(identifier="acme", name="Acme Corp"),
+)
+
+page = list_vulnerability_findings.sync(
+    client=client,
+    x_organization_id=str(org.id),
+    severity="CRITICAL,HIGH",
+    state="OPEN",
+    limit=100,
+)
+for finding in page.items:
+    print(finding.severity, finding.title)
+```
+
+Query parameters become snake_case arguments (`updatedSince` is `updated_since`), and scope headers become `x_connection_id` and `x_organization_id`.
+
+## Use asyncio
+
+```python
+from securefabric_client.api.connections import list_connections
+
+async def active_connections(org_id: str):
+    async with client as c:
+        page = await list_connections.asyncio(client=c, organization_id=org_id, state="ACTIVE")
+        return page.items
+```
+
+## Handle errors
+
+`sync` returns the parsed body for a success response and `None` for an error. To read the [error code](/api-reference/errors) of a failed request, use `sync_detailed` and check `status_code`:
+
+```python
+import json
+from securefabric_client.api.organizations import create_organization
+
+response = create_organization.sync_detailed(
+    client=client, body=OrganizationIn(identifier="acme", name="Acme Corp")
+)
+if response.status_code >= 400:
+    problem = json.loads(response.content)
+    if problem["code"] == "organization_exists":
+        ...
+```
+
+To raise on undocumented statuses instead, create the client with `raise_on_unexpected_status=True`.

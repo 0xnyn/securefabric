@@ -1,0 +1,43 @@
+---
+title: "Status page"
+description: "Check whether SecureFabric is working normally."
+---
+
+The dashboard's **Status** page shows whether SecureFabric is working normally, and refreshes every few seconds. Check it first when syncs or webhooks seem slow.
+
+## Overall status
+
+| Status | Meaning |
+|---|---|
+| `ok` | Everything is working. |
+| `degraded` | SecureFabric is running, but something needs attention, such as a queue falling behind. `problems` lists what. |
+| `down` | SecureFabric can't reach its database. Requests fail until it recovers. |
+
+## What the page shows
+
+When you're signed in, the page also shows:
+
+- **Workers**: the processes that run syncs and deliver webhooks, and whether each is online.
+- **Queues**: how much work is waiting.
+- **Runs**: how many syncs are running, stuck, or failed in the last day.
+- **Alerts**: how many alerts are open, by severity. SecureFabric's on-call team handles them.
+
+These numbers describe SecureFabric as a whole, not only your environment.
+
+## Check status with the API
+
+`GET /v1/status` returns the same information. Without credentials it returns only the overall `status` and `version`, so you can use it in uptime checks:
+
+```bash
+curl https://api.securefabric.dev/v1/status
+```
+
+```json
+{ "status": "ok", "problems": [], "version": "0.1.0", "database": { "reachable": true } }
+```
+
+Send an API key to get workers, queues, runs and alert counts.
+
+<Tip>
+  For the health of one customer's connection rather than of SecureFabric, see [Connection health](/concepts/connection-health).
+</Tip>

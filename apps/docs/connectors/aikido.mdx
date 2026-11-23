@@ -1,0 +1,45 @@
+---
+title: "Aikido Security"
+sidebarTitle: "Aikido"
+description: "Coming soon: findings and resources from Aikido Security."
+icon: "/logo/connectors/aikido.png"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Expected in February 2027. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `AIKIDO` |
+| Category | AppSec |
+| Expected | February 2027 |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `REPOSITORY`, `IMAGE`, `CONTAINER` |
+| Findings | `CODE`, `DEPENDENCY`, `SECRET`, `CONTAINER`, `IAC` |
+
+From Aikido:
+
+- Issue export
+- Issue groups
+- Repositories
+- Containers
+- Clouds
+
+### How it will stay current
+
+Each sync exports all issues. Aikido allows 20 API calls a minute per workspace, which sets how often syncs can run.
+
+## What your customers will need
+
+- Aikido OAuth client credentials (client ID and secret).
+- An Aikido plan with REST API access (Basic or higher). The free Developer plan has none.
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.

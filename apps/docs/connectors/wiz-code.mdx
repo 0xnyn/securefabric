@@ -1,0 +1,45 @@
+---
+title: "Wiz Code"
+sidebarTitle: "Wiz Code"
+description: "Coming soon: findings and resources from Wiz Code."
+icon: "/logo/connectors/wiz.png"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Planned. Work starts once SecureFabric has partner access to the vendor, so there is no date yet. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `WIZ_CODE` |
+| Category | AppSec |
+| Expected | When partner access is in place |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `REPOSITORY`, `BRANCH` |
+| Findings | `CODE`, `DEPENDENCY`, `SECRET`, `IAC` |
+
+From Wiz Code:
+
+- Code findings: SAST, SCA, secrets and IaC
+- Repositories
+
+### How it will stay current
+
+Each sync reads findings updated since the last sync.
+
+## What your customers will need
+
+- A Wiz service account, on a Wiz tenant with Wiz Code.
+
+## Good to know
+
+- Shares the service account's rate limit with [Wiz vulnerability findings](/connectors/wiz-vulnerabilities).
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.

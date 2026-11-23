@@ -1,0 +1,117 @@
+---
+title: "Sync findings incrementally"
+description: "Copy every finding once, then read only what changed, deletions included."
+---
+
+Most products keep their own copy of their customers' findings. This guide shows how to backfill that copy once and then keep it current by reading only changes. The same pattern works for [resources](/concepts/resources).
+
+## How the feed works
+
+Findings are ordered by `updated_at`, then `id`. Every change to a finding, including its deletion, gives it a new `updated_at`. Within one connection, `updated_at` follows the order changes were saved, so reading forward from a point in time never skips a change.
+
+Deleted findings stay in the feed: a read with `updatedSince` returns them with `state: DELETED` and a `deleted_at` timestamp. A plain listing without `updatedSince` leaves them out.
+
+<Steps>
+  <Step title="Backfill">
+    Page through every finding of the connection in the default order. Store each finding by its `id`, and remember the `updated_at` of the last one you read.
+
+    ```bash
+    curl "https://api.securefabric.dev/v1/vulnerability_findings?limit=500" \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "X-CONNECTION-ID: $CONNECTION_ID"
+    ```
+
+    Repeat with `cursor` set to the previous response's `next_cursor` until `next_cursor` is `null`. See [Pagination](/api-reference/pagination).
+  </Step>
+  <Step title="Wait for changes">
+    Subscribe to [`sync.completed`](/webhooks/event-types#sync-completed). When its `has_changes` is `true`, read the changes. You can also poll on a timer.
+  </Step>
+  <Step title="Read changes">
+    Pass the last `updated_at` you stored as `updatedSince`:
+
+    ```bash
+    curl "https://api.securefabric.dev/v1/vulnerability_findings?updatedSince=2026-12-01T10:00:41.870Z&limit=500" \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "X-CONNECTION-ID: $CONNECTION_ID"
+    ```
+
+    Page through to the end, upsert each finding by `id`, and remove or archive findings whose `state` is `DELETED`. Store the new last `updated_at`.
+  </Step>
+</Steps>
+
+`updatedSince` includes findings updated exactly at that time, so you may receive the last finding of your previous read again. Upserting by `id` makes that harmless.
+
+## Example
+
+<CodeGroup>
+```typescript TypeScript
+import { createClient, unwrap } from "@securefabric/client";
+
+const api = createClient("https://api.securefabric.dev", { token: process.env.SF_API_KEY });
+
+export async function syncFindings(connectionId: string, since: string | undefined) {
+  let cursor: string | undefined;
+  let watermark = since;
+  do {
+    const page = await unwrap(
+      api.GET("/v1/vulnerability_findings", {
+        params: {
+          header: { "X-CONNECTION-ID": connectionId },
+          query: { updatedSince: since, cursor, limit: 500 },
+        },
+      })
+    );
+    for (const finding of page.items) {
+      if (finding.state === "DELETED") await archive(finding.id);
+      else await upsert(finding);
+      watermark = finding.updated_at ?? watermark;
+    }
+    cursor = page.next_cursor ?? undefined;
+  } while (cursor);
+  return watermark; // store it for the next run
+}
+```
+
+```python Python
+import os
+from datetime import datetime
+
+from securefabric_client import AuthenticatedClient
+from securefabric_client.api.data import list_vulnerability_findings
+
+client = AuthenticatedClient(base_url="https://api.securefabric.dev", token=os.environ["SF_API_KEY"])
+
+
+def sync_findings(connection_id: str, since: str | None = None) -> str | None:
+    cursor, watermark = None, since
+    while True:
+        page = list_vulnerability_findings.sync(
+            client=client,
+            x_connection_id=connection_id,
+            updated_since=datetime.fromisoformat(since) if since else None,
+            cursor=cursor,
+            limit=500,
+        )
+        for finding in page.items:
+            if finding.state == "DELETED":
+                archive(finding.id)
+            else:
+                upsert(finding)
+            watermark = finding.updated_at or watermark
+        cursor = page.next_cursor
+        if not cursor:
+            return watermark  # store it for the next run
+```
+</CodeGroup>
+
+<Note>
+  Keep the same filters on every page of one read. A cursor remembers the filters it was created with, and a different value fails with `400 cursor_filter_mismatch`.
+</Note>
+
+## Only some kinds of change
+
+Add `changeType` to receive only `added`, `updated` or `deleted` findings, comma-separated. With `updatedSince`, `added` means created at or after that time.
+
+## Organization-wide feeds
+
+You can run the same loop with `X-ORGANIZATION-ID` to cover every connection of an [organization](/concepts/organizations). Different connections sync independently, so organization-wide reads hold back findings changed in the last 5 seconds; that delay is what keeps the feed from skipping changes. A connection-scoped feed has no delay.

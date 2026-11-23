@@ -1,0 +1,34 @@
+---
+title: "Manage your team"
+description: "Invite teammates to the dashboard, change their roles, and remove them."
+---
+
+Your team is shared across your account's environments. Each member has one [role](/dashboard/roles). Only admins can change the team.
+
+## Invite a teammate
+
+<Steps>
+  <Step title="Open the team settings">
+    In the dashboard, open **Settings** and select the **Team** tab.
+  </Step>
+  <Step title="Send the invitation">
+    Select **Invite**, enter your teammate's email address, and choose a role: **Admin**, **Developer** or **Support**.
+  </Step>
+  <Step title="Your teammate accepts">
+    They receive an email invitation. After they sign in, they appear in the member list with the role you chose.
+  </Step>
+</Steps>
+
+## Change a role or remove a member
+
+On the **Team** tab, change a member's role or remove them. Changes apply to the member's next request.
+
+Every invitation, role change and removal is recorded in the [audit log](/dashboard/audit-log) as `member.invited`, `member.role_changed` or `member.removed`.
+
+## Who can see the team
+
+Every member can see the member list. Only admins can invite, change or remove members; others get `403 role_required`.
+
+<Note>
+  Team management is a dashboard feature. API keys can't manage members.
+</Note>

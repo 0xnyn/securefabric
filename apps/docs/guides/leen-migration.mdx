@@ -1,0 +1,52 @@
+---
+title: "Migrate from Leen"
+description: "Move a Leen V2 integration to SecureFabric with a handful of changes."
+---
+
+SecureFabric's data API is wire-compatible with Leen V2: the same resources and vulnerability findings, the same field names and values, the same filters and the same pagination envelope. SecureFabric's responses are tested against Leen's published OpenAPI document on every change. A Leen client needs the changes below and nothing else.
+
+## Required changes
+
+<Steps>
+  <Step title="Change the base URL and version">
+    Replace `https://api.leen.dev/v2` with `https://api.securefabric.dev/v1`. For example, `GET /v2/vulnerability_findings` becomes `GET /v1/vulnerability_findings`, and `GET /v2/resources` becomes `GET /v1/resources`.
+  </Step>
+  <Step title="Use a SecureFabric API key">
+    Create a key in the dashboard under **API keys**, or with `POST /v1/api_keys`. Send it as before in `X-API-KEY`, or as `Authorization: Bearer sfk_…`. See [Authentication](/api-reference/authentication).
+  </Step>
+  <Step title="Reconnect your customers' tools">
+    Connections are created again through SecureFabric's [connect UI](/connect/overview), so they get new IDs. `X-CONNECTION-ID` works as in Leen, with the new IDs.
+  </Step>
+  <Step title="Switch your webhook verifier">
+    Leen signs `X-Leen-Signature: v0=sha256=<hex>`. SecureFabric signs `SecureFabric-Signature: v1=<hex>` with `SecureFabric-Timestamp`. The signed message (`{timestamp}.{raw body}`, HMAC-SHA256) is the same, so only the header names and the `v1=` prefix change. See [Verify webhook signatures](/webhooks/verify-signatures).
+  </Step>
+  <Step title="Map the changed health codes">
+    Leen's resolution owner `LEEN` is `PLATFORM` in SecureFabric. Leen's `CONNECTION_RECONFIGURATION_REQUIRED` is split into `CONFIGURATION_ERROR` (options or base URL wrong) and `REAUTHORIZATION_REQUIRED` (token refresh keeps failing). See [Connection health](/concepts/connection-health).
+  </Step>
+</Steps>
+
+## Behavior that differs
+
+These differences are compatible, but worth knowing:
+
+- **Cursors with filters.** Leen returns `422` when you send `cursor` together with `updatedSince`. SecureFabric accepts a cursor with the same filters it was created with, and returns `400 cursor_filter_mismatch`, naming the parameter, if they differ. Code that never combined them is unaffected.
+- **Unsupported filters.** A filter no connector in scope can evaluate is named in the `X-Unsupported-Filters` response header instead of being silently ignored.
+- **Errors** are `application/problem+json` with a stable `code`, a `request_id` and, for validation errors, `errors[].field`. See [Errors](/api-reference/errors).
+- **Unknown query parameters** fail with `400 unknown_parameter`, naming each one.
+
+## What you can adopt later
+
+- **Organization scope.** Send `X-ORGANIZATION-ID` instead of `X-CONNECTION-ID` to read every connection of one [organization](/concepts/organizations) at once.
+- **More filters and sorts.** `type`, `cveId` (also matches GHSA aliases), `changeType=added,updated,deleted` for a change feed that includes deletions, `include=resources`, and sorts on `first_seen` and `last_seen`. See [Filtering and sorting](/api-reference/filtering-and-sorting).
+- **More endpoints.** Finding state history, finding counts, and CVE lookups with NVD, KEV and EPSS data. See [Findings](/concepts/findings).
+- **More fields.** `_meta` on every record, `enrichment` and `cve_ids` on findings, and repository details in `data`.
+- **Write-back.** [Update a finding's state](/guides/update-finding-state) in the vendor.
+- **More events.** `sync.completed`, `connection.health.changed`, lifecycle and action events, and the [event feed](/concepts/events#pull-the-event-feed). See [Event types](/webhooks/event-types).
+
+## Checklist
+
+- [ ] Base URL and `/v1` prefix changed
+- [ ] SecureFabric API key in `X-API-KEY` or `Authorization`
+- [ ] Connections created again, stored connection IDs updated
+- [ ] Webhook verifier reads `SecureFabric-Signature` and `SecureFabric-Timestamp`
+- [ ] Health-code handling covers `PLATFORM`, `CONFIGURATION_ERROR` and `REAUTHORIZATION_REQUIRED`

@@ -1,0 +1,64 @@
+---
+title: "Retries and replay"
+description: "What happens when your endpoint fails, and how to get missed events back."
+---
+
+## Retries
+
+When a delivery fails with a `5xx`, `408` or `429` status, a timeout, or a network error, SecureFabric retries it on this schedule, with up to 10% jitter:
+
+| Attempt | Delay after the previous attempt |
+|---|---|
+| 2 | 10 seconds |
+| 3 | 1 minute |
+| 4 | 5 minutes |
+| 5 | 30 minutes |
+| 6 | 2 hours |
+| 7 | 6 hours |
+| 8 | 12 hours |
+| 9 | 24 hours |
+
+Retries span about 45 hours. A delivery that still fails after the last attempt is marked `DEAD`.
+
+Any other `4xx` response fails the delivery permanently, without retries: a `401` or `410` won't fix itself. Fix your endpoint, then [replay](#replay-deliveries).
+
+<Tip>
+  Retries reuse the event ID, and a replay can send an event you already processed. Deduplicate on `SecureFabric-Event-Id`.
+</Tip>
+
+## Endpoints that keep failing
+
+If an endpoint keeps failing for 5 days, SecureFabric disables it and sets `disabled_reason`. Events that occur while it is disabled are not delivered to it. They stay available in the [event feed](/concepts/events#pull-the-event-feed).
+
+Re-enable it once it works again:
+
+```bash
+curl -X PATCH https://api.securefabric.dev/v1/webhook_endpoints/$ENDPOINT_ID \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"enabled": true}'
+```
+
+## Inspect deliveries
+
+`GET /v1/webhook_endpoints/{endpoint_id}/deliveries` lists the endpoint's recent deliveries with their `status`, `attempts`, `last_status_code`, `last_error`, `next_attempt_at` and a log of each attempt. Filter with `status`. The dashboard shows the same log under **Webhooks**.
+
+## Replay deliveries
+
+Replay one delivery, including a `DEAD` or failed one:
+
+```bash
+curl -X POST https://api.securefabric.dev/v1/webhook_deliveries/$DELIVERY_ID/replay \
+  -H "Authorization: Bearer $SF_API_KEY"
+```
+
+Replay every delivery of an endpoint created in a time range:
+
+```bash
+curl -X POST https://api.securefabric.dev/v1/webhook_endpoints/$ENDPOINT_ID/replay \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"since": "2026-12-01T00:00:00Z", "until": "2026-12-02T00:00:00Z"}'
+```
+
+The response says how many deliveries were queued. Replays start a fresh retry schedule and are recorded in the [audit log](/dashboard/audit-log).

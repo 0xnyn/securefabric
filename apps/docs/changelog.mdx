@@ -1,0 +1,19 @@
+---
+title: "Changelog"
+description: "New features, connectors and API changes."
+icon: "clock-rotate-left"
+---
+
+<Update label="2026-11-24" description="API v1 beta" tags={["API", "Connectors", "Webhooks"]}>
+  ## SecureFabric API v1 beta
+
+  The first public version of the SecureFabric API and these docs.
+
+  - **Data API**: findings and resources in one normalized model, wire-compatible with Leen V2. Keyset pagination, an incremental feed that includes deletions, organization-wide reads, and CVE enrichment from NVD, KEV and EPSS.
+  - **Connectors**: [GitHub Advanced Security](/connectors/github) (beta), covering code scanning, secret scanning and Dependabot alerts with repositories and branches, and the [SecureFabric Sandbox](/connectors/sandbox) for testing.
+  - **Connect UI**: a hosted, brandable flow your customers use to connect their tools, with [connect-js](/connect/embed) to embed it.
+  - **Connection health**: one health code per connection, with who can fix it.
+  - **Webhooks**: signed events with retries, replay, and an event feed.
+  - **Write-back**: [update a finding's state](/guides/update-finding-state) in the vendor.
+  - **Typed clients** for [TypeScript](/api-reference/clients/typescript) and [Python](/api-reference/clients/python), generated from the OpenAPI document.
+</Update>

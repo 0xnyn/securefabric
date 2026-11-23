@@ -1,0 +1,53 @@
+---
+title: "Organizations"
+description: "Represent each of your customers, and group their connections."
+---
+
+An organization represents one of your customers. Every [connection](/concepts/connections) belongs to one organization, and you can read the data of all of an organization's connections at once.
+
+## Create an organization
+
+```bash
+curl https://api.securefabric.dev/v1/organizations \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"identifier": "acme", "name": "Acme Corp", "metadata": {"plan": "enterprise"}}'
+```
+
+| Field | Rules |
+|---|---|
+| `identifier` | Your ID for the customer, 1 to 255 characters. Unique among the environment's organizations. A duplicate is `409 organization_exists`. |
+| `name` | A display name, 1 to 255 characters. |
+| `metadata` | Optional JSON object for your own data. |
+
+Requires the `provisioning:write` scope.
+
+## Find an organization
+
+`GET /v1/organizations` filters by `identifier`, `name`, `id`, `ids` (comma-separated) and `search`, and returns pages of results. See [Pagination](/api-reference/pagination).
+
+```bash
+curl "https://api.securefabric.dev/v1/organizations?identifier=acme" \
+  -H "Authorization: Bearer $SF_API_KEY"
+```
+
+## Read an organization's data
+
+Send `X-ORGANIZATION-ID` instead of `X-CONNECTION-ID` on a data request to read every connection of the organization at once:
+
+```bash
+curl "https://api.securefabric.dev/v1/vulnerability_findings?state=OPEN" \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "X-ORGANIZATION-ID: $ORG_ID"
+```
+
+Add `connectionId` to narrow the request to some of the organization's connections.
+
+<Note>
+  Organization-wide reads hold back records changed in the last 5 seconds, so that an incremental reader never skips a change. Connection-scoped reads see changes immediately. See [Sync findings incrementally](/guides/sync-incrementally).
+</Note>
+
+## Delete an organization
+
+`DELETE /v1/organizations/{organization_id}` fails with `409 organization_has_connections` while the organization has connections. [Delete its connections](/concepts/connections#delete-a-connection) first.

@@ -1,0 +1,75 @@
+---
+title: "Syncs and streams"
+description: "How SecureFabric keeps a connection's data current, and how you trigger, follow and reset syncs."
+---
+
+A connector reads a vendor as a set of **streams**. Each stream is one kind of data, such as GitHub's `repositories` or `dependabot_alerts`, and produces either [resources](/concepts/resources) or [findings](/concepts/findings). A **job** syncs one or more streams of a connection.
+
+## When syncs run
+
+| Job type | Started by |
+|---|---|
+| `INITIAL` | The connection becoming `ACTIVE`. |
+| `SCHEDULED` | Each stream's interval. GitHub streams default to every hour. |
+| `ON_DEMAND` | You, with `POST /v1/connections/{connection_id}/jobs`, or resuming a paused connection. |
+| `WEBHOOK` | A vendor webhook, such as a GitHub alert being dismissed. SecureFabric refetches only the changed records. |
+| `RETRY` | A retry of a failed sync. |
+
+Vendor webhooks are signals, not data: SecureFabric fetches the record from the vendor before it changes anything. A change on the vendor's side usually reaches the API within seconds.
+
+## How streams sync
+
+| Mode | What a sync reads |
+|---|---|
+| `incremental` | What changed since the last sync. Most finding streams. Some also run a periodic full pass to catch changes the vendor doesn't timestamp. |
+| `full` | Everything, every time. Usually resource streams. |
+| `export` | A bulk export the vendor prepares. |
+
+Records that disappear from the vendor become deleted in SecureFabric, either because the vendor reports it or because a full listing no longer includes them. Deleted records appear in the [incremental feed](/guides/sync-incrementally) with `state: DELETED`.
+
+Each connector page lists its streams, modes and intervals, for example [GitHub](/connectors/github#streams).
+
+## Start a sync now
+
+```bash
+curl https://api.securefabric.dev/v1/connections/$CONNECTION_ID/jobs \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"streams": ["dependabot_alerts"]}'
+```
+
+| Field | Meaning |
+|---|---|
+| `streams` | Streams to sync. Omit to sync every enabled stream. An unknown stream is `422 invalid_streams`. |
+| `force_full_refresh` | Read everything instead of only changes. |
+| `since` | For incremental streams, read changes since this time. |
+
+If a requested stream is already syncing, the API returns that job instead of starting another. Requires the `jobs:execute` scope.
+
+## Follow a job
+
+`GET /v1/jobs/{job_id}` returns the job's `status` and one entry per stream with its counts: `added`, `updated`, `deleted`, `unchanged`, `quarantined`, `pages` and `vendor_requests`.
+
+| Job status | Meaning |
+|---|---|
+| `QUEUED` | Waiting to start. |
+| `RUNNING` | At least one stream is running. |
+| `SUCCESS` | Every stream finished. |
+| `PARTIAL` | Some streams finished and some failed. |
+| `FAILED` | The job failed. `health_code` says why. |
+| `CANCELLED` | Cancelled by you, or by pausing or deleting the connection. |
+
+`GET /v1/jobs/{job_id}/logs` returns the job's log lines. When a job finishes you receive [`sync.completed`](/webhooks/event-types#sync-completed) with the counts per stream.
+
+## Cancel a job
+
+`POST /v1/jobs/{job_id}/cancel` stops a job. Streams that haven't started are cancelled at once; running streams stop after the page they are reading.
+
+## Reset a connection
+
+`POST /v1/connections/{connection_id}/reset` forgets where each stream left off and starts a full sync. Use it when you suspect the data has drifted from the vendor. Records that didn't change are not counted as updated.
+
+- Pass `streams` to reset only some streams.
+- Pass `"wipe": true` to delete the streams' records first. In the dashboard, only admins can wipe.
+- A reset while a stream is running fails with `409 sync_in_progress`. [Cancel the job](#cancel-a-job) or wait.

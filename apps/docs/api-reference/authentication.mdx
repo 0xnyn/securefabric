@@ -1,0 +1,88 @@
+---
+title: "Authentication"
+description: "Authenticate with API keys, choose their scopes, and rotate them safely."
+---
+
+Every request, except the public connector catalogue and the unauthenticated status check, needs an API key.
+
+## Send your API key
+
+Send the key as a bearer token, or in the `X-API-KEY` header that Leen clients use:
+
+<CodeGroup>
+```bash Authorization header
+curl https://api.securefabric.dev/v1/organizations \
+  -H "Authorization: Bearer sfk_live_us_..."
+```
+
+```bash X-API-KEY header
+curl https://api.securefabric.dev/v1/organizations \
+  -H "X-API-KEY: sfk_live_us_..."
+```
+</CodeGroup>
+
+Keep keys on your servers. Never put an API key in a browser, a mobile app or a repository. To let your customers connect tools from your frontend, use a [connect session](/connect/overview) instead.
+
+## API keys
+
+A key looks like `sfk_<live|test>_<region>_<random>`:
+
+- `sfk_live_` keys belong to a production [environment](/concepts/environments); `sfk_test_` keys to any other.
+- The region is where your data is stored. A key works only against its own region (`401 wrong_region`).
+- A key belongs to exactly one environment. You don't need to send `X-Environment-Id`; if you do and it names another environment, the request fails with `404 environment_not_found`.
+
+### Create a key
+
+Create keys in the dashboard under **API keys**, or with the API:
+
+```bash
+curl https://api.securefabric.dev/v1/api_keys \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Findings sync", "scopes": ["data:read"], "expires_at": "2027-12-31T00:00:00Z"}'
+```
+
+The full key is in the response's `key` field, and is shown only once. Later, the API and dashboard show only its `prefix`. Omit `scopes` to grant every scope, and omit `expires_at` for a key that doesn't expire. Creating keys requires the `keys:manage` scope, and a key can't create a key with scopes it lacks (`403 scope_escalation`).
+
+### Rotate a key
+
+You can have several active keys per environment. To rotate one without downtime:
+
+1. Create a new key with the same scopes.
+2. Deploy it.
+3. Revoke the old key with `DELETE /v1/api_keys/{key_id}`, or in the dashboard.
+
+A revoked key stops working everywhere within 60 seconds. `last_used_at` on each key helps you find keys nobody uses.
+
+## Scopes
+
+Give each key only the scopes it needs. Each endpoint page in this reference shows the scope it requires.
+
+| Scope | Allows |
+|---|---|
+| `provisioning:read` | Read organizations, integrations, vendor apps, connections, connect sessions, jobs, actions, operations and usage. |
+| `provisioning:write` | Create, change and delete organizations, integrations, vendor apps and connections; create connect sessions. |
+| `data:read` | Read findings, resources, CVE data and the event feed; send passthrough requests. |
+| `jobs:execute` | Start, cancel and reset syncs. |
+| `webhooks:manage` | Manage webhook endpoints, read deliveries, and replay them. |
+| `keys:manage` | Create, list and revoke API keys. |
+| `actions:write` | [Update a finding's state](/guides/update-finding-state) in the vendor. |
+
+`GET /v1/me` and `GET /v1/environments` work with any valid key. A request without the scope it needs fails with `403 scope_missing`, and `detail` names the missing scope.
+
+Dashboard members get scopes from their [role](/dashboard/roles).
+
+## Connect session tokens
+
+A connect session token (`sfcs_…`) authorizes the hosted connect UI for one organization for 30 minutes. It works only on the `/v1/connect/*` endpoints; anywhere else it fails with `401 invalid_credential_for_route`. You don't normally use it directly: [connect-js](/connect/embed) and the hosted page do.
+
+## Authentication errors
+
+| Code | What happened | How to fix it |
+|---|---|---|
+| `401 unauthenticated` | The request had no credentials. | Send `Authorization: Bearer sfk_…` or `X-API-KEY`. |
+| `401 invalid_api_key` | The key is malformed, unknown, expired or revoked. | Check you copied the whole key. Create a new one if it was revoked or expired. |
+| `401 wrong_region` | The key belongs to another region. | Call the API host of the key's region. |
+| `401 invalid_credential_for_route` | A connect session token was sent to an endpoint outside `/v1/connect/*`. | Use an API key. |
+| `403 scope_missing` | The key lacks the scope this endpoint needs. | Create a key with the scope named in `detail`. |
+| `404 environment_not_found` | `X-Environment-Id` names an environment the key doesn't belong to. | Remove the header. |

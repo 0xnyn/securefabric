@@ -1,0 +1,27 @@
+---
+title: "Versioning"
+description: "What can change within v1, and how to write a client that keeps working."
+---
+
+The API version is in the path: every endpoint is under `/v1`. Within `v1`, SecureFabric makes only additive changes.
+
+## Changes that can happen within v1
+
+- New endpoints.
+- New optional request parameters and fields.
+- New response fields.
+- New values in enumerations, such as a new `severity`, finding `type`, resource `type`, health code or event type.
+- New [connectors](/connectors/overview) and streams.
+
+A change that removes or renames something, or changes a field's meaning, would come with a new version.
+
+## Write a tolerant client
+
+- **Ignore fields you don't know.** Don't fail on new response fields.
+- **Handle unknown enum values.** Treat an unknown `severity` or `type` as `UNKNOWN` rather than an error. The generated clients type these fields as strings for this reason.
+- **Ignore event types you don't handle,** and still answer `2xx` so they aren't retried.
+- **Branch on error `code`,** never on `detail` text.
+
+## Changelog
+
+Every change to the API is listed in the [changelog](/changelog).

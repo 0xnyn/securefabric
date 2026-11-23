@@ -1,0 +1,45 @@
+---
+title: "Wiz vulnerability findings"
+sidebarTitle: "Wiz vulnerabilities"
+description: "Coming soon: findings and resources from Wiz vulnerability findings."
+icon: "/logo/connectors/wiz.png"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Planned. Work starts once SecureFabric has partner access to the vendor, so there is no date yet. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `WIZ_VMS` |
+| Category | Vulnerability management |
+| Expected | When partner access is in place |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `HOST`, `CONTAINER`, `IMAGE`, `KUBERNETES` |
+| Findings | `HOST`, `CONTAINER`, `DEPENDENCY` |
+
+From Wiz vulnerabilities:
+
+- Vulnerability findings
+- Cloud resources
+
+### How it will stay current
+
+Each sync reads findings updated since the last sync.
+
+## What your customers will need
+
+- A Wiz service account.
+
+## Good to know
+
+- Wiz applies one rate limit per service account, shared with [Wiz Code](/connectors/wiz-code).
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.

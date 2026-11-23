@@ -1,0 +1,88 @@
+---
+title: "SecureFabric Sandbox"
+sidebarTitle: "Sandbox"
+description: "Synthetic hosts, images and findings of every type and state, for building and testing without a vendor account."
+icon: "/favicon.svg"
+---
+
+The Sandbox connector is a synthetic vendor. It serves hosts, container images and findings of every type and state, never calls the network, and can simulate vendor failures on demand. Use it to build your integration before you connect a real tool, and to test how your product handles errors.
+
+| | |
+|---|---|
+| Connector ID | `SANDBOX` |
+| Status | Generally available |
+| Connects by | Credential form |
+| Finding types | Every type: `HOST`, `CONTAINER`, `DEPENDENCY`, `CODE`, `SECRET`, `IAC`, `DOMAIN`, `UNKNOWN` |
+| Resource types | `HOST`, `IMAGE`, `CONTAINER` |
+| Write-back | Yes |
+| Billing | Not billed |
+
+## Connect the Sandbox
+
+Create a connection through a [connect session](/connect/overview) offering `SANDBOX`, or directly:
+
+```bash
+curl https://api.securefabric.dev/v1/organizations/$ORG_ID/connections \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"vendor": "SANDBOX", "credentials": {"api_key": "sbx_demo_key"}}'
+```
+
+The API key can be any value that starts with `sbx_` followed by at least four letters, digits or underscores. A key that starts with `sbx_revoked_` is rejected, so you can test a failed connection.
+
+## Streams
+
+| Stream | Produces | Sync | Default interval | Allowed interval |
+|---|---|---|---|---|
+| `hosts` | Resources: `HOST` | Full | 1 hour | 5 minutes to 1 day |
+| `images` | Resources: `IMAGE`, `CONTAINER` | Full | 1 hour | 5 minutes to 1 day |
+| `findings` | Findings: every type | Incremental, full pass weekly | 1 hour | 5 minutes to 1 day |
+| `finding_exports` | Findings: every type, by bulk export | Export | 1 day | 1 hour to 3 days |
+
+`finding_exports` is off by default; enable it on the [integration](/concepts/integrations). It returns the same findings as `findings`, through the export flow some vendors use for large datasets.
+
+Every finding field is supported, including `has_fix`, `exploitable` and `reachability`.
+
+## Options
+
+| Option | Values | Default | Effect |
+|---|---|---|---|
+| `region` | `us`, `eu` | `us` | The sandbox region. |
+| `seed` | 0 or more | `42` | The same seed always produces the same data. |
+| `host_count` | 0 to 100,000 | `25` | Number of hosts. |
+| `image_count` | 0 to 100,000 | `10` | Number of images. |
+| `finding_count` | 0 to 2,000,000 | `120` | Number of findings. |
+| `page_size` | 1 to 1,000 | `50` | Records per vendor page. |
+| `scenario` | See below | `none` | A vendor behavior to simulate. |
+
+## Simulate vendor failures
+
+Set the `scenario` option to see how SecureFabric, and your product, handle a misbehaving vendor:
+
+| Scenario | The simulated vendor |
+|---|---|
+| `none` | Behaves normally. |
+| `rate_limit_short` | Rate-limits once for 2 seconds. |
+| `rate_limit_20m` | Rate-limits once for 20 minutes, partway through the findings. |
+| `fail_every_3rd_page` | Returns a server error on every third page. |
+| `server_errors` | Returns server errors on every request. |
+| `revoke_mid_run` | Revokes the credentials partway through a sync. |
+| `forbidden` | Refuses access to findings. |
+| `not_found` | Reports findings as not found. |
+| `empty_listing` | Returns empty lists. |
+| `expire_export` | Lets one bulk export expire before it is downloaded. |
+
+Watch the result in the connection's [health](/concepts/connection-health), its jobs, and your webhooks.
+
+## Write-back
+
+The Sandbox records [`set_state`](/guides/update-finding-state) actions: `IGNORED` or `CLOSED` with `false_positive`, `accepted_risk` or `test_code`, and `OPEN`. It needs no write permissions, so it works without turning on write-back on the integration.
+
+## OAuth variants
+
+Two more Sandbox connectors use the same synthetic data with other ways of connecting, so you can test those flows:
+
+| Connector ID | Connects by |
+|---|---|
+| `SANDBOX_OAUTH` | An OAuth 2.0 authorization code flow with PKCE, through a redirect, like a real OAuth vendor. |
+| `SANDBOX_CC` | OAuth 2.0 client credentials. The client ID is any value starting with `sbxc_`; `GET /v1/connectors/SANDBOX_CC` explains how to derive the matching client secret. |

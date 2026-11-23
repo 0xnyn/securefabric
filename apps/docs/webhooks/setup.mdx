@@ -1,0 +1,72 @@
+---
+title: "Set up webhooks"
+description: "Register an HTTPS endpoint and receive signed events."
+---
+
+SecureFabric posts [events](/concepts/events) to HTTPS endpoints you register. Each delivery is signed so you can check it came from SecureFabric.
+
+<Steps>
+  <Step title="Register an endpoint">
+    ```bash
+    curl https://api.securefabric.dev/v1/webhook_endpoints \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: $(uuidgen)" \
+      -d '{
+        "url": "https://example.com/webhooks/securefabric",
+        "description": "Production receiver",
+        "event_types": ["sync.completed", "connection.health.changed"]
+      }'
+    ```
+
+    | Field | Rules |
+    |---|---|
+    | `url` | HTTPS, at most 2,048 characters, on a public address. |
+    | `event_types` | The [event types](/webhooks/event-types) to send. Empty or omitted means every type. |
+    | `enabled` | `true` by default. |
+
+    Requires the `webhooks:manage` scope. You can also register endpoints in the dashboard under **Webhooks**.
+  </Step>
+
+  <Step title="Store the signing secret">
+    The response includes `secret`, starting with `whsec_`. It is shown once. Store it with your other secrets; later responses show only `secret_hint`, its last four characters.
+  </Step>
+
+  <Step title="Verify each delivery">
+    Check the signature before you trust the body. See [Verify webhook signatures](/webhooks/verify-signatures).
+  </Step>
+
+  <Step title="Send a test event">
+    ```bash
+    curl -X POST https://api.securefabric.dev/v1/webhook_endpoints/$ENDPOINT_ID/ping \
+      -H "Authorization: Bearer $SF_API_KEY"
+    ```
+
+    Your endpoint receives a `webhook.ping` event. `GET /v1/webhook_endpoints/{endpoint_id}/deliveries` shows the result.
+  </Step>
+</Steps>
+
+## The request
+
+Each delivery is a `POST` with the [event object](/concepts/events#the-event-object) as its JSON body and these headers:
+
+| Header | Value |
+|---|---|
+| `SecureFabric-Event-Id` | The event ID, `evt_…`. The same on every retry: deduplicate on it. |
+| `SecureFabric-Event-Type` | The event type, such as `sync.completed`. |
+| `SecureFabric-Delivery-Id` | This delivery's ID. |
+| `SecureFabric-Timestamp` | Unix seconds when this attempt was signed. |
+| `SecureFabric-Signature` | `v1=<hex>`. Two comma-separated values for 24 hours after you rotate the secret. |
+| `User-Agent` | `SecureFabric-Webhooks/1` |
+
+## Respond
+
+- Return any `2xx` status within 15 seconds. Do slow work after you respond.
+- SecureFabric doesn't follow redirects.
+- `5xx`, `408`, `429` and network errors are retried. Other `4xx` responses are not. See [Retries and replay](/webhooks/retries-and-replay).
+
+## Limits
+
+- At most 5 endpoints per environment. A sixth fails with `409 endpoint_limit`.
+- A URL that isn't HTTPS or is too long fails with `422 invalid_url`. An unknown event type fails with `422 invalid_event_types`.
+- An endpoint that resolves to a private or reserved address is refused at delivery time and not retried.

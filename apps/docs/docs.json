@@ -1,0 +1,184 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "SecureFabric",
+  "description": "One API for vulnerability and application security data from your customers' security tools.",
+  "colors": {
+    "primary": "#533AFD",
+    "light": "#9B8CFF",
+    "dark": "#533AFD"
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "/"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": ["index", "quickstart", "glossary"]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "concepts/environments",
+              "concepts/organizations",
+              "concepts/integrations",
+              "concepts/connections",
+              "concepts/syncs",
+              "concepts/connection-health",
+              "concepts/findings",
+              "concepts/resources",
+              "concepts/events"
+            ]
+          },
+          {
+            "group": "How-to guides",
+            "pages": [
+              "guides/sync-incrementally",
+              "guides/update-finding-state",
+              "guides/leen-migration"
+            ]
+          },
+          {
+            "group": "Connect UI",
+            "pages": [
+              "connect/overview",
+              "connect/embed",
+              "connect/reauthorize",
+              "connect/branding"
+            ]
+          },
+          {
+            "group": "Webhooks",
+            "pages": [
+              "webhooks/setup",
+              "webhooks/event-types",
+              "webhooks/verify-signatures",
+              "webhooks/retries-and-replay"
+            ]
+          },
+          {
+            "group": "Dashboard",
+            "pages": [
+              "dashboard/roles",
+              "dashboard/team",
+              "dashboard/audit-log",
+              "dashboard/status"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Connectors",
+        "icon": "plug",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["connectors/overview"]
+          },
+          {
+            "group": "Available",
+            "pages": ["connectors/github", "connectors/sandbox"]
+          },
+          {
+            "group": "Coming in February 2027",
+            "tag": "Soon",
+            "pages": [
+              "connectors/tenable",
+              "connectors/microsoft-defender",
+              "connectors/aws-inspector",
+              "connectors/qualys",
+              "connectors/gitlab",
+              "connectors/sonarqube",
+              "connectors/semgrep",
+              "connectors/aikido",
+              "connectors/socket"
+            ]
+          },
+          {
+            "group": "Planned with partner access",
+            "tag": "Soon",
+            "pages": [
+              "connectors/crowdstrike-spotlight",
+              "connectors/wiz-vulnerabilities",
+              "connectors/wiz-code",
+              "connectors/snyk",
+              "connectors/upwind",
+              "connectors/tanium"
+            ]
+          },
+          {
+            "group": "Planned for March to April 2027",
+            "tag": "Soon",
+            "pages": [
+              "connectors/rapid7-insightvm",
+              "connectors/sentinelone",
+              "connectors/microsoft-defender-gcc-high",
+              "connectors/mend",
+              "connectors/orca",
+              "connectors/checkmarx",
+              "connectors/black-duck-sca",
+              "connectors/black-duck-coverity",
+              "connectors/arnica",
+              "connectors/heeler"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "icon": "code",
+        "openapi": "api-reference/openapi.json",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "api-reference/introduction",
+              "api-reference/authentication",
+              "api-reference/errors",
+              "api-reference/pagination",
+              "api-reference/filtering-and-sorting",
+              "api-reference/rate-limits",
+              "api-reference/idempotency",
+              "api-reference/versioning"
+            ]
+          },
+          {
+            "group": "Typed clients",
+            "pages": [
+              "api-reference/clients/typescript",
+              "api-reference/clients/python"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Changelog",
+        "icon": "clock-rotate-left",
+        "pages": ["changelog"]
+      }
+    ]
+  },
+  "api": {
+    "playground": {
+      "display": "interactive"
+    },
+    "examples": {
+      "languages": ["curl", "javascript", "python"],
+      "defaults": "required"
+    }
+  },
+  "redirects": [
+    {
+      "source": "/errors/:code",
+      "destination": "/api-reference/errors"
+    }
+  ]
+}

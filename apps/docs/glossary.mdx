@@ -1,0 +1,31 @@
+---
+title: "Glossary"
+description: "The terms these docs use, each with one meaning."
+icon: "book"
+---
+
+These docs use each term below with exactly one meaning.
+
+| Term | Meaning |
+|---|---|
+| **Account** | Your company's SecureFabric account. It holds your environments and your team. |
+| **Environment** | An isolated space inside your account, such as `dev` or `prod`. API keys, organizations, connections, data and webhooks all belong to one environment. See [Environments](/concepts/environments). |
+| **Live environment, test environment** | A production environment issues `sfk_live_` keys. Any other environment issues `sfk_test_` keys. |
+| **API key** | A secret (`sfk_live_…` or `sfk_test_…`) your backend uses to call the API. It belongs to one environment and carries [scopes](/api-reference/authentication#scopes). |
+| **Scope** | A permission an API key or dashboard role carries, such as `data:read`. |
+| **Organization** | One of your customers. Every connection belongs to one organization. See [Organizations](/concepts/organizations). |
+| **Connector** | SecureFabric's support for one vendor product, identified by an ID such as `GITHUB`. See [Connectors](/connectors/overview). |
+| **Integration** | A connector enabled and configured in one environment: which streams it syncs, how often, and whether write-back is on. See [Integrations](/concepts/integrations). |
+| **Vendor app** | A registration on the vendor's side that connections authenticate through, such as a GitHub App. SecureFabric provides default vendor apps; you can register your own. |
+| **Connection** | One vendor tenant, such as one GitHub organization, connected for one organization through one integration. See [Connections](/concepts/connections). |
+| **Connect session** | A single-use, 30-minute link to the hosted connect UI, where your customer authorizes a connection. See [Connect UI](/connect/overview). |
+| **Stream** | One kind of data a connector syncs, such as `dependabot_alerts` or `repositories`. |
+| **Job** | One sync of one or more streams of a connection. See [Syncs and streams](/concepts/syncs). |
+| **Health code** | The state of a connection's last syncs, such as `HEALTHY` or `UNAUTHORIZED`, with who can fix it. See [Connection health](/concepts/connection-health). |
+| **Finding** | A vulnerability finding: one security issue a tool reports, such as a Dependabot alert. See [Findings](/concepts/findings). |
+| **Resource** | A thing findings are about, such as a repository, host or container image. See [Resources](/concepts/resources). |
+| **Event** | A record that something happened, such as `sync.completed`. See [Events](/concepts/events). |
+| **Webhook endpoint** | An HTTPS URL of yours that SecureFabric sends events to. |
+| **Delivery** | One event sent to one webhook endpoint, with its attempts. |
+| **Action** | A change SecureFabric makes in the vendor on your behalf, such as setting a finding's state. See [Update a finding's state](/guides/update-finding-state). |
+| **Dashboard** | The SecureFabric web app where your team manages environments, keys, connections and webhooks. |

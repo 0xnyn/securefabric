@@ -1,0 +1,48 @@
+---
+title: "Snyk"
+sidebarTitle: "Snyk"
+description: "Coming soon: findings and resources from Snyk."
+icon: "/logo/connectors/snyk.svg"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Planned. Work starts once SecureFabric has partner access to the vendor, so there is no date yet. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `SNYK` |
+| Category | AppSec |
+| Expected | When partner access is in place |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `REPOSITORY`, `IMAGE`, `DEPENDENCY` |
+| Findings | `DEPENDENCY`, `CODE`, `CONTAINER`, `IAC` |
+
+Resources: Snyk projects and targets.
+
+From Snyk:
+
+- Issues, per organization and group
+- Projects and targets
+
+### How it will stay current
+
+Each sync reads issues updated since the last sync.
+
+## What your customers will need
+
+- Authorization through a Snyk App, or a service account token on Snyk Enterprise.
+- Your Snyk region: US-01, US-02, EU or AU. Tokens work only in their region.
+
+## Good to know
+
+- Covers Snyk Open Source, Snyk Code, Snyk Container and Snyk IaC.
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.

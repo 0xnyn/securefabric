@@ -1,0 +1,46 @@
+---
+title: "Tanium Comply"
+sidebarTitle: "Tanium"
+description: "Coming soon: findings and resources from Tanium Comply."
+icon: "/logo/connectors/tanium.svg"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Planned. Work starts once SecureFabric has partner access to the vendor, so there is no date yet. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `TANIUM_VMS` |
+| Category | Vulnerability management |
+| Expected | When partner access is in place |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `HOST` |
+| Findings | `HOST` |
+
+From Tanium:
+
+- Endpoints
+- Endpoint compliance findings
+
+### How it will stay current
+
+Each sync reads endpoints and their CVE findings through the Tanium API Gateway.
+
+## What your customers will need
+
+- A Tanium API token with Asset: Read and Comply: Read.
+- Tanium Comply, with the Comply CVE Findings sensor installed.
+
+## Good to know
+
+- Works with Tanium Cloud and on-premises deployments.
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.

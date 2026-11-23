@@ -1,0 +1,85 @@
+---
+title: "Update a finding's state"
+description: "Dismiss, reopen or resolve a finding in the vendor's own tool, from SecureFabric."
+---
+
+An action changes a finding in the vendor on your behalf. Today the action is `set_state`: mark a finding as a false positive, accepted risk or test code, mark a secret as revoked, or reopen it. The vendor records the change, and SecureFabric then reads the finding back from the vendor, so its state always reflects what the vendor accepted.
+
+## Before you start
+
+- For connectors that need write permissions in the vendor, such as GitHub, turn on write-back on the connection's [integration](/concepts/integrations) (`"write_back_enabled": true`). It is off by default.
+- For GitHub, write-back uses an app with write permissions. Turn on write-back before your customers connect, or ask them to [re-authorize](/connect/reauthorize) afterwards.
+- Your API key needs the `actions:write` scope.
+- The connection must be `ACTIVE`.
+
+## Set a finding's state
+
+```bash
+curl https://api.securefabric.dev/v1/vulnerability_findings/$FINDING_ID/actions \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "X-CONNECTION-ID: $CONNECTION_ID" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Prefer: wait=10" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "set_state", "state": "IGNORED", "reason": "false_positive", "comment": "Not reachable in production"}'
+```
+
+| Field | Rules |
+|---|---|
+| `action` | `set_state`. |
+| `state` | `OPEN`, `IGNORED` or `CLOSED`. |
+| `reason` | Required for `IGNORED` and `CLOSED`: `false_positive`, `accepted_risk`, `test_code` or `revoked`. |
+| `comment` | Optional, up to 2,000 characters. Recorded in the vendor where it supports comments. |
+
+The `Idempotency-Key` header is required for actions, so a retried request never changes the vendor twice. The request needs a scope header, `X-CONNECTION-ID` or `X-ORGANIZATION-ID`, like any data request.
+
+## Follow the result
+
+The API answers `202` with the action:
+
+```json
+{
+  "id": "0193b7d0-…",
+  "finding_id": "0193b7a2-…",
+  "connection_id": "0193b79f-…",
+  "name": "finding.set_state",
+  "params": { "state": "IGNORED", "reason": "false_positive", "comment": "Not reachable in production" },
+  "status": "SUCCEEDED",
+  "message": null,
+  "vendor_response": { "state": "dismissed" },
+  "created_at": "2026-12-01T10:20:00.000Z",
+  "finished_at": "2026-12-01T10:20:01.000Z"
+}
+```
+
+`status` is `PENDING` until the vendor answers, then `SUCCEEDED` or `FAILED`. With `Prefer: wait=N`, the API waits up to `N` seconds (at most 30) for the answer before it responds. Otherwise, read `GET /v1/actions/{action_id}` or wait for the `action.completed` or `action.failed` [event](/webhooks/event-types#action-completed-and-action-failed).
+
+Shortly after an action succeeds, the finding's `state` changes in SecureFabric and the change appears in the [incremental feed](/guides/sync-incrementally).
+
+<Warning>
+  An action is attempted once. If it fails, read `message`, fix the cause, and send a new request with a new `Idempotency-Key`.
+</Warning>
+
+## What each vendor accepts
+
+Not every vendor can record every state and reason. A combination the vendor can't record fails with `422 reason_unsupported`, and the error lists the combinations it can.
+
+For GitHub:
+
+| Alert type | Accepted |
+|---|---|
+| Code scanning | `IGNORED` with `false_positive`, `accepted_risk` or `test_code`; `OPEN` |
+| Secret scanning | `IGNORED` with `false_positive`, `accepted_risk` or `test_code`; `CLOSED` with `revoked`; `OPEN` |
+| Dependabot | `IGNORED` with `false_positive`, `accepted_risk` or `test_code`; `OPEN` |
+
+## Errors
+
+| Code | What happened | How to fix it |
+|---|---|---|
+| `400 idempotency_key_required` | The request had no `Idempotency-Key`. | Send a unique key per action. |
+| `422 invalid_action` | `action`, `state` or `reason` is missing or not one of the allowed values. | Check the request body against the table above. |
+| `422 write_back_disabled` | The action needs write permissions and write-back is off on the integration. | Set `write_back_enabled` on the integration. |
+| `422 action_unsupported` | The connector doesn't support write-back. | Change the state in the vendor's tool. |
+| `422 reason_unsupported` | The vendor can't record this state with this reason. | Use one of the combinations the error lists. |
+| `422 connection_not_active` | The connection is paused or pending. | Resume or finish connecting it. |
+| `404 finding_not_found` | No finding with that ID in the scope you sent. | Check the ID and the scope header. |

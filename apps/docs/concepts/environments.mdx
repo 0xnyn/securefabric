@@ -1,0 +1,35 @@
+---
+title: "Environments"
+description: "Keep test and production data, keys and webhooks apart."
+---
+
+An environment is an isolated space inside your account. API keys, organizations, integrations, connections, findings, resources and webhook endpoints all belong to exactly one environment. Nothing in one environment is visible from another.
+
+A new account starts with two environments:
+
+| Environment | Production | API key prefix |
+|---|---|---|
+| `dev` | No | `sfk_test_` |
+| `prod` | Yes | `sfk_live_` |
+
+Build and test against `dev`, then repeat the setup in `prod`. Admins can add more environments from the dashboard.
+
+## Choose an environment
+
+- **With an API key**, the key decides the environment. You don't send anything else. If you also send an `X-Environment-Id` header that names a different environment, the request fails with `404 environment_not_found`.
+- **In the dashboard**, pick the environment from the switcher. The dashboard sends `X-Environment-Id` for you.
+
+## Environment settings
+
+Each environment has its own settings, edited by admins in the dashboard under **Settings**:
+
+| Setting | What it does |
+|---|---|
+| Name | The display name. |
+| Allowed redirect origins | HTTPS origins that connect sessions may redirect to after the flow. Empty by default. See [Connect UI](/connect/overview#redirect-after-the-flow). |
+| Connect page branding | Name, logo, accent color and theme of the hosted connect UI. See [Brand the connect UI](/connect/branding). |
+
+## Limits that apply per environment
+
+- [Rate limits](/api-reference/rate-limits) count requests per environment.
+- You can register at most 5 [webhook endpoints](/webhooks/setup) per environment.

@@ -1,0 +1,47 @@
+---
+title: "Microsoft Defender Vulnerability Management"
+sidebarTitle: "Microsoft Defender"
+description: "Coming soon: findings and resources from Microsoft Defender Vulnerability Management."
+icon: "/logo/connectors/microsoft-defender.svg"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Expected in February 2027. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `MS_DEFENDER_VMS` |
+| Category | Vulnerability management |
+| Expected | February 2027 |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `HOST` |
+| Findings | `HOST` |
+
+From Microsoft Defender:
+
+- Software vulnerabilities by machine (full export)
+- Software vulnerability changes by machine (delta export)
+- Machines
+
+### How it will stay current
+
+A full export weekly and a delta export daily. Microsoft refreshes this data every 6 hours, so a change can take up to 6 hours to appear.
+
+## What your customers will need
+
+- A Microsoft Entra administrator to consent to the app, with the Microsoft Defender for Endpoint API permissions `Vulnerability.Read.All`, `Machine.Read.All` and `Software.Read.All`.
+- Microsoft Defender for Endpoint Plan 2, which includes core vulnerability data, or Defender Vulnerability Management.
+
+## Good to know
+
+- For Microsoft's US government cloud, see [Microsoft Defender Vulnerability Management (GCC High)](/connectors/microsoft-defender-gcc-high).
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.

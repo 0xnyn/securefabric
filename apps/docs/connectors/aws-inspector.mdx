@@ -1,0 +1,44 @@
+---
+title: "Amazon Inspector"
+sidebarTitle: "Amazon Inspector"
+description: "Coming soon: findings and resources from Amazon Inspector."
+icon: "/logo/connectors/aws.svg"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Expected in February 2027. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `AWS_INSPECTOR2` |
+| Category | Vulnerability management and AppSec |
+| Expected | February 2027 |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `HOST`, `IMAGE`, `CONTAINER`, `FUNCTION`, `REPOSITORY` |
+| Findings | `HOST`, `CONTAINER`, `DEPENDENCY`, `CODE`, `IAC` |
+
+Resources: EC2 instances as `HOST`, ECR images as `IMAGE`, Lambda functions as `FUNCTION`, and code repositories as `REPOSITORY`.
+
+From Amazon Inspector:
+
+- Inspector findings, per region
+- Inspector coverage, per region
+
+### How it will stay current
+
+Each sync reads findings updated since the last sync, region by region. Amazon Inspector deletes closed findings after 7 days, so syncs run at least daily.
+
+## What your customers will need
+
+- An IAM role SecureFabric can assume with an external ID, or access keys, with the `AmazonInspector2ReadOnlyAccess` and `AmazonEC2ReadOnlyAccess` policies.
+- To cover many accounts, use the Inspector delegated administrator account of your AWS organization.
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.

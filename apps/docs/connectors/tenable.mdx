@@ -1,0 +1,45 @@
+---
+title: "Tenable Vulnerability Management"
+sidebarTitle: "Tenable"
+description: "Coming soon: findings and resources from Tenable Vulnerability Management."
+icon: "/logo/connectors/tenable.svg"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Expected in February 2027. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `TENABLE` |
+| Category | Vulnerability management |
+| Expected | February 2027 |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `HOST` |
+| Findings | `HOST` |
+
+From Tenable:
+
+- Asset exports
+- Vulnerability exports
+
+### How it will stay current
+
+Each sync requests a vulnerability export of what changed since the last successful sync, including fixed vulnerabilities, so findings close when Tenable marks them fixed.
+
+## What your customers will need
+
+- A Tenable Vulnerability Management access key and secret key. Create them for a dedicated user rather than a person's account.
+
+## Good to know
+
+- Tenable Security Center (on-premises) is not covered by this connector.
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.

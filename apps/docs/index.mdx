@@ -1,0 +1,49 @@
+---
+title: "Introduction"
+description: "One API for the vulnerability and application security data in your customers' security tools."
+icon: "house"
+---
+
+SecureFabric connects to the security tools your customers already use, such as GitHub Advanced Security, and turns what those tools report into one normalized model. You read every vendor's findings and resources through one API, with one set of filters, one pagination scheme and one webhook format.
+
+The data API is wire-compatible with Leen V2. If you have a Leen integration, see [Migrate from Leen](/guides/leen-migration).
+
+## How it works
+
+<Steps>
+  <Step title="Your customer connects a tool">
+    You create a [connect session](/connect/overview) and open the hosted connect UI. Your customer installs the GitHub App or enters credentials there. Credentials never pass through your servers.
+  </Step>
+  <Step title="SecureFabric syncs it">
+    SecureFabric verifies the [connection](/concepts/connections), checks which permissions it has, and [syncs](/concepts/syncs) each data stream on a schedule. Vendor webhooks trigger targeted refreshes between scheduled syncs.
+  </Step>
+  <Step title="You read normalized data">
+    You read [findings](/concepts/findings) and [resources](/concepts/resources) for one connection or one whole [organization](/concepts/organizations), and receive [webhooks](/webhooks/setup) when syncs finish or a connection's health changes.
+  </Step>
+</Steps>
+
+## Start here
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Connect a test tool and read your first findings.
+  </Card>
+  <Card title="Concepts" icon="diagram-project" href="/concepts/environments">
+    Environments, organizations, connections and syncs.
+  </Card>
+  <Card title="Connectors" icon="plug" href="/connectors/overview">
+    The tools you can connect today, and what is coming.
+  </Card>
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    Every endpoint, generated from the API's OpenAPI document.
+  </Card>
+</CardGroup>
+
+## What you get
+
+- **One model for every vendor.** Severity, state, finding type and resource type use the same values whatever the source. See [Findings](/concepts/findings).
+- **An incremental feed that does not skip changes.** Read everything that changed since your last read, including deletions. See [Sync findings incrementally](/guides/sync-incrementally).
+- **Health you can act on.** Each connection reports a [health code](/concepts/connection-health) and who can fix it: you, your customer, or the vendor.
+- **Signed webhooks.** Events are signed with HMAC-SHA256, retried for about two days, and can be replayed. See [Webhooks](/webhooks/setup).
+- **Write-back.** Mark a finding as a false positive in SecureFabric and the vendor records it too. See [Update a finding's state](/guides/update-finding-state).
+- **Typed clients.** TypeScript and Python clients are generated from the same OpenAPI document as the [API reference](/api-reference/introduction).

@@ -1,0 +1,40 @@
+---
+title: "Microsoft Defender Vulnerability Management (GCC High)"
+sidebarTitle: "Defender GCC High"
+description: "Coming soon: findings and resources from Microsoft Defender Vulnerability Management (GCC High)."
+icon: "/logo/connectors/microsoft-defender.svg"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Expected between March and April 2027, as vendor access becomes available. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `MS_DEFENDER_VMS_GCC_HIGH` |
+| Category | Vulnerability management |
+| Expected | March to April 2027 |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `HOST` |
+| Findings | `HOST` |
+
+From Defender GCC High:
+
+- The same data as [Microsoft Defender Vulnerability Management](/connectors/microsoft-defender), from Microsoft's US government cloud
+
+### How it will stay current
+
+The same as the commercial connector: a weekly full export and daily deltas.
+
+## What your customers will need
+
+- An app registration in Azure Government with the same permissions as the commercial connector. Commercial and government tokens are not interchangeable.
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.

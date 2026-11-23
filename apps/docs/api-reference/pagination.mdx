@@ -1,0 +1,55 @@
+---
+title: "Pagination"
+description: "Page through lists with opaque cursors."
+---
+
+Lists that can grow large return pages. A page holds `items` and two cursors:
+
+```json
+{
+  "items": [],
+  "next_cursor": "eyJ2IjoxLCJzIjoidXBkYXRlZF9hdDphc2MiLC4uLn0.Zm9v",
+  "previous_cursor": null
+}
+```
+
+These endpoints return pages: `GET /v1/organizations`, `GET /v1/connections`, `GET /v1/vulnerability_findings`, `GET /v1/resources` and `GET /v1/operations`. Other lists return a plain array, some with a `limit`. The [event feed](/concepts/events#pull-the-event-feed) uses its own `after` parameter.
+
+## Read every page
+
+<Steps>
+  <Step title="Request the first page">
+    Send your filters, and optionally `limit`: from 1 to 500, 100 by default.
+
+    ```bash
+    curl "https://api.securefabric.dev/v1/vulnerability_findings?severity=CRITICAL&limit=200" \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "X-CONNECTION-ID: $CONNECTION_ID"
+    ```
+  </Step>
+  <Step title="Request the next page">
+    Pass `next_cursor` back as `cursor`. You can repeat your filters or leave them out: the cursor remembers them.
+
+    ```bash
+    curl "https://api.securefabric.dev/v1/vulnerability_findings?limit=200&cursor=$NEXT_CURSOR" \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "X-CONNECTION-ID: $CONNECTION_ID"
+    ```
+  </Step>
+  <Step title="Stop at the last page">
+    `next_cursor` is `null` on the last page.
+  </Step>
+</Steps>
+
+`previous_cursor` goes back one page. It is `null` on the first page.
+
+## How cursors behave
+
+- **Cursors are opaque.** Pass them back exactly as received. They are signed: a modified cursor fails with `400 invalid_cursor`.
+- **Cursors keep their filters.** Changing a filter or `sort` while paging fails with `400 cursor_filter_mismatch`, and `errors[0].field` names what changed. To change filters, start again without a cursor.
+- **Cursors keep their scope.** A cursor from one connection or organization fails with `400 cursor_scope_mismatch` on another.
+- **Pages don't shift.** A cursor points at a position in the sort order, not an offset, so records added while you page never make you skip others. A record that changes while you page moves to its new position, so you can see it again on a later page. Every sort ends with the record ID, so ties are ordered too.
+
+<Tip>
+  To read only what changed since your last read, combine pagination with `updatedSince`. See [Sync findings incrementally](/guides/sync-incrementally).
+</Tip>

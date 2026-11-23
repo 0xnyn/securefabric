@@ -1,0 +1,41 @@
+---
+title: "Qualys VMDR"
+sidebarTitle: "Qualys"
+description: "Coming soon: findings and resources from Qualys VMDR."
+icon: "/logo/connectors/qualys.svg"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Expected in February 2027. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `QUALYS` |
+| Category | Vulnerability management |
+| Expected | February 2027 |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `HOST` |
+| Findings | `HOST` |
+
+From Qualys:
+
+- Host list detections
+- KnowledgeBase, to map Qualys IDs (QIDs) to CVEs
+
+### How it will stay current
+
+Each sync reads detections updated since the last sync. Qualys's standard API limits (2 concurrent requests, 300 calls an hour) can make large syncs take longer.
+
+## What your customers will need
+
+- A Qualys user with API access. Qualys supports basic authentication and OAuth.
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.

@@ -1,0 +1,47 @@
+---
+title: "Idempotency"
+description: "Retry creating requests safely with Idempotency-Key."
+---
+
+A network error can leave you unsure whether a request succeeded. Send an `Idempotency-Key` header on creating requests so a retry returns the first result instead of creating a second organization, connection or webhook endpoint.
+
+```bash
+curl https://api.securefabric.dev/v1/organizations \
+  -H "Authorization: Bearer $SF_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 6c3e9e0a-1b8f-4a2e-9d55-0e7c4f1a2b3c" \
+  -d '{"identifier": "acme", "name": "Acme Corp"}'
+```
+
+Use a new unique value, such as a UUID, for each logical request, and the same value when you retry it. Keys are up to 255 characters.
+
+## Endpoints that accept it
+
+- `POST /v1/organizations`
+- `POST /v1/api_keys`
+- `POST /v1/integrations`
+- `POST /v1/vendor_apps`
+- `POST /v1/organizations/{organization_id}/connections`
+- `POST /v1/connections/{connection_id}/jobs`
+- `POST /v1/connections/{connection_id}/reset`
+- `POST /v1/connect_sessions`
+- `POST /v1/webhook_endpoints`
+- `POST /v1/vulnerability_findings/{finding_id}/actions`, where it is required
+
+Other endpoints ignore the header.
+
+## How a retry is answered
+
+| Situation | Response |
+|---|---|
+| First request with the key | Processed normally. The response is stored for 24 hours. |
+| Retry with the same key and the same body, after the first finished | The stored response, with the header `Idempotent-Replayed: true`. |
+| Retry while the first is still running | `409 idempotency_in_progress`. Wait and retry with the same key. |
+| Same key, different method, path or body | `422 idempotency_key_reused`. |
+| The first request failed with a `5xx` | Nothing is stored, so a retry is processed again. |
+
+Keys are scoped to your environment and expire after 24 hours.
+
+<Warning>
+  A replayed response is identical to the first, including one-time values such as a new API key, webhook secret or connect session token.
+</Warning>

@@ -1,0 +1,201 @@
+---
+title: "GitHub Advanced Security"
+sidebarTitle: "GitHub"
+description: "Sync code scanning, secret scanning and Dependabot alerts, with the repositories and branches they affect."
+icon: "/logo/connectors/github.svg"
+tag: "Beta"
+---
+
+The GitHub connector syncs GitHub Advanced Security alerts and the repositories and branches they belong to. It works with GitHub.com, GitHub Enterprise Cloud with data residency (GHE.com) and GitHub Enterprise Server.
+
+| | |
+|---|---|
+| Connector ID | `GITHUB` |
+| Status | Beta |
+| Connects by | Installing a GitHub App (redirect) |
+| Finding types | `CODE`, `SECRET`, `DEPENDENCY` |
+| Resource types | `REPOSITORY`, `BRANCH` |
+| Write-back | Yes: dismiss, reopen, or resolve as revoked |
+| Real-time updates | Yes, through GitHub webhooks |
+
+## Connect GitHub
+
+Your customer connects GitHub by installing SecureFabric's GitHub App on their organization or user account. No tokens change hands.
+
+<Steps>
+  <Step title="Create a connect session">
+    Create a [connect session](/connect/overview) that offers `GITHUB`, and open it with [connect-js](/connect/embed) or send the link.
+
+    ```bash
+    curl https://api.securefabric.dev/v1/connect_sessions \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"organization_id": "'"$ORG_ID"'", "integrations": ["GITHUB"]}'
+    ```
+  </Step>
+  <Step title="Your customer installs the app">
+    The connect UI lists the permissions the app requests, then opens GitHub in a popup. Your customer picks the account to install on and chooses all repositories or selected ones.
+
+    Installing on an organization needs an organization owner. If your customer isn't one, GitHub sends an installation request to the owners, and the connection stays `PENDING` until an owner approves it.
+  </Step>
+  <Step title="SecureFabric verifies the installation">
+    SecureFabric confirms the person who installed the app can access the installation, checks which alert types the app can read, and starts the first sync. You receive `connection.create.succeeded` with the `grants` for each stream.
+  </Step>
+</Steps>
+
+<Tip>
+  If the app is already installed, your customer can authorize the existing installation instead of installing again. With several accessible installations, the connect UI asks which one to use.
+</Tip>
+
+To try the connector without a GitHub account, create a [sandbox connection](/concepts/connections#sandbox-connections) with `"vendor": "GITHUB", "is_sandbox": true`. It replays recorded GitHub data.
+
+## Permissions
+
+The GitHub App requests these repository permissions. Optional permissions only add data or features; the connection works without them.
+
+| Permission | Access | Needed for | Optional |
+|---|---|---|---|
+| Metadata | Read | `repositories`, `branches` | No |
+| Administration | Read | `repositories` | Yes |
+| Code scanning alerts | Read | `code_scanning_alerts` | No |
+| Secret scanning alerts | Read | `secret_scanning_alerts` | No |
+| Dependabot alerts | Read | `dependabot_alerts` | No |
+| Code scanning alerts | Write | Write-back | Yes |
+| Secret scanning alerts | Write | Write-back | Yes |
+| Dependabot alerts | Write | Write-back | Yes |
+
+Write permissions are requested only when [write-back](#write-back) is on for the integration; otherwise your customer installs a read-only app.
+
+If a feature is turned off in GitHub, such as code scanning on an organization without GitHub Advanced Security, the stream's grant is `NOT_ENABLED`. The connection stays healthy and the stream returns no data. See [Connection health](/concepts/connection-health#permissions-and-missing-features).
+
+## Streams
+
+| Stream | Produces | Sync | Default interval | Allowed interval |
+|---|---|---|---|---|
+| `repositories` | Resources: `REPOSITORY` | Full | 1 hour | 15 minutes to 1 day |
+| `branches` | Resources: `BRANCH` | Full | 1 hour | 15 minutes to 1 day |
+| `code_scanning_alerts` | Findings: `CODE` | Incremental, full pass daily | 1 hour | 15 minutes to 1 day |
+| `secret_scanning_alerts` | Findings: `SECRET` | Incremental, full pass daily | 1 hour | 15 minutes to 1 day |
+| `dependabot_alerts` | Findings: `DEPENDENCY` | Incremental, full pass daily | 1 hour | 15 minutes to 1 day |
+
+Between scheduled syncs, GitHub webhooks for alerts, repositories and security settings trigger a refresh of the records that changed, usually within seconds.
+
+Repositories that are removed from the installation are marked deleted. Alerts follow GitHub's own state.
+
+### GitHub Enterprise Server versions
+
+| Stream | Minimum version |
+|---|---|
+| `code_scanning_alerts` | 3.0 |
+| `secret_scanning_alerts` | 3.1 |
+| `dependabot_alerts` | 3.8 |
+
+On an older version, the stream's grant is `UNSUPPORTED`.
+
+## How fields map
+
+| Finding field | Code scanning | Secret scanning | Dependabot |
+|---|---|---|---|
+| `severity` | Yes | No: GitHub assigns secret alerts no severity. See the `secret_severity` option. | Yes |
+| `has_fix` | No | No | Yes |
+| `reachability` | No | No | Yes, where GitHub computed it |
+| `exploitable` | No: GitHub makes no exploitability claim | No | No |
+| `cve_ids` | No | No | Yes |
+
+Unsupported fields are `null`. Filtering on them returns an `X-Unsupported-Filters` header. See [Filtering and sorting](/api-reference/filtering-and-sorting#unsupported-filters).
+
+### Severity
+
+| GitHub | SecureFabric |
+|---|---|
+| Code scanning security severity `critical`, `high`, `medium`, `low` | `CRITICAL`, `HIGH`, `MEDIUM`, `LOW` |
+| Code scanning rule severity `error`, `warning`, `note`, `none` (non-security rules) | `HIGH`, `MEDIUM`, `LOW`, `INFO` |
+| Dependabot `critical`, `high`, `medium` or `moderate`, `low` | `CRITICAL`, `HIGH`, `MEDIUM`, `LOW` |
+
+### State
+
+| GitHub | SecureFabric |
+|---|---|
+| Code scanning and Dependabot `open` | `OPEN` |
+| Code scanning and Dependabot `fixed` | `CLOSED` |
+| Code scanning `dismissed`; Dependabot `dismissed`, `auto_dismissed` | `IGNORED` |
+| Secret scanning resolved as `revoked`, `pattern_deleted` or `pattern_edited` | `CLOSED` |
+| Secret scanning resolved as `false_positive`, `wont_fix` or `used_in_tests` | `IGNORED` |
+
+### Dependabot reachability
+
+GitHub's `reachable`, `potentially_reachable` and `unreachable` map to `REACHABLE`, `POTENTIALLY_REACHABLE` and `UNREACHABLE`. When GitHub hasn't computed reachability, or the analysis is off, `reachability` is `null`.
+
+## Options
+
+Set options per connection, or as defaults on the [integration](/concepts/integrations).
+
+| Option | Values | Default | Effect |
+|---|---|---|---|
+| `secret_severity` | `unknown`, `critical`, `high`, `medium`, `low`, `by_validity` | `unknown` | GitHub assigns secret alerts no severity. `unknown` keeps it that way. `by_validity` derives it from the secret's validity: active `CRITICAL`, unknown `HIGH`, inactive `LOW`. A fixed value applies that severity. Derived severities are listed in `_meta.derived`. |
+| `secret_locations` | `first`, `all` | `first` | `first` records the first detected location of a secret. `all` records every location, at one extra GitHub request per alert with more locations. |
+| `branch_scope` | `default`, `protected`, `all` | `default` | Which branches to sync. `default` syncs each repository's default branch with no extra requests. `protected` and `all` list branches per repository. |
+| `include_archived` | `true`, `false` | `true` | Include alerts on archived repositories. |
+| `listing_mode` | `auto`, `org`, `per_repo` | `auto` | How alerts are listed. `auto` uses organization-wide listings for organization installations with all repositories, and per-repository listings otherwise. |
+
+## Write-back
+
+With write-back on for the integration, you can change an alert's state in GitHub with [`set_state`](/guides/update-finding-state):
+
+| Alert type | State and reason | Recorded in GitHub as |
+|---|---|---|
+| Code scanning | `IGNORED`, `false_positive` | Dismissed: false positive |
+| Code scanning | `IGNORED`, `accepted_risk` | Dismissed: won't fix |
+| Code scanning | `IGNORED`, `test_code` | Dismissed: used in tests |
+| Secret scanning | `IGNORED`, `false_positive` | Resolved: false positive |
+| Secret scanning | `IGNORED`, `accepted_risk` | Resolved: won't fix |
+| Secret scanning | `IGNORED`, `test_code` | Resolved: used in tests |
+| Secret scanning | `CLOSED`, `revoked` | Resolved: revoked |
+| Dependabot | `IGNORED`, `false_positive` | Dismissed: inaccurate |
+| Dependabot | `IGNORED`, `accepted_risk` | Dismissed: tolerable risk |
+| Dependabot | `IGNORED`, `test_code` | Dismissed: not used |
+| Any | `OPEN` | Reopened |
+
+A `comment` is recorded as GitHub's dismissal or resolution comment.
+
+## GitHub Enterprise Server and GHE.com
+
+SecureFabric's own GitHub App can't be installed on a GitHub Enterprise Server instance. For GitHub Enterprise Server, your customer registers a GitHub App on their instance, and you register it with SecureFabric as a [vendor app](/concepts/integrations#vendor-apps). You can do the same on GHE.com or GitHub.com to use your own app.
+
+<Steps>
+  <Step title="Register the GitHub App">
+    On the GitHub instance, create a GitHub App with the [permissions](#permissions) above. Set its callback URL to `https://api.securefabric.dev/v1/connect/callback/github`, and generate a private key and a webhook secret.
+  </Step>
+  <Step title="Register it with SecureFabric">
+    ```bash
+    curl https://api.securefabric.dev/v1/vendor_apps \
+      -H "Authorization: Bearer $SF_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "connector_id": "GITHUB",
+        "name": "Acme GHES",
+        "base_url": "https://github.acme.example",
+        "config": {
+          "app_id": 12345,
+          "slug": "acme-securefabric",
+          "client_id": "Iv1.0123456789abcdef",
+          "api_base_url": "https://github.acme.example/api/v3"
+        },
+        "secrets": { "private_key": "<contents of the .pem file>", "client_secret": "…" },
+        "webhook_secret": "…"
+      }'
+    ```
+
+    The API base URL is `https://<host>/api/v3` for GitHub Enterprise Server and `https://api.<subdomain>.ghe.com` for GHE.com. The base URL must be HTTPS and publicly reachable. Secrets are write-only.
+  </Step>
+  <Step title="Point GitHub's webhooks at SecureFabric">
+    Set the app's webhook URL to `https://api.securefabric.dev/v1/ingress/github/<vendor app id>`, using the `id` from the previous response. Subscribe to `code_scanning_alert`, `secret_scanning_alert`, `secret_scanning_alert_location`, `dependabot_alert`, `repository`, `security_and_analysis` and `installation_target`.
+  </Step>
+  <Step title="Use it in an integration">
+    Create an [integration](/concepts/integrations) with `"vendor_app_id"` set to the vendor app's `id`, and offer that integration in your connect sessions.
+  </Step>
+</Steps>
+
+## Rate limits
+
+GitHub limits each app installation to a number of requests per hour. SecureFabric spreads syncs within that budget and backs off when GitHub asks it to. Connections that share one installation, for example across your organizations, share its budget. If GitHub's limits stop a sync from finishing, the connection reports `RATE_LIMIT_EXCEEDED` and catches up when the limit resets.

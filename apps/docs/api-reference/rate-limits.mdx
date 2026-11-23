@@ -1,0 +1,44 @@
+---
+title: "Rate limits"
+description: "How many requests you can send, and what to do when you hit the limit."
+---
+
+Requests are counted per [environment](/concepts/environments), across all of its API keys, in one-minute windows. The default limit is 1,000 requests per minute.
+
+The public connector catalogue and the unauthenticated status check are not counted.
+
+## Rate limit headers
+
+Every authenticated response tells you where you stand:
+
+| Header | Meaning |
+|---|---|
+| `X-RateLimit-Limit` | Requests allowed per window. |
+| `X-RateLimit-Remaining` | Requests left in the current window. |
+| `X-RateLimit-Reset` | When the current window ends, in Unix seconds. |
+
+## When you exceed the limit
+
+The API responds with `429 rate_limited` and a `Retry-After` header with the seconds until the window ends:
+
+```http
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/problem+json
+Retry-After: 17
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1764583260
+```
+
+Wait for `Retry-After` seconds, then retry. The [TypeScript client](/api-reference/clients/typescript) exposes the value as `retryAfter` on its `TooManyRequestsResponseError`.
+
+## Stay under the limit
+
+- Page with `limit=500` instead of many small pages.
+- Read only changes with `updatedSince` instead of re-reading everything. See [Sync findings incrementally](/guides/sync-incrementally).
+- React to [webhooks](/webhooks/setup) instead of polling.
+- Use `X-ORGANIZATION-ID` to read all of an organization's connections in one request.
+
+<Note>
+  Syncs with vendors have their own limits, set by each vendor. They don't count against your API rate limit. When a vendor's limit slows a sync down, the connection reports [`RATE_LIMIT_EXCEEDED`](/concepts/connection-health#health-codes).
+</Note>

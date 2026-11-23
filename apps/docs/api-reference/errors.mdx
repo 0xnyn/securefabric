@@ -1,0 +1,145 @@
+---
+title: "Errors"
+description: "The error format, and what each error code means and how to fix it."
+---
+
+Every error response uses one format, [RFC 9457 problem details](https://www.rfc-editor.org/rfc/rfc9457), with the content type `application/problem+json`:
+
+```json
+{
+  "type": "https://docs.securefabric.dev/errors/scope_missing",
+  "title": "Permission denied",
+  "status": 403,
+  "detail": "This credential lacks provisioning:write.",
+  "code": "scope_missing",
+  "request_id": "req_6f1c2b8e0d4a4f6b9c3e2a1d0b9f8e7c",
+  "errors": []
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `code` | A stable, machine-readable code. Branch on this, never on `detail`. |
+| `status` | The HTTP status. |
+| `title` | A short summary of the status. |
+| `detail` | What went wrong, for people. The text can change. |
+| `errors` | For validation errors, one `{ field, message }` per problem, such as `{ "field": "credentials.api_key", "message": "…" }`. Never contains the values you sent. |
+| `request_id` | The request's ID, also in the `X-Request-Id` header. Quote it when you contact support. |
+| `type` | A URI for the code. |
+
+The [typed clients](/api-reference/clients/typescript) turn these into exceptions that expose `code`, `requestId` and field errors.
+
+## Retry or fix
+
+- **`429` and `5xx`**: retry with backoff. For `429`, wait for `Retry-After` seconds. Use an [`Idempotency-Key`](/api-reference/idempotency) so a retried create can't run twice.
+- **Other `4xx`**: the request itself is wrong. Retrying won't help: fix it using the tables below.
+
+## 400 Bad request
+
+| Code | What happened | How to fix it |
+|---|---|---|
+| `bad_request` | The request is malformed. | Read `detail`. |
+| `unknown_parameter` | A query parameter isn't accepted by this endpoint. `errors` names each one. | Remove it, or check its spelling and case (`updatedSince`, not `updated_since`). |
+| `invalid_limit` | `limit` is outside 1 to 500. | Send a `limit` from 1 to 500. |
+| `invalid_sort` | `sort` names an unsupported field or direction. | Use a field this endpoint sorts on, with `:asc` or `:desc`. See [Filtering and sorting](/api-reference/filtering-and-sorting#sorting). |
+| `invalid_cursor` | The cursor is malformed, was modified, or comes from an incompatible API version. | Pass `next_cursor` or `previous_cursor` exactly as returned, or start again without a cursor. |
+| `cursor_filter_mismatch` | A filter or `sort` differs from the one the cursor was created with. `errors[0].field` names it. | Send the same filters on every page, or omit them, or start again without a cursor. |
+| `cursor_scope_mismatch` | The cursor was created for a different connection or organization. | Use cursors only with the scope header they came from. |
+| `scope_header_required` | A data request sent neither or both of `X-CONNECTION-ID` and `X-ORGANIZATION-ID`. | Send exactly one. |
+| `invalid_scope_header` | `X-CONNECTION-ID` or `X-ORGANIZATION-ID` isn't a UUID. | Send the connection or organization ID. |
+| `environment_required` | No environment was selected. | Use an API key, which selects its environment. |
+| `idempotency_key_required` | An action was sent without `Idempotency-Key`. | Send a unique key. See [Idempotency](/api-reference/idempotency). |
+| `invalid_idempotency_key` | `Idempotency-Key` is longer than 255 characters. | Use a shorter key, such as a UUID. |
+
+## 401 Authentication required
+
+| Code | What happened | How to fix it |
+|---|---|---|
+| `unauthenticated` | The request had no credentials. | Send an API key. See [Authentication](/api-reference/authentication). |
+| `invalid_api_key` | The key is malformed, unknown, expired or revoked. | Use a valid key. Create a new one if needed. |
+| `wrong_region` | The key belongs to another region. | Use the key against its own region. |
+| `invalid_credential_for_route` | A connect session token was sent outside `/v1/connect/*`. | Use an API key. |
+| `invalid_connect_session` | The connect session token is unknown. | Create a new connect session. |
+
+## 403 Permission denied
+
+| Code | What happened | How to fix it |
+|---|---|---|
+| `scope_missing` | The credential lacks the scope this endpoint needs. `detail` names it. | Use a key with that scope. |
+| `scope_escalation` | A key tried to create a key with scopes it doesn't have. | Request only scopes the creating key has. |
+| `role_required` | This action is reserved for admins. | Ask an admin. See [Roles and permissions](/dashboard/roles). |
+| `session_required` | This endpoint is only for the dashboard, not API keys. | Use the dashboard. |
+
+## 404 Not found
+
+A resource that doesn't exist and one in another environment both return `404`. SecureFabric never confirms that an ID exists outside your environment.
+
+| Code | What wasn't found |
+|---|---|
+| `not_found` | The path. |
+| `organization_not_found`, `connection_not_found`, `integration_not_found`, `vendor_app_not_found`, `connector_not_found` | The organization, connection, integration, vendor app or connector. A deleted organization or connection is not found. |
+| `finding_not_found`, `resource_not_found`, `cve_not_found` | The finding or resource in the scope you sent, or the CVE in SecureFabric's CVE data. |
+| `job_not_found`, `action_not_found`, `operation_not_found` | The job, action or operation. |
+| `api_key_not_found`, `webhook_endpoint_not_found`, `delivery_not_found`, `member_not_found` | The API key, webhook endpoint, delivery or team member. |
+| `environment_not_found` | The environment, or `X-Environment-Id` names one the key doesn't belong to. |
+
+## 409 Conflict
+
+| Code | What happened | How to fix it |
+|---|---|---|
+| `conflict` | The request conflicts with the current state. | Read `detail`. |
+| `organization_exists` | An organization with this `identifier` already exists. | Use another identifier, or fetch the existing organization. |
+| `organization_has_connections` | The organization still has connections. | Delete its connections first. |
+| `connection_identifier_exists` | The organization already has a connection with this `identifier`. | Use another identifier. |
+| `integration_exists` | An integration with this `key` already exists. | Use another key. |
+| `integration_has_connections` | Connections still use the integration. | Delete or move them first. |
+| `vendor_app_in_use` | An integration still uses the vendor app. | Point the integration at another vendor app first. |
+| `invalid_state_transition` | The connection can't move to that state, such as resuming a deleted connection. | See the [lifecycle](/concepts/connections#lifecycle). |
+| `sync_in_progress` | A reset was requested while a sync is running. | Cancel the job or wait, then retry. |
+| `endpoint_limit` | The environment already has 5 webhook endpoints. | Delete an endpoint you don't use. |
+| `idempotency_in_progress` | A request with this `Idempotency-Key` is still running. | Wait and retry with the same key. |
+| `environment_exists` | An environment with this name already exists. | Choose another name. |
+
+## 410 Gone
+
+| Code | What happened | How to fix it |
+|---|---|---|
+| `connect_session_expired` | The connect session is more than 30 minutes old. | Create a new connect session. |
+| `connect_session_used` | The connect session already created a connection. | Create a new connect session. |
+
+## 422 Validation failed
+
+| Code | What happened | How to fix it |
+|---|---|---|
+| `validation_failed` | The body or parameters don't match the schema, or contain unknown fields. `errors` lists each problem. | Fix each field in `errors`. |
+| `invalid_filter` | A filter value is invalid: an unknown enum value, a boolean that isn't `true` or `false`, an ID that isn't a UUID, or more than 100 `ids`. | Check the value against [Filtering and sorting](/api-reference/filtering-and-sorting). |
+| `invalid_credentials` | The credentials don't match the connector's form. `errors[0].field` names the field. | Check the connector's credential fields. |
+| `credentials_required` | The connector needs credentials and none were sent. | Send `credentials`, or use a [connect session](/connect/overview). |
+| `invalid_options` | The connection's options don't match the connector's options. | Check the options on the connector's page. |
+| `vendor_required` | A connection was created without `vendor` or `integration`. | Send one of them. |
+| `invalid_integration` | The integration's streams, intervals, options or write-back setting are invalid. `errors` lists each. | Fix each field in `errors`. |
+| `invalid_streams` | A job named streams the connector doesn't have. | Use stream names from the connector's page. |
+| `invalid_scopes` | An API key was requested with unknown scopes. | Use [scopes](/api-reference/authentication#scopes) from the list. |
+| `metadata_too_large` | Connection metadata is larger than 16 KB. | Store less in metadata. |
+| `too_many_tags`, `invalid_tag` | A connection has more than 10 tags, or a malformed tag. | Use at most 10 tags with simple keys. |
+| `invalid_url`, `invalid_event_types` | A webhook endpoint's URL isn't HTTPS or is too long, or an event type is unknown. | See [Set up webhooks](/webhooks/setup#limits). |
+| `invalid_base_url` | A vendor app's base URL isn't HTTPS or points to a private address. | Use the public HTTPS address of the vendor. |
+| `vendor_app_missing`, `vendor_app_unsupported` | The connector needs a vendor app and none is registered, or doesn't use vendor apps. | Register a vendor app, or remove `vendor_app_id`. |
+| `redirect_not_allowed` | A connect session redirect URL isn't on the environment's allowed origins. | Add the origin in **Settings**. See [Redirect after the flow](/connect/overview#redirect-after-the-flow). |
+| `idempotency_key_reused` | An `Idempotency-Key` was reused with a different request. | Use a new key for each different request. |
+| `connection_not_active` | The action needs an `ACTIVE` connection. | Resume or finish connecting it. |
+| `invalid_action`, `action_unsupported`, `write_back_disabled`, `reason_unsupported` | The write-back action can't run. | See [Update a finding's state](/guides/update-finding-state#errors). |
+| `passthrough_not_allowed` | The passthrough request isn't on the connector's allowlist. | Use an allowed vendor path. |
+
+## 429 Too many requests
+
+| Code | What happened | How to fix it |
+|---|---|---|
+| `rate_limited` | The environment exceeded its rate limit. | Wait `Retry-After` seconds. See [Rate limits](/api-reference/rate-limits). |
+
+## 5xx Server errors
+
+| Code | What happened | How to fix it |
+|---|---|---|
+| `internal_error` | Something failed on SecureFabric's side. | Retry with backoff. If it persists, contact support with the `request_id`. |
+| `unavailable` | A service SecureFabric depends on is unavailable. | Retry with backoff. |

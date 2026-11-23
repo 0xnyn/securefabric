@@ -1,0 +1,50 @@
+---
+title: "SonarQube Server and SonarQube Cloud"
+sidebarTitle: "SonarQube"
+description: "Coming soon: findings and resources from SonarQube Server and SonarQube Cloud."
+icon: "/logo/connectors/sonarqube.svg"
+tag: "Soon"
+---
+
+<Info>
+  **Coming soon.** Expected in February 2027. The plan below can change before release.
+</Info>
+
+| | |
+|---|---|
+| Planned connector ID | `SONARQUBE` |
+| Category | AppSec |
+| Expected | February 2027 |
+
+## What SecureFabric will sync
+
+| | |
+|---|---|
+| Resources | `REPOSITORY`, `BRANCH` |
+| Findings | `CODE` |
+
+Resources: SonarQube projects as `REPOSITORY`, and their branches.
+
+From SonarQube:
+
+- Vulnerability issues
+- Security hotspots
+- Projects
+- Project branches
+
+### How it will stay current
+
+Each sync reads issues created or updated since the last sync, project by project.
+
+## What your customers will need
+
+- A SonarQube user token.
+- On SonarQube Cloud, a token without an expiry date is removed after 60 days without use. Use a token with an expiry date and renew it.
+
+## Good to know
+
+- SonarQube Cloud regions: EU, US and AU.
+
+## Until it's available
+
+Build against the [Sandbox](/connectors/sandbox) connector, which produces findings of every type. Every connector shares one data model, so the code you write keeps working when this connector ships.
