@@ -1,0 +1,18 @@
+[project]
+name = "securefabric-connectors"
+version = "0.1.0"
+description = "First-party connectors: GITHUB and SANDBOX"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "securefabric-cdk",
+    "securefabric-schema",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.15,<0.10"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+securefabric-cdk = { workspace = true }
+securefabric-schema = { workspace = true }

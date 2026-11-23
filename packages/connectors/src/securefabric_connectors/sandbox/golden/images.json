@@ -1,0 +1,96 @@
+[
+  {
+    "cloud_metadata": null,
+    "data": {
+      "hash": {
+        "algorithm": "sha256",
+        "value": "9eebcaa9cf53de6265aaaaa39c1c352f3ee8a098294deabaa2b7ef0a9fede9a2"
+      },
+      "labels": [
+        "svc=app-0"
+      ]
+    },
+    "groups": [],
+    "meta_derived": [],
+    "name": "registry.example/app-0:1.0.0",
+    "natural_key": "image:i-00000",
+    "object": "resource",
+    "state": "ACTIVE",
+    "tags": [],
+    "type": "IMAGE",
+    "url": null,
+    "vendor_attributes_data": {
+      "host_id": null,
+      "vendor": "SANDBOX"
+    },
+    "vendor_id": "i-00000"
+  },
+  {
+    "cloud_metadata": null,
+    "data": {
+      "hostnames": [],
+      "image": "registry.example/app-1:1.1.0"
+    },
+    "groups": [],
+    "meta_derived": [],
+    "name": "registry.example/app-1:1.1.0",
+    "natural_key": "container:i-00001",
+    "object": "resource",
+    "state": "ACTIVE",
+    "tags": [],
+    "type": "CONTAINER",
+    "url": null,
+    "vendor_attributes_data": {
+      "host_id": "h-00001",
+      "vendor": "SANDBOX"
+    },
+    "vendor_id": "i-00001"
+  },
+  {
+    "cloud_metadata": null,
+    "data": {
+      "hash": {
+        "algorithm": "sha256",
+        "value": "98f8d101a6b0f4563c0385063f57f7f2e939e58094dbae76c3180cf00cb51c1b"
+      },
+      "labels": [
+        "svc=app-2"
+      ]
+    },
+    "groups": [],
+    "meta_derived": [],
+    "name": "registry.example/app-2:1.2.0",
+    "natural_key": "image:i-00002",
+    "object": "resource",
+    "state": "ACTIVE",
+    "tags": [],
+    "type": "IMAGE",
+    "url": null,
+    "vendor_attributes_data": {
+      "host_id": null,
+      "vendor": "SANDBOX"
+    },
+    "vendor_id": "i-00002"
+  },
+  {
+    "cloud_metadata": null,
+    "data": {
+      "hostnames": [],
+      "image": "registry.example/app-3:1.3.0"
+    },
+    "groups": [],
+    "meta_derived": [],
+    "name": "registry.example/app-3:1.3.0",
+    "natural_key": "container:i-00003",
+    "object": "resource",
+    "state": "ACTIVE",
+    "tags": [],
+    "type": "CONTAINER",
+    "url": null,
+    "vendor_attributes_data": {
+      "host_id": "h-00003",
+      "vendor": "SANDBOX"
+    },
+    "vendor_id": "i-00003"
+  }
+]

@@ -1,0 +1,207 @@
+# SANDBOX: a deterministic synthetic vendor running in-process (docs/plan/05-connector-sdk.md, section 6).
+# It exercises the platform primitives GitHub does not, injects failures on demand,
+# and gives customers sandbox connections with every enum value (TEN-13).
+id: SANDBOX
+version: 1.0.0
+display_name: SecureFabric Sandbox
+description: >-
+  Synthetic hosts, images, containers and findings of every type and state, for
+  building against SecureFabric before connecting a real vendor. Never calls the network.
+categories: [ sandbox, vulnerability_management, appsec ]
+status: ga
+logo: /icon.svg
+docs_url: https://docs.securefabric.dev/connectors/sandbox
+billing_exempt: true
+
+auth:
+  mode: API_KEY
+  connect: form
+
+connection_config:
+  type: object
+  properties:
+    tenant_id: { type: string, readOnly: true }
+    tenant_name: { type: string, readOnly: true }
+    region: { enum: [ us, eu ], default: us }
+
+credentials:
+  type: object
+  required: [ api_key ]
+  properties:
+    api_key:
+      title: API key
+      description: "Any value starting with sbx_ works. sbx_revoked_* is rejected, which is useful for testing failures."
+      type: string
+      pattern: "^sbx_[A-Za-z0-9_]{4,}$"
+      x-secret: true
+      x-order: 1
+  additionalProperties: false
+
+options:
+  type: object
+  properties:
+    region:
+      title: Region
+      enum: [ us, eu ]
+      default: us
+    seed:
+      title: Data seed
+      description: Same seed, same data.
+      type: integer
+      minimum: 0
+      default: 42
+    host_count:
+      { title: Hosts, type: integer, minimum: 0, maximum: 100000, default: 25 }
+    image_count:
+      { title: Images, type: integer, minimum: 0, maximum: 100000, default: 10 }
+    finding_count:
+      {
+        title: Findings,
+        type: integer,
+        minimum: 0,
+        maximum: 2000000,
+        default: 120,
+      }
+    page_size:
+      {
+        title: Vendor page size,
+        type: integer,
+        minimum: 1,
+        maximum: 1000,
+        default: 50,
+      }
+    scenario:
+      title: Failure scenario
+      description: Inject a vendor behaviour (for testing).
+      enum:
+        [
+          none,
+          rate_limit_20m,
+          rate_limit_short,
+          fail_every_3rd_page,
+          server_errors,
+          revoke_mid_run,
+          empty_listing,
+          expire_export,
+          forbidden,
+          not_found,
+        ]
+      default: none
+
+regions:
+  - {
+      id: us,
+      api_base: "https://sandbox.securefabric.dev/us/api",
+      label: United States,
+    }
+  - {
+      id: eu,
+      api_base: "https://sandbox.securefabric.dev/eu/api",
+      label: Europe,
+    }
+
+http:
+  retry:
+    statuses: [ 429, "5xx" ]
+    retry_after_header: retry-after
+    remaining_header: x-ratelimit-remaining
+    limit_header: x-ratelimit-limit
+    reset_header: x-ratelimit-reset
+  budget:
+    key: "SANDBOX:{tenant_id}"
+    per_hour: 100000
+    max_concurrency: 8
+    max_requests_per_second: 1000
+
+permissions:
+  - { name: "Assets: read", access: read, streams: [ hosts, images ] }
+  - {
+      name: "Findings: read",
+      access: read,
+      streams: [ findings, finding_exports ],
+    }
+  - {
+      name: "Findings: write",
+      access: write,
+      actions: [ finding.set_state ],
+      optional: true,
+    }
+
+webhooks:
+  signature_header: x-sandbox-signature
+  signature_prefix: "sha256="
+  algorithm: hmac-sha256
+  delivery_id_header: x-sandbox-delivery
+  event_header: x-sandbox-event
+  tenant_ref_path: tenant.id
+  action_path: action
+
+passthrough_allowlist:
+  - "GET /v1/me"
+  - "GET /v1/hosts/{id}"
+  - "GET /v1/findings/{id}"
+
+streams:
+  - name: hosts
+    title: Hosts
+    object: resource
+    resource_types: [ HOST ]
+    sync_mode: full
+    interval: { default: 3600, min: 300, max: 86400 }
+    deletion: sweep
+    natural_key: "host:{id}"
+    endpoint: "GET /v1/hosts"
+    supports_targeted: true
+    cost: "Offset pagination, one request per page."
+  - name: images
+    title: Images and containers
+    object: resource
+    resource_types: [ IMAGE, CONTAINER ]
+    sync_mode: full
+    interval: { default: 3600, min: 300, max: 86400 }
+    deletion: sweep
+    natural_key: "image:{id} | container:{id}"
+    endpoint: "GET /v1/images"
+    cost: "Page-token pagination."
+  - name: findings
+    title: Findings
+    object: vulnerability_finding
+    finding_types:
+      [ HOST, CONTAINER, DEPENDENCY, CODE, SECRET, IAC, DOMAIN, UNKNOWN ]
+    sync_mode: incremental
+    interval: { default: 3600, min: 300, max: 86400 }
+    full_every: 604800
+    deletion: vendor_reported
+    natural_key: "finding:{id}"
+    endpoint: "GET /v1/findings"
+    webhook_events: [ finding ]
+    supports_targeted: true
+    capabilities:
+      severity: { supported: true }
+      has_fix: { supported: true }
+      exploitable: { supported: true }
+      reachability: { supported: true }
+  - name: finding_exports
+    title: Findings (bulk export)
+    object: vulnerability_finding
+    finding_types:
+      [ HOST, CONTAINER, DEPENDENCY, CODE, SECRET, IAC, DOMAIN, UNKNOWN ]
+    sync_mode: export
+    interval: { default: 86400, min: 3600, max: 259200 }
+    vendor_retention: 259200
+    deletion: sweep
+    natural_key: "finding:{id}"
+    endpoint: "POST /v1/exports"
+    enabled_by_default: false
+    capabilities:
+      severity: { supported: true }
+      has_fix: { supported: true }
+      exploitable: { supported: true }
+      reachability: { supported: true }
+    cost: "Asynchronous vendor export: request, poll, download chunks."
+
+actions:
+  - name: finding.set_state
+    object: vulnerability_finding
+    requires_permission_tier: read
+    reasons: [ false_positive, accepted_risk, test_code ]

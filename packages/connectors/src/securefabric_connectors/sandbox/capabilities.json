@@ -1,0 +1,99 @@
+{
+  "connector": "SANDBOX",
+  "streams": {
+    "findings": {
+      "coverage": {
+        "analytic": 1.0,
+        "cve_ids": 0.375,
+        "description": 1.0,
+        "exploitable": 0.75,
+        "has_fix": 0.667,
+        "product": 1.0,
+        "reachability": 0.833,
+        "remediation": 0.083,
+        "resource_related": 0.875,
+        "severity": 1.0,
+        "state_changed_at": 0.625,
+        "title": 1.0,
+        "vulnerabilities": 0.375
+      },
+      "records": 24,
+      "values_emitted": {
+        "exploitable": [
+          "False",
+          "True"
+        ],
+        "has_fix": [
+          "False",
+          "True"
+        ],
+        "reachability": [
+          "POTENTIALLY_REACHABLE",
+          "REACHABLE",
+          "UNKNOWN",
+          "UNREACHABLE"
+        ],
+        "severity": [
+          "CRITICAL",
+          "HIGH",
+          "MEDIUM"
+        ],
+        "state": [
+          "CLOSED",
+          "IGNORED",
+          "OPEN"
+        ],
+        "type": [
+          "CODE",
+          "CONTAINER",
+          "DEPENDENCY",
+          "DOMAIN",
+          "HOST",
+          "IAC",
+          "SECRET",
+          "UNKNOWN"
+        ]
+      }
+    },
+    "hosts": {
+      "coverage": {
+        "cloud_metadata": 0.667,
+        "data": 1.0,
+        "groups": 1.0,
+        "name": 1.0,
+        "tags": 1.0,
+        "url": 0.0
+      },
+      "records": 6,
+      "values_emitted": {
+        "state": [
+          "ACTIVE"
+        ],
+        "type": [
+          "HOST"
+        ]
+      }
+    },
+    "images": {
+      "coverage": {
+        "cloud_metadata": 0.0,
+        "data": 1.0,
+        "groups": 0.0,
+        "name": 1.0,
+        "tags": 0.0,
+        "url": 0.0
+      },
+      "records": 4,
+      "values_emitted": {
+        "state": [
+          "ACTIVE"
+        ],
+        "type": [
+          "CONTAINER",
+          "IMAGE"
+        ]
+      }
+    }
+  },
+  "version": "1.0.0"
+}

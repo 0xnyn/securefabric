@@ -1,0 +1,1781 @@
+[
+  {
+    "analytic": {
+      "name": "rule-0",
+      "type": "host_vuln",
+      "uid": "SBX-HOST_VULN-0",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2020-1000"
+    ],
+    "description": "Synthetic host_vuln finding 0 for testing.",
+    "exploitable": true,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000000",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "REACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": 443,
+        "protocol": "tcp",
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00000",
+        "natural_key": "host:h-00000",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "CRITICAL",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Host Vuln issue #0",
+    "type": "HOST",
+    "vendor": {
+      "created_at": "2026-01-01T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "host_vuln",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000000",
+      "severity": "critical",
+      "state": "open",
+      "updated_at": "2025-12-20T10:13:20Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000000",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 1.0,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": null,
+        "last_modified": null,
+        "published": null,
+        "references": [],
+        "source_identifier": null,
+        "status": null,
+        "uid": "CVE-2020-1000",
+        "weaknesses": []
+      }
+    ]
+  },
+  {
+    "analytic": {
+      "name": "rule-1",
+      "type": "container_vuln",
+      "uid": "SBX-CONTAINER_VULN-1",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2021-1001"
+    ],
+    "description": "Synthetic container_vuln finding 1 for testing.",
+    "exploitable": true,
+    "has_fix": false,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000001",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "POTENTIALLY_REACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": null,
+          "name": "lib1",
+          "package_manager": "pip",
+          "path": null,
+          "reachability": "POTENTIALLY_REACHABLE",
+          "version": "1.1.0"
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "i-00001",
+        "natural_key": "container:i-00001",
+        "role": "primary",
+        "stream": "images",
+        "type": "CONTAINER"
+      }
+    ],
+    "severity": "CRITICAL",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Container Vuln issue #1",
+    "type": "CONTAINER",
+    "vendor": {
+      "created_at": "2025-12-31T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "container_vuln",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000001",
+      "severity": "critical",
+      "state": "open",
+      "updated_at": "2025-12-20T10:13:21Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000001",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 1.1,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": null,
+        "last_modified": null,
+        "published": null,
+        "references": [],
+        "source_identifier": null,
+        "status": null,
+        "uid": "CVE-2021-1001",
+        "weaknesses": []
+      }
+    ]
+  },
+  {
+    "analytic": {
+      "name": "rule-2",
+      "type": "package",
+      "uid": "SBX-PACKAGE-2",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2022-1002"
+    ],
+    "description": "Synthetic package finding 2 for testing.",
+    "exploitable": true,
+    "has_fix": null,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000002",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "UNREACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": null,
+          "name": "lib2",
+          "package_manager": "maven",
+          "path": null,
+          "reachability": "UNREACHABLE",
+          "version": "1.2.0"
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00002",
+        "natural_key": "host:h-00002",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "CRITICAL",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Package issue #2",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-30T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "package",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000002",
+      "severity": "critical",
+      "state": "open",
+      "updated_at": "2025-12-20T10:13:22Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000002",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 1.2,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": null,
+        "last_modified": null,
+        "published": null,
+        "references": [],
+        "source_identifier": null,
+        "status": null,
+        "uid": "CVE-2022-1002",
+        "weaknesses": []
+      }
+    ]
+  },
+  {
+    "analytic": {
+      "name": "rule-3",
+      "type": "code",
+      "uid": "SBX-CODE-3",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic code finding 3 for testing.",
+    "exploitable": false,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000003",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "UNKNOWN",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": {
+          "end_line_number": 13,
+          "file_path": "src/module_3.py",
+          "start_line_number": 13,
+          "url": "https://code.example/f-0000003"
+        },
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00003",
+        "natural_key": "host:h-00003",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "CRITICAL",
+    "state": "CLOSED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Code issue #3",
+    "type": "CODE",
+    "vendor": {
+      "created_at": "2025-12-29T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "code",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000003",
+      "severity": "critical",
+      "state": "resolved",
+      "updated_at": "2025-12-20T10:13:23Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000003",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-4",
+      "type": "secret",
+      "uid": "SBX-SECRET-4",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic secret finding 4 for testing.",
+    "exploitable": false,
+    "has_fix": false,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000004",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": null,
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": {
+          "end_line_number": 14,
+          "file_path": "src/module_4.py",
+          "start_line_number": 14,
+          "url": "https://code.example/f-0000004"
+        },
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00004",
+        "natural_key": "host:h-00004",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "CRITICAL",
+    "state": "CLOSED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Secret issue #4",
+    "type": "SECRET",
+    "vendor": {
+      "created_at": "2025-12-28T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "secret",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000004",
+      "severity": "critical",
+      "state": "resolved",
+      "updated_at": "2025-12-20T10:13:24Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000004",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-5",
+      "type": "iac",
+      "uid": "SBX-IAC-5",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic iac finding 5 for testing.",
+    "exploitable": false,
+    "has_fix": null,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000005",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "REACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": {
+          "end_line_number": 15,
+          "file_path": "src/module_5.py",
+          "start_line_number": 15,
+          "url": "https://code.example/f-0000005"
+        },
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00005",
+        "natural_key": "host:h-00005",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "CRITICAL",
+    "state": "CLOSED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Iac issue #5",
+    "type": "IAC",
+    "vendor": {
+      "created_at": "2025-12-27T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "iac",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000005",
+      "severity": "critical",
+      "state": "resolved",
+      "updated_at": "2025-12-20T10:13:25Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000005",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-6",
+      "type": "domain",
+      "uid": "SBX-DOMAIN-6",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic domain finding 6 for testing.",
+    "exploitable": null,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000006",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "POTENTIALLY_REACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": 443,
+        "protocol": "tcp",
+        "service": "svc6.example.com"
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00000",
+        "natural_key": "host:h-00000",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "CRITICAL",
+    "state": "IGNORED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Domain issue #6",
+    "type": "DOMAIN",
+    "vendor": {
+      "created_at": "2025-12-26T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "domain",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000006",
+      "severity": "critical",
+      "state": "suppressed",
+      "updated_at": "2025-12-20T10:13:26Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000006",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-7",
+      "type": "misc",
+      "uid": "SBX-MISC-7",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic misc finding 7 for testing.",
+    "exploitable": null,
+    "has_fix": false,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000007",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "UNREACHABLE",
+    "remediation": null,
+    "resource_related": [],
+    "resources": [
+      {
+        "name": "h-00001",
+        "natural_key": "host:h-00001",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "CRITICAL",
+    "state": "IGNORED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Misc issue #7",
+    "type": "UNKNOWN",
+    "vendor": {
+      "created_at": "2025-12-25T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "misc",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000007",
+      "severity": "critical",
+      "state": "suppressed",
+      "updated_at": "2025-12-20T10:13:27Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000007",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-8",
+      "type": "host_vuln",
+      "uid": "SBX-HOST_VULN-8",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2022-1008"
+    ],
+    "description": "Synthetic host_vuln finding 8 for testing.",
+    "exploitable": null,
+    "has_fix": null,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000008",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "UNKNOWN",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": 443,
+        "protocol": "tcp",
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00002",
+        "natural_key": "host:h-00002",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "HIGH",
+    "state": "IGNORED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Host Vuln issue #8",
+    "type": "HOST",
+    "vendor": {
+      "created_at": "2025-12-24T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "host_vuln",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000008",
+      "severity": "high",
+      "state": "suppressed",
+      "updated_at": "2025-12-20T10:13:28Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000008",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 1.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": null,
+        "last_modified": null,
+        "published": null,
+        "references": [],
+        "source_identifier": null,
+        "status": null,
+        "uid": "CVE-2022-1008",
+        "weaknesses": []
+      }
+    ]
+  },
+  {
+    "analytic": {
+      "name": "rule-9",
+      "type": "container_vuln",
+      "uid": "SBX-CONTAINER_VULN-9",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2023-1009"
+    ],
+    "description": "Synthetic container_vuln finding 9 for testing.",
+    "exploitable": true,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000009",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": null,
+    "remediation": "Upgrade lib9 to 1.0.1 or later.",
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": "1.0.1",
+          "name": "lib9",
+          "package_manager": "go",
+          "path": null,
+          "reachability": null,
+          "version": "1.0.0"
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "i-00001",
+        "natural_key": "container:i-00001",
+        "role": "primary",
+        "stream": "images",
+        "type": "CONTAINER"
+      }
+    ],
+    "severity": "HIGH",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Container Vuln issue #9",
+    "type": "CONTAINER",
+    "vendor": {
+      "created_at": "2025-12-23T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "container_vuln",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000009",
+      "severity": "high",
+      "state": "open",
+      "updated_at": "2025-12-20T10:13:29Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000009",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 1.9,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": null,
+        "last_modified": null,
+        "published": null,
+        "references": [],
+        "source_identifier": null,
+        "status": null,
+        "uid": "CVE-2023-1009",
+        "weaknesses": []
+      }
+    ]
+  },
+  {
+    "analytic": {
+      "name": "rule-10",
+      "type": "package",
+      "uid": "SBX-PACKAGE-10",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2024-1010"
+    ],
+    "description": "Synthetic package finding 10 for testing.",
+    "exploitable": true,
+    "has_fix": false,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000010",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "REACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": null,
+          "name": "lib10",
+          "package_manager": "nuget",
+          "path": null,
+          "reachability": "REACHABLE",
+          "version": "1.1.0"
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00004",
+        "natural_key": "host:h-00004",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "HIGH",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Package issue #10",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-22T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "package",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000010",
+      "severity": "high",
+      "state": "open",
+      "updated_at": "2025-12-20T10:13:30Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000010",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 2.0,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": null,
+        "last_modified": null,
+        "published": null,
+        "references": [],
+        "source_identifier": null,
+        "status": null,
+        "uid": "CVE-2024-1010",
+        "weaknesses": []
+      }
+    ]
+  },
+  {
+    "analytic": {
+      "name": "rule-11",
+      "type": "code",
+      "uid": "SBX-CODE-11",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic code finding 11 for testing.",
+    "exploitable": true,
+    "has_fix": null,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000011",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "POTENTIALLY_REACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": {
+          "end_line_number": 21,
+          "file_path": "src/module_11.py",
+          "start_line_number": 21,
+          "url": "https://code.example/f-0000011"
+        },
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00005",
+        "natural_key": "host:h-00005",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "HIGH",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Code issue #11",
+    "type": "CODE",
+    "vendor": {
+      "created_at": "2025-12-21T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "code",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000011",
+      "severity": "high",
+      "state": "open",
+      "updated_at": "2025-12-20T10:13:31Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000011",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-12",
+      "type": "secret",
+      "uid": "SBX-SECRET-12",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic secret finding 12 for testing.",
+    "exploitable": false,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000012",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "UNREACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": {
+          "end_line_number": 22,
+          "file_path": "src/module_12.py",
+          "start_line_number": 22,
+          "url": "https://code.example/f-0000012"
+        },
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00000",
+        "natural_key": "host:h-00000",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "HIGH",
+    "state": "CLOSED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Secret issue #12",
+    "type": "SECRET",
+    "vendor": {
+      "created_at": "2025-12-20T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "secret",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000012",
+      "severity": "high",
+      "state": "resolved",
+      "updated_at": "2025-12-20T10:13:32Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000012",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-13",
+      "type": "iac",
+      "uid": "SBX-IAC-13",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic iac finding 13 for testing.",
+    "exploitable": false,
+    "has_fix": false,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000013",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "UNKNOWN",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": {
+          "end_line_number": 23,
+          "file_path": "src/module_13.py",
+          "start_line_number": 23,
+          "url": "https://code.example/f-0000013"
+        },
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00001",
+        "natural_key": "host:h-00001",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "HIGH",
+    "state": "CLOSED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Iac issue #13",
+    "type": "IAC",
+    "vendor": {
+      "created_at": "2025-12-19T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "iac",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000013",
+      "severity": "high",
+      "state": "resolved",
+      "updated_at": "2025-12-20T10:13:33Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000013",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-14",
+      "type": "domain",
+      "uid": "SBX-DOMAIN-14",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic domain finding 14 for testing.",
+    "exploitable": false,
+    "has_fix": null,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000014",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": null,
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": 443,
+        "protocol": "tcp",
+        "service": "svc0.example.com"
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00002",
+        "natural_key": "host:h-00002",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "HIGH",
+    "state": "CLOSED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Domain issue #14",
+    "type": "DOMAIN",
+    "vendor": {
+      "created_at": "2025-12-18T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "domain",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000014",
+      "severity": "high",
+      "state": "resolved",
+      "updated_at": "2025-12-20T10:13:34Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000014",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-15",
+      "type": "misc",
+      "uid": "SBX-MISC-15",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic misc finding 15 for testing.",
+    "exploitable": null,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000015",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "REACHABLE",
+    "remediation": null,
+    "resource_related": [],
+    "resources": [
+      {
+        "name": "h-00003",
+        "natural_key": "host:h-00003",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "HIGH",
+    "state": "IGNORED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Misc issue #15",
+    "type": "UNKNOWN",
+    "vendor": {
+      "created_at": "2025-12-17T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "misc",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000015",
+      "severity": "high",
+      "state": "suppressed",
+      "updated_at": "2025-12-20T10:13:35Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000015",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-16",
+      "type": "host_vuln",
+      "uid": "SBX-HOST_VULN-16",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2024-1016"
+    ],
+    "description": "Synthetic host_vuln finding 16 for testing.",
+    "exploitable": null,
+    "has_fix": false,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000016",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "POTENTIALLY_REACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": 443,
+        "protocol": "tcp",
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00004",
+        "natural_key": "host:h-00004",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "MEDIUM",
+    "state": "IGNORED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Host Vuln issue #16",
+    "type": "HOST",
+    "vendor": {
+      "created_at": "2025-12-16T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "host_vuln",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000016",
+      "severity": "medium",
+      "state": "suppressed",
+      "updated_at": "2025-12-20T10:13:36Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000016",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 2.6,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": null,
+        "last_modified": null,
+        "published": null,
+        "references": [],
+        "source_identifier": null,
+        "status": null,
+        "uid": "CVE-2024-1016",
+        "weaknesses": []
+      }
+    ]
+  },
+  {
+    "analytic": {
+      "name": "rule-17",
+      "type": "container_vuln",
+      "uid": "SBX-CONTAINER_VULN-17",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2025-1017"
+    ],
+    "description": "Synthetic container_vuln finding 17 for testing.",
+    "exploitable": null,
+    "has_fix": null,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000017",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "UNREACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": null,
+          "name": "lib17",
+          "package_manager": "cargo",
+          "path": null,
+          "reachability": "UNREACHABLE",
+          "version": "1.8.0"
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "i-00001",
+        "natural_key": "container:i-00001",
+        "role": "primary",
+        "stream": "images",
+        "type": "CONTAINER"
+      }
+    ],
+    "severity": "MEDIUM",
+    "state": "IGNORED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Container Vuln issue #17",
+    "type": "CONTAINER",
+    "vendor": {
+      "created_at": "2025-12-15T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "container_vuln",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000017",
+      "severity": "medium",
+      "state": "suppressed",
+      "updated_at": "2025-12-20T10:13:37Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000017",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 2.7,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": null,
+        "last_modified": null,
+        "published": null,
+        "references": [],
+        "source_identifier": null,
+        "status": null,
+        "uid": "CVE-2025-1017",
+        "weaknesses": []
+      }
+    ]
+  },
+  {
+    "analytic": {
+      "name": "rule-18",
+      "type": "package",
+      "uid": "SBX-PACKAGE-18",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [
+      "CVE-2020-1018"
+    ],
+    "description": "Synthetic package finding 18 for testing.",
+    "exploitable": true,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000018",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "UNKNOWN",
+    "remediation": "Upgrade lib18 to 1.0.1 or later.",
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": {
+          "fixed_version": "1.0.1",
+          "name": "lib18",
+          "package_manager": "npm",
+          "path": null,
+          "reachability": "UNKNOWN",
+          "version": "1.0.0"
+        },
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00000",
+        "natural_key": "host:h-00000",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "MEDIUM",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Package issue #18",
+    "type": "DEPENDENCY",
+    "vendor": {
+      "created_at": "2025-12-14T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "package",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000018",
+      "severity": "medium",
+      "state": "open",
+      "updated_at": "2025-12-20T10:13:38Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000018",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": [
+      {
+        "cvss_scores": [
+          {
+            "score": 2.8,
+            "severity": null,
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "version": "3.1"
+          }
+        ],
+        "description": null,
+        "last_modified": null,
+        "published": null,
+        "references": [],
+        "source_identifier": null,
+        "status": null,
+        "uid": "CVE-2020-1018",
+        "weaknesses": []
+      }
+    ]
+  },
+  {
+    "analytic": {
+      "name": "rule-19",
+      "type": "code",
+      "uid": "SBX-CODE-19",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic code finding 19 for testing.",
+    "exploitable": true,
+    "has_fix": false,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000019",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": null,
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": {
+          "end_line_number": 29,
+          "file_path": "src/module_19.py",
+          "start_line_number": 29,
+          "url": "https://code.example/f-0000019"
+        },
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00001",
+        "natural_key": "host:h-00001",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "MEDIUM",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Code issue #19",
+    "type": "CODE",
+    "vendor": {
+      "created_at": "2025-12-13T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "code",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000019",
+      "severity": "medium",
+      "state": "open",
+      "updated_at": "2025-12-20T10:13:39Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000019",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-20",
+      "type": "secret",
+      "uid": "SBX-SECRET-20",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic secret finding 20 for testing.",
+    "exploitable": true,
+    "has_fix": null,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000020",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "REACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": {
+          "end_line_number": 30,
+          "file_path": "src/module_20.py",
+          "start_line_number": 30,
+          "url": "https://code.example/f-0000020"
+        },
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00002",
+        "natural_key": "host:h-00002",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "MEDIUM",
+    "state": "OPEN",
+    "state_changed_at": null,
+    "ticket": null,
+    "title": "Secret issue #20",
+    "type": "SECRET",
+    "vendor": {
+      "created_at": "2025-12-12T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "secret",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000020",
+      "severity": "medium",
+      "state": "open",
+      "updated_at": "2025-12-20T10:13:40Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000020",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-21",
+      "type": "iac",
+      "uid": "SBX-IAC-21",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic iac finding 21 for testing.",
+    "exploitable": false,
+    "has_fix": true,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000021",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "POTENTIALLY_REACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": {
+          "end_line_number": 31,
+          "file_path": "src/module_21.py",
+          "start_line_number": 31,
+          "url": "https://code.example/f-0000021"
+        },
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": null,
+        "protocol": null,
+        "service": null
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00003",
+        "natural_key": "host:h-00003",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "MEDIUM",
+    "state": "CLOSED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Iac issue #21",
+    "type": "IAC",
+    "vendor": {
+      "created_at": "2025-12-11T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "iac",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000021",
+      "severity": "medium",
+      "state": "resolved",
+      "updated_at": "2025-12-20T10:13:41Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000021",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-22",
+      "type": "domain",
+      "uid": "SBX-DOMAIN-22",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic domain finding 22 for testing.",
+    "exploitable": false,
+    "has_fix": false,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000022",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "UNREACHABLE",
+    "remediation": null,
+    "resource_related": [
+      {
+        "affected_code": null,
+        "affected_image": null,
+        "affected_os": null,
+        "affected_package": null,
+        "affected_platform": null,
+        "port": 443,
+        "protocol": "tcp",
+        "service": "svc1.example.com"
+      }
+    ],
+    "resources": [
+      {
+        "name": "h-00004",
+        "natural_key": "host:h-00004",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "MEDIUM",
+    "state": "CLOSED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Domain issue #22",
+    "type": "DOMAIN",
+    "vendor": {
+      "created_at": "2025-12-10T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "domain",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000022",
+      "severity": "medium",
+      "state": "resolved",
+      "updated_at": "2025-12-20T10:13:42Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000022",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  },
+  {
+    "analytic": {
+      "name": "rule-23",
+      "type": "misc",
+      "uid": "SBX-MISC-23",
+      "url": null
+    },
+    "analytic_output": null,
+    "cve_ids": [],
+    "description": "Synthetic misc finding 23 for testing.",
+    "exploitable": false,
+    "has_fix": null,
+    "meta_derived": [],
+    "natural_key": "finding:f-0000023",
+    "object": "vulnerability_finding",
+    "product": {
+      "name": "Sandbox Scanner",
+      "vendor_name": "SecureFabric"
+    },
+    "reachability": "UNKNOWN",
+    "remediation": null,
+    "resource_related": [],
+    "resources": [
+      {
+        "name": "h-00005",
+        "natural_key": "host:h-00005",
+        "role": "primary",
+        "stream": "hosts",
+        "type": "HOST"
+      }
+    ],
+    "severity": "MEDIUM",
+    "state": "CLOSED",
+    "state_changed_at": "2026-01-01T00:00:00Z",
+    "ticket": null,
+    "title": "Misc issue #23",
+    "type": "UNKNOWN",
+    "vendor": {
+      "created_at": "2025-12-09T00:00:00Z",
+      "data": {
+        "comment": null,
+        "rule_category": "misc",
+        "vendor": "SANDBOX"
+      },
+      "id": "f-0000023",
+      "severity": "medium",
+      "state": "resolved",
+      "updated_at": "2025-12-20T10:13:43Z",
+      "url": "https://sandbox.securefabric.dev/findings/f-0000023",
+      "vulnerability_identifiers": []
+    },
+    "vulnerabilities": []
+  }
+]

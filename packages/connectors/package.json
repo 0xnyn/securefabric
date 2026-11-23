@@ -1,0 +1,12 @@
+{
+  "name": "@securefabric/connectors",
+  "version": "0.1.0",
+  "private": true,
+  "description": "First-party connectors: GITHUB and SANDBOX (Python; deps in pyproject.toml, managed by uv)",
+  "scripts": {
+    "fix": "cd ../.. && uv run --frozen ruff check --fix packages/connectors && uv run --frozen ruff format packages/connectors",
+    "lint": "cd ../.. && uv run --frozen ruff check packages/connectors && uv run --frozen ruff format --check packages/connectors",
+    "test": "cd ../.. && uv run --frozen pytest packages/connectors",
+    "typecheck": "cd ../.. && uv run --frozen mypy packages/connectors"
+  }
+}
