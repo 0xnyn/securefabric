@@ -1,0 +1,10 @@
+# Block pushes to main; open a PR instead
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "Pushing directly to main is not allowed. Push a branch and open a PR."
+    exit 1
+  fi
+done
+
+echo "Type checking and verifying the generated API client before push..."
+pnpm exec turbo run typecheck check-generated check-catalog --output-logs=errors-only

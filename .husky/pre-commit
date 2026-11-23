@@ -1,0 +1,62 @@
+# Block direct commits to main (the first commit of a new repo is allowed)
+BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+if [ "$BRANCH" = "main" ] && git rev-parse --verify -q HEAD >/dev/null; then
+  echo "Committing directly to main is not allowed. Create a branch: git switch -c <type>/<name>"
+  exit 1
+fi
+
+STAGED=$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR)
+[ -z "$STAGED" ] && exit 0
+
+# --- TypeScript / JSON / CSS: Ultracite (Biome) fixes the staged files --------
+STAGED_JS=$(printf '%s\n' "$STAGED" | grep -E '\.(js|jsx|ts|tsx|mjs|cjs|mts|cts|json|jsonc|css|yaml|yml)$' || true)
+if [ -n "$STAGED_JS" ]; then
+  # Files that also have unstaged changes: fix them, but don't stage the fixes
+  # (that would sneak the unstaged hunks into the commit).
+  UNSTAGED=$(git -c core.quotePath=false diff --name-only)
+  PARTIAL=""
+  [ -n "$UNSTAGED" ] && PARTIAL=$(printf '%s\n' "$STAGED_JS" | grep -Fx -- "$UNSTAGED" || true)
+
+  FORMAT_EXIT=0
+  printf '%s\n' "$STAGED_JS" | tr '\n' '\0' | xargs -0 pnpm exec ultracite fix || FORMAT_EXIT=$?
+
+  printf '%s\n' "$STAGED_JS" | while IFS= read -r file; do
+    if [ -f "$file" ] && ! printf '%s\n' "$PARTIAL" | grep -Fxq -- "$file"; then
+      git add -- "$file"
+    fi
+  done
+  if [ -n "$PARTIAL" ]; then
+    echo "Ultracite fixed files that also have unstaged changes; review and stage them:"
+    printf '%s\n' "$PARTIAL" | sed 's/^/  /'
+  fi
+  if [ $FORMAT_EXIT -ne 0 ]; then
+    echo "Ultracite found issues it could not auto-fix (run: make fix)."
+    exit $FORMAT_EXIT
+  fi
+fi
+
+# --- Python + repo hygiene: the hooks in .pre-commit-config.yaml --------------
+# (uv lock --check, ruff check/format, mypy, whitespace, yaml/toml, secrets).
+# Run through `uv run` so tool versions always match uv.lock.
+uv run --frozen pre-commit run --hook-stage pre-commit || {
+  echo "pre-commit hooks failed or modified files. Review, stage, and commit again."
+  exit 1
+}
+
+# --- End-to-end types: the TS client must match the FastAPI schema ------------
+if printf '%s\n' "$STAGED" | grep -qE '^(apps/api|packages/(core|domain|tasks))/.*\.py$|^packages/client/src/v1\.ts$'; then
+  if ! pnpm -s -F @securefabric/client check-generated >/dev/null 2>&1; then
+    echo "packages/client/src/v1.ts is out of date with the API schema."
+    echo "Run: make generate   (then stage packages/client/src/v1.ts)"
+    exit 1
+  fi
+fi
+
+# --- Provider catalog: the dash's catalog.ts feeds the backend's catalog.json ---
+if printf '%s\n' "$STAGED" | grep -qE '^apps/dash/src/lib/catalog\.ts$|^packages/domain/src/securefabric_domain/catalog\.json$'; then
+  if ! pnpm -s -F dash check-catalog >/dev/null 2>&1; then
+    echo "packages/domain/src/securefabric_domain/catalog.json is out of date with the dash catalog."
+    echo "Run: make generate   (then stage catalog.json)"
+    exit 1
+  fi
+fi

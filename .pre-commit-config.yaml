@@ -1,0 +1,43 @@
+# Python + repo-hygiene hooks. Husky's .husky/pre-commit runs these on staged files
+# (`uv run pre-commit run`) next to Ultracite for TS, so don't `pre-commit install`;
+# `make hooks` sets up husky. Tools run from the project venv, so versions match uv.lock.
+# Vendored assets and generated files are left byte-for-byte as shipped.
+exclude: ^(apps/dash/public/|packages/client/src/v1\.ts$|packages/tokens/src/theme\.css$)
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [ --unsafe ] # allow compose's !reset tag
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        exclude: ^(pnpm-lock\.yaml|uv\.lock)$
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: uv-lock
+        name: uv lock --check
+        entry: uv lock --check
+        language: system
+        files: ^(uv\.lock|pyproject\.toml|(apps|packages)/[^/]+/pyproject\.toml)$
+        pass_filenames: false
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types: [ python ]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [ python ]
+      - id: mypy
+        name: mypy
+        entry: uv run mypy apps packages conftest.py
+        language: system
+        types: [ python ]
+        pass_filenames: false
