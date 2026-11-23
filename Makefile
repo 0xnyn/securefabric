@@ -284,6 +284,20 @@ start-dash: ## Serve the production build of apps/dash on http://localhost:3000
 shell: ## Python REPL with the workspace importable
 	$(RUN) python
 
+##@ Storybook (packages/ui components and patterns, in apps/storybook)
+
+.PHONY: storybook
+storybook: ## Run Storybook with hot reload on http://localhost:6006
+	$(PNPM) run storybook
+
+.PHONY: storybook-build
+storybook-build: ## Build the static Storybook into apps/storybook/storybook-static
+	$(TURBO) build --filter=storybook
+
+.PHONY: storybook-check
+storybook-check: ## Lint, type-check and build Storybook (fails on a broken story)
+	$(TURBO) lint typecheck build --filter=storybook
+
 ##@ Database (Postgres in Docker)
 
 .PHONY: db-up
@@ -488,7 +502,7 @@ nuke: ## ⚠ Stop everything and delete volumes + local images
 .PHONY: clean
 clean: ## Remove caches, build artefacts and coverage output
 	find . -type d \( -name __pycache__ -o -name .pytest_cache -o -name .mypy_cache -o -name .ruff_cache -o -name .turbo -o -name .next \) -not -path "./.venv/*" -not -path "*/node_modules/*" -prune -exec rm -rf {} +
-	rm -rf htmlcov .coverage .coverage.* coverage.xml dist build openapi.json
+	rm -rf htmlcov .coverage .coverage.* coverage.xml dist build openapi.json apps/storybook/storybook-static
 
 .PHONY: clean-all
 clean-all: clean ## clean + remove .venv and every node_modules

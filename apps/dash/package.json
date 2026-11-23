@@ -50,6 +50,7 @@
   },
   "devDependencies": {
     "@securefabric/config": "workspace:*",
+    "@storybook/nextjs-vite": "10.6.8",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

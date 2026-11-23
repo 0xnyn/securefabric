@@ -1,0 +1,35 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Introduction" />
+
+# SecureFabric UI
+
+Every piece of UI the dashboard and the hosted connect page are built from, in light and dark. Use the theme switch in the toolbar to check both, and the Accessibility tab on any story.
+
+## Where a component lives
+
+| Layer | Path | What belongs there | May import |
+|---|---|---|---|
+| **Primitives** | `packages/ui/src/primitives` | Vendored shadcn/ui building blocks (sidebar, command, popover, chart…). Added with `shadcn add`, kept close to upstream. | lib, hooks |
+| **Components** | `packages/ui/src/components` | Our curated controls that pages use every day: button, form, card, badge, table, empty state, dialog, select, switch, menu, tooltip. | primitives, lib |
+| **Patterns** | `packages/ui/src/patterns` | Domain-free compositions: page header, section, stat, charts, copy, code, tabs, key-value, avatars. | components, primitives, lib |
+| **Domain** | `apps/dash/src/components/domain` | Anything that knows SecureFabric: connector logos, health and status badges, query states, role gating, the schema form. | everything above, the API client, Next.js |
+| **Features** | `apps/dash/src/components/{shell,data-table,connect,views}` | The app frame, the log viewer, the connect page, and one view per page. | everything above |
+
+`packages/ui` knows nothing about the app: Biome rejects `@/…`, `next/…` and the API client there. If a component needs those, it is a domain component.
+
+## Rules of thumb
+
+- **Reach for the highest layer that fits.** A page uses `components` and `patterns`; it only touches a `primitive` for something no component covers yet.
+- **One concept per file**, named after it (`empty-state.tsx` exports `EmptyState`). No grab-bag files.
+- **Stories sit next to the component** (`button.stories.tsx` beside `button.tsx`). A new component gets a story in the same change.
+- **Copy follows the writing guide**: sentence case, verb-first buttons, errors that say what happened and how to fix it, empty states that point to the next step.
+- **Sizes share one scale**: controls are 28, 32, 36 or 40px tall, so a row of buttons, inputs and selects lines up.
+- **Lists with repeatable values** (a shortcut sequence, a set of types) need keys that include position or are de-duplicated first.
+
+## Running it
+
+```sh
+pnpm -F storybook dev     # http://localhost:6006
+pnpm -F storybook build   # static build in apps/storybook/storybook-static
+```

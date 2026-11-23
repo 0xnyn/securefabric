@@ -1,0 +1,20 @@
+/* The app loads Inter through next/font, which sets --font-inter on <body>.
+   Storybook has no next/font, so load it here and set the same variable. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap");
+/* The dashboard's stylesheet: Tailwind, the design tokens and the table
+   status colours. */
+@import "../../dash/src/index.css";
+
+/* Tailwind scans packages/ui itself (globals.css). Storybook builds from
+   apps/storybook, so name the dashboard's components too. */
+@source "../../dash/src/components";
+@source "../../dash/src/lib";
+
+:root {
+	--font-inter: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html,
+body {
+	background: var(--background);
+}
