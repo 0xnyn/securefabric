@@ -1,8 +1,9 @@
 "use client";
 
+import { Field, Input } from "@securefabric/ui/components/form";
+import { Select } from "@securefabric/ui/components/select";
+import { Switch } from "@securefabric/ui/components/switch";
 import { useId } from "react";
-import { Select, Switch } from "@/components/ui/overlay";
-import { Field, Input } from "@/components/ui/primitives";
 
 /**
  * A form rendered from a connector's JSON Schema and nothing else (CAT-04):
@@ -36,6 +37,14 @@ export interface JsonSchemaProperty {
 export type FormValues = Record<string, unknown>;
 
 const FIRST_LETTER = /^\w/u;
+const ACRONYM_START = /^[A-Z]{2}/u;
+
+/** "Tenant ID" → "tenant ID": lower-case the first letter unless it starts an acronym. */
+function lower(text: string): string {
+	return ACRONYM_START.test(text)
+		? text
+		: text.charAt(0).toLowerCase() + text.slice(1);
+}
 
 function label(name: string, prop: JsonSchemaProperty): string {
 	return (
@@ -93,10 +102,10 @@ function matches(pattern: string, value: string): boolean {
 
 function rangeError(prop: JsonSchemaProperty, v: number): string | null {
 	if (prop.minimum !== undefined && v < prop.minimum) {
-		return `At least ${prop.minimum}`;
+		return `Enter ${prop.minimum} or more`;
 	}
 	if (prop.maximum !== undefined && v > prop.maximum) {
-		return `At most ${prop.maximum}`;
+		return `Enter ${prop.maximum} or less`;
 	}
 	return null;
 }
@@ -108,10 +117,10 @@ function fieldError(
 	required: boolean
 ): string | null {
 	if (v === undefined || v === null || v === "") {
-		return required ? `${label(name, prop)} is required` : null;
+		return required ? `Enter the ${lower(label(name, prop))}` : null;
 	}
 	if (prop.pattern && typeof v === "string" && !matches(prop.pattern, v)) {
-		return `${label(name, prop)} has the wrong format`;
+		return `This doesn't look like a valid ${lower(label(name, prop))}. Check for missing characters or extra spaces.`;
 	}
 	if (isNumeric(prop) && typeof v === "number") {
 		return rangeError(prop, v);

@@ -63,15 +63,16 @@ describe("schema helpers", () => {
 
 	it("checks required, pattern and range", () => {
 		expect(validate(SCHEMA, { page_size: 5 })).toEqual({
-			api_key: "API key is required",
-			page_size: "At least 10",
-			tenant: "Tenant is required",
+			api_key: "Enter the API key",
+			page_size: "Enter 10 or more",
+			tenant: "Enter the tenant",
 		});
 		expect(
 			validate(SCHEMA, { api_key: "nope", page_size: 500, tenant: "acme" })
 		).toEqual({
-			api_key: "API key has the wrong format",
-			page_size: "At most 100",
+			api_key:
+				"This doesn't look like a valid API key. Check for missing characters or extra spaces.",
+			page_size: "Enter 100 or less",
 		});
 		expect(
 			validate(SCHEMA, { api_key: "key_abcd1234", tenant: "acme" })
@@ -188,13 +189,18 @@ describe("<SchemaForm>", () => {
 		act(() =>
 			root.render(
 				<Harness
-					errors={{ api_key: "API key has the wrong format" }}
+					errors={{
+						api_key:
+							"This doesn't look like a valid API key. Check for missing characters or extra spaces.",
+					}}
 					onChange={() => undefined}
 				/>
 			)
 		);
 		const alert = container.querySelector("[role=alert]");
-		expect(alert?.textContent).toBe("API key has the wrong format");
+		expect(alert?.textContent).toBe(
+			"This doesn't look like a valid API key. Check for missing characters or extra spaces."
+		);
 		expect(
 			container.querySelector("#t-api_key")?.getAttribute("aria-invalid")
 		).toBe("true");
